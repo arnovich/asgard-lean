@@ -1,0 +1,46 @@
+name = "asgard"
+version = "0.13.0"
+defaultTargets = ["Gimle.Asgard", "Gimle.Asgard.Examples", "Gimle.Asgard.Tests",
+  "Gimle.Asgard.Examples.CircuitGallery", "diagram_demo"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.32.1"
+
+[[lean_lib]]
+name = "Gimle.Asgard"
+
+[[lean_lib]]
+name = "Gimle.Asgard.Examples"
+
+[[lean_lib]]
+name = "Gimle.Asgard.Tests"
+
+[[lean_exe]]
+name = "simulation_demo"
+root = "Executables.SimulationDemo"
+
+[[lean_exe]]
+name = "simulation_process_tests"
+root = "Tests.Integration.SimulationProcessTests"
+
+[[lean_exe]]
+name = "rational_simulation_demo"
+root = "Executables.RationalSimulationDemo"
+
+[[lean_exe]]
+name = "three_state_demo"
+root = "Executables.ThreeStateDemo"
+
+# Separate target, deliberately not imported by Gimle/Asgard/Examples.lean:
+# it pulls in Visualization.Widget, the only ProofWidgets consumer.
+# Keep this block AFTER Gimle.Asgard.Examples. Lake resolves an overlapping
+# module name with findSomeRev? (reverse declaration order), so reordering
+# these two would silently bind CircuitGallery to the parent library.
+[[lean_lib]]
+name = "Gimle.Asgard.Examples.CircuitGallery"
+
+[[lean_exe]]
+name = "diagram_demo"
+root = "Executables.DiagramDemo"
