@@ -3,6 +3,7 @@ name: Lean verification
 on:
   push:
     branches: [main]
+    paths-ignore: ["tasks/**", "docs/**"]
   workflow_dispatch:
 
 concurrency:
