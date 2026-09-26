@@ -26,41 +26,41 @@ predicates and theorems that use it; they must not become compiler dependencies.
 
 ## Outcome
 
-- [ ] Define a finite observation manifest whose slots identify port ID and
+- [x] Define a finite observation manifest whose slots identify port ID and
       natural multi-index, with separate ordered axis IDs and an explicit OGF/EGF
       basis. Read exact rational coefficients from full `StreamPoint d n` inputs.
       Bounds, duplicate slots, zero-sized windows and dimension/order consistency
       have specified behavior; no anonymous flattening establishes identity.
-- [ ] Given an original stream circuit and finite output observation, compute
+- [x] Given an original stream circuit and finite output observation, compute
       sufficient finite input dependencies and a typed rational-polynomial
       feedforward circuit for those output coefficients. Support routing,
       constants, axis variables, addition, stream product (coefficient
       convolution), selected-axis derivatives/integrals, sequential and parallel
       composition.
-- [ ] Prove that evaluating the lowered circuit on the extracted coefficients
+- [x] Prove that evaluating the lowered circuit on the extracted coefficients
       (cast exactly into its real interpretation) equals the extracted output
       of the original full-stream circuit. The theorem names the original
       circuit, basis and both manifests; lowering data alone grants no claim.
-- [ ] Dependency propagation accounts for derivative halo coefficients,
+- [x] Dependency propagation accounts for derivative halo coefficients,
       convolution splits along every axis, and the complete required boundary
       slice of an integral. Propagate requirements backwards through composition;
       do not assume all intermediate windows have the same shape.
-- [ ] Reject `seriesCompose` and any future unsupported constructor explicitly
+- [x] Reject `seriesCompose` and any future unsupported constructor explicitly
       in this first lowering, including unsupported operations whose output is
       later discarded. This must not erase Asgard's strict domain semantics.
-- [ ] Two-axis tests show that output coefficient `(0,0)` of `D_x² u` needs
+- [x] Two-axis tests show that output coefficient `(0,0)` of `D_x² u` needs
       input coefficient `(0,2)` with OGF factor 2 and EGF factor 1. Two streams
       agreeing on a smaller window can yield different observed derivatives.
       Include mixed-axis products, boundary dependence on the other axis,
       asymmetric wiring and named-axis permutations.
-- [ ] Check both outputs of the existing `FormalHeat` circuit through this
+- [x] Check both outputs of the existing `FormalHeat` circuit through this
       bridge and include a polynomial input with a nonzero coefficient outside
       the naive window. The observation theorem, not just the example's zero
       tail, must justify each successful finite evaluation.
-- [ ] Bound dependency expansion and intermediate polynomial size in the
+- [x] Bound dependency expansion and intermediate polynomial size in the
       executable lowering; distinguish unsupported structure from exhausted
       resource limits. No numerical tolerance enters coefficient claims.
-- [ ] `lake build`, executable standard-axiom audit and positive/hostile
+- [x] `lake build`, executable standard-axiom audit and positive/hostile
       regressions pass. Update `docs/formal-streams.md` with the precise supported
       observation fragment and the derivative counterexample.
 
@@ -78,3 +78,18 @@ This theorem concerns selected exact coefficients, not the full stream or its
 analytic values. There is no zero-tail assumption, numerical error estimate,
 general substitution lowering, feedback solver, Python compiler port or proof
 of JAX execution. Analytic evaluation and tail bounds are tasks 024 and 025.
+
+## Conversation
+
+### note · claude/88c9ba9a · 2026-09-26T16:59:33Z
+
+Done in `Gimle/Asgard/Streams/Lowering.lean`. `lowerRaw_correct` is the exact
+coefficient theorem for every supported constructor; `lower_correct`,
+`lower_names` and `lower_defined` bind a lowered observation to the original
+circuit, its basis and both manifests. Degrees are `Fin d → ℕ` so the lowering
+computes; `Degrees`, `Slot` and `Term` have hand-written decidable equality
+because the derived instances (and `Function.update`) do not reduce in the
+kernel. For forseti-lean 020: `lower` output plus `lower_correct` is the bridge
+from a finite polynomial certificate over the dependency coefficients to the
+observed output coefficients; `dependencyPoint_extract` connects it to
+`Manifest.extract`.
