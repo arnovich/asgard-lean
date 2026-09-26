@@ -10,6 +10,7 @@ import Gimle.Asgard.Tests.Normalization
 import Gimle.Asgard.Tests.RealAtomics
 import Gimle.Asgard.Tests.Streams
 import Gimle.Asgard.Tests.StreamLowering
+import Gimle.Asgard.Tests.StreamRealization
 import Gimle.Asgard.Tests.External
 import Gimle.Asgard.Tests.Approximation
 import Gimle.Asgard.Tests.EquationModels
