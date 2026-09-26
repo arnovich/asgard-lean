@@ -1,12 +1,9 @@
 ---
 title: Relate finite polynomial streams to analytic fields and heat evolution
-state: ongoing
+state: closed
 priority: high
 labels: [streams, pde, semantics, analysis]
 related: ["023", "025"]
-claimed_by: claude-024
-claimed_at: 2026-09-26T00:00:00Z
-branch: feat/polynomial_stream_realization
 ---
 
 # Relate finite polynomial streams to analytic fields and heat evolution
@@ -27,34 +24,34 @@ these fields belong to downstream property systems.
 
 ## Outcome
 
-- [ ] Represent finite polynomial streams using existing mathlib polynomial
+- [x] Represent finite polynomial streams using existing mathlib polynomial
       data and an exact embedding into `Streams.Stream d`; prove the embedding
       and real evaluation agree coefficient by coefficient. Preserve OGF/EGF
       factorial conversion on every named axis.
-- [ ] Prove evaluation correspondence for routing, constants, axis variables,
+- [x] Prove evaluation correspondence for routing, constants, axis variables,
       addition and product, and for selected-axis formal differentiation and
       integration with the full boundary profile at that axis's origin. Analytic
       derivatives/integrals refer to the evaluated field, not coefficient shifts.
       Reuse `Streams.Circuit.Rel` and its compilation theorems.
-- [ ] Construct heat evolution for any finite rational polynomial boundary
+- [x] Construct heat evolution for any finite rational polynomial boundary
       `p(x)` on axes `[t,x]` by the finite sum
       `u(t,x) = Σ_k t^k/k! · (D_x^(2k) p)(x)`, stopping when the derivatives
       vanish. Derive the degree cutoff from `p`, with constants and zero handled.
-- [ ] Prove the constructed stream satisfies the original formal derivative/
+- [x] Prove the constructed stream satisfies the original formal derivative/
       integration circuit and full initial profile, and its evaluated polynomial
       field satisfies `∂_t u = ∂_x² u` and `u(0,x)=p(x)` for every real `t,x`.
       Prove uniqueness within the finite bivariate polynomial solution class
       from coefficient recurrence. Do not claim uniqueness among all smooth fields.
-- [ ] Worked regressions include `p=x²` giving `x²+2t`, `p=x⁴` giving
+- [x] Worked regressions include `p=x²` giving `x²+2t`, `p=x⁴` giving
       `x⁴+12tx²+12t²`, and affine boundaries remaining fixed. Check both bases,
       axis transport and a changed boundary/coefficient that invalidates the
       original correspondence. No hand-supplied second model may replace the
       original stream circuit in the theorem.
-- [ ] A same-prefix/different-tail example cannot use finite support or the
+- [x] A same-prefix/different-tail example cannot use finite support or the
       finite-polynomial evaluation theorem without its full-stream hypothesis.
       State explicitly what is proved for a supplied candidate field and what
       is proved for the constructed polynomial solution family.
-- [ ] `lake build` and an executable transitive standard-axiom audit pass;
+- [x] `lake build` and an executable transitive standard-axiom audit pass;
       document the construction, interpretation bridge, solution class and
       examples in `docs/formal-streams.md`. No Python or downstream property-system
       core dependency.
