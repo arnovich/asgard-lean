@@ -1,9 +1,6 @@
 ---
 title: Lower finite stream observations to circuits with checked dependencies
-state: ongoing
-claimed_by: claude-a023
-claimed_at: 2026-09-26T16:30:22Z
-branch: feat/stream_observation_lowering
+state: closed
 priority: high
 labels: [streams, compiler, observations, semantics]
 related: ["024", "025"]
