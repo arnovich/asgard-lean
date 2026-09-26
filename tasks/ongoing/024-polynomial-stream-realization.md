@@ -1,9 +1,12 @@
 ---
 title: Relate finite polynomial streams to analytic fields and heat evolution
-state: open
+state: ongoing
 priority: high
 labels: [streams, pde, semantics, analysis]
 related: ["023", "025"]
+claimed_by: claude-024
+claimed_at: 2026-09-26T00:00:00Z
+branch: feat/polynomial_stream_realization
 ---
 
 # Relate finite polynomial streams to analytic fields and heat evolution
