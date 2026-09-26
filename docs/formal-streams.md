@@ -68,11 +68,75 @@ them, analytic values, or numerical error.
 lake build Gimle.Asgard.Tests.StreamLowering
 ```
 
+## Polynomial realization
+
+[`Streams.Realization`](../Gimle/Asgard/Streams/Realization.lean) connects finite
+streams to mathlib `MvPolynomial (Fin d) ℚ` (`Poly d`) and their real fields.
+
+- `ofPoly basis p` embeds `p` exactly: OGF raw coefficients are `coeff n p`,
+  EGF raw ones `α₁!⋯α_d! · coeff n p` on every axis (`ofPoly_ogf_apply`,
+  `ofPoly_egf_apply`); `ofPoly_injective`.
+- `Realizes basis a p` means the **whole** stream is `ofPoly basis p`.
+  `finiteSupport_iff`: a stream is realized iff all its raw coefficients have
+  finite support. Agreement on a finite window is not a witness.
+- `field p x` is real evaluation; `field_eq_sum` writes it as the finite sum of
+  the decoded stream coefficients against monomials, in either basis.
+- Every circuit maps realized inputs to realized outputs: `Circuit.polyValue`
+  is the wire-for-wire polynomial semantics, and `Circuit.rel_ofPoly` restates
+  the original `Circuit.Rel`: outputs are exactly `ofPoly ∘ polyValue`, under
+  `PolyDefined` (only substitution has a side condition, zero constant term).
+- Analytic meaning, on the evaluated field rather than coefficient shifts:
+  `hasDerivAt_field` (selected-axis `pderiv` is the real partial derivative),
+  `field_integralPoly` (`U(x) = B(x|ᵢ₌₀) + ∫₀^{xᵢ} P(x|ᵢ₌ₛ) ds`, with the full
+  boundary profile on `xᵢ = 0`), `field_composePoly`, and the `field_C/X/add/mul`
+  laws. `slice_iff` equates coefficients on the zero slice with values on `xᵢ = 0`.
+
+## Polynomial heat evolution
+
+[`Streams.Heat`](../Gimle/Asgard/Streams/Heat.lean), axes `[t, x]`. For any
+rational profile `p` (`Profile = Polynomial ℚ`):
+
+`solution p = Σ_{k ≤ cutoff p} t^k/k! · (D^(2k) p)(x)`, `cutoff p = natDegree p / 2`.
+
+Later terms vanish (`term_eq_zero`, `solution_eq_sum`); constant, zero and affine
+profiles are stationary (`solution_of_natDegree_le_one`).
+
+| Object | Proved |
+| --- | --- |
+| Constructed `stream basis p` | `circuit_solution`: the original `D_x²`/`I_t` heat circuit returns `[D_x² u, u]` on `[u, p, _]`, both bases |
+| Its field `solution p` | `solution_pde`: `∂_t u = ∂_x² u` at every real `(t,x)`; `solution_initial`: `u(0,x) = p(x)` |
+| Supplied stream `a` | `candidate_stream`: if the circuit reconstructs `a` from `p`, then `a = stream basis p` |
+| Supplied polynomial `q` | `field_unique`: PDE and initial profile everywhere imply `q = solution p` |
+| Arbitrary smooth field | nothing |
+
+`formal_unique` proves uniqueness from the coefficient recurrence
+(`t`-degree `k+1` from `k`) among all formal streams, hence within the finite
+polynomial class (`poly_unique`). `reconstructs_iff`: reconstruction by
+integration is exactly `D_t u = D_x² u` plus the whole `t = 0` slice.
+
+[PolynomialHeat.lean](../Gimle/Asgard/Examples/PolynomialHeat.lean) checks
+`x² ↦ x²+2t`, `x⁴ ↦ x⁴+12tx²+12t²`, stationary affine profiles, EGF
+coefficients, the `[x,t]` axis swap, and that a changed boundary or coefficient
+fails. `FormalHeat.circuit` *is* `Heat.circuit .ogf`, and `FormalHeat.heat` is
+derived as the constructed stream by uniqueness from its own circuit theorem.
+A stream equal to `x²+2t` on the window `degree < (5,5)` but with an infinite
+tail along `t = 0` has no finite support, so it is not realized
+(`tailed_not_realized`) and no field theorem applies to it.
+
+Scope: no infinite-series summation, spatial boundary-value problem, maximum
+principle or numerical claim; bounds on a strip are properties of this explicit
+solution. Analytic realization from a checked majorant is task 025.
+
+```sh
+lake build Gimle.Asgard.Tests.StreamRealization
+```
+
 ## Example
 
 [FormalHeat.lean](../Gimle/Asgard/Examples/FormalHeat.lean) checks `u=x²+2t`,
 `u_t=u_xx=2`, and `u(0,x)=x²`. The compiled circuit returns `[2,u]` using the
-supplied boundary. This is a formal coefficient theorem, not analytic PDE existence.
+supplied boundary. On its own this is a formal coefficient theorem; the analytic
+bridge for every polynomial profile is in *Polynomial heat evolution* above.
 
 ```sh
 lake build Gimle.Asgard.Tests.Streams
