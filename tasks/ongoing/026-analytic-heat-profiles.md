@@ -1,6 +1,9 @@
 ---
 title: Heat streams for analytic initial profiles with certified coefficient majorants
-state: open
+state: ongoing
+claimed_by: claude-026
+claimed_at: 2026-09-27
+branch: feat/analytic_heat_profiles
 priority: medium
 labels: [streams, heat, analysis, certificates]
 depends_on: ["024", "025"]
