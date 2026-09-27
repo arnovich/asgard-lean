@@ -2,7 +2,7 @@
 
 Lean 4 proofs for typed circuits, equation compilation, and circuit rewrites.
 Examples cover polynomial models, continuous feedback, linear ODEs, formal
-streams, and approximation bounds.
+streams, certified stream truncation, and approximation bounds.
 
 Public showcase, licensed under [MIT](LICENSE). External pull requests are not accepted.
 
@@ -29,6 +29,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Three-state model](Gimle/Asgard/Examples/ThreeState.lean) | Coupled ODEs, exact initial data, and energy calculations |
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
+| [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |
 | [Circuit gallery](Gimle/Asgard/Examples/CircuitGallery.lean) | Interactive diagrams in Lean Infoview |
 
 Check an individual example with `lake env lean Gimle/Asgard/Examples/EnergyDemo.lean`.

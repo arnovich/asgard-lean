@@ -25,7 +25,8 @@ for explicit axis permutations.
 - The `convolution` aliases mean this substitution, not discrete-kernel convolution.
 - `truncate_inside` proves agreement only inside the requested coefficient window.
   Derivatives may need coefficients beyond it; substitution may move degrees between axes.
-- No analytic convergence, Taylor identification, or numerical truncation bound is implied.
+- On its own this implies no analytic convergence, Taylor identification or numerical
+  truncation bound; *Certified analytic truncation* below derives one from a proved majorant.
 
 ## Finite observations
 
@@ -125,10 +126,80 @@ tail along `t = 0` has no finite support, so it is not realized
 
 Scope: no infinite-series summation, spatial boundary-value problem, maximum
 principle or numerical claim; bounds on a strip are properties of this explicit
-solution. Analytic realization from a checked majorant is task 025.
+solution. Infinite streams with a proved majorant are covered by *Certified
+analytic truncation* below.
 
 ```sh
 lake build Gimle.Asgard.Tests.StreamRealization
+```
+
+## Certified analytic truncation
+
+[`Streams.Tail`](../Gimle/Asgard/Streams/Tail.lean) turns an explicit, proved
+coefficient majorant into analytic convergence and a uniform rectangular
+truncation error. The stream type alone gives neither.
+
+**Hypotheses the caller supplies**, bundled as `TailCertificate basis a`:
+
+| Field | Meaning |
+| --- | --- |
+| `majorant : Majorant d` | exact rationals `M ≥ 0`, `R_i > 0`, one per ordered axis |
+| `box : Box d` | exact radii `r_i ≥ 0` (zero allowed); the domain is the closed box `\|x_i\| ≤ r_i` |
+| `inside` | `r_i < R_i` for every axis; boundary radii `r_i ≥ R_i` are rejected |
+| `majorizes : Majorizes basis a majorant` | a proof that **every** decoded OGF coefficient obeys `\|a_α\| ≤ M · ∏ᵢ R_i^(−α_i)` |
+
+Coefficients are always decoded (EGF raw values are divided by `α₁!⋯α_d!`), so
+the majorant, the field and the error depend only on the OGF series. Without a
+`majorizes` proof there is no certificate and no conclusion.
+
+**Conclusion.** With `q_i = r_i / R_i` and a window `N : Fin d → ℕ`
+(`α_i < N_i` on every axis):
+
+```text
+tailBound = M · (Σᵢ q_i^N_i) · ∏ᵢ (1 − q_i)⁻¹             (exact ℚ)
+TruncationBound basis a box N ε  :=
+  ∀ x, box.Mem x → |analyticField basis a x − windowField basis N a x| ≤ ε
+```
+
+| Theorem | Statement |
+| --- | --- |
+| `TailCertificate.summable_norm`, `.hasSum` | on the box, `Σ_α a_α x^α` converges absolutely, to `analyticField` |
+| `TailCertificate.truncationBound c N` | `TruncationBound basis a c.box N (c.error N)`, where `c.error N = tailBound c.majorant c.box N` |
+| `abs_analyticField_sub_windowField_le` | the same bound, from the premises unbundled |
+| `TruncationBound.lower`, `.upper`, `.mono` | transport a bound on the window field to the analytic field |
+| `truncationBound_ports` | per-port bounds `ε_j` on a shared box give `‖F − W‖ ≤ B` in the sup norm of `ℝⁿ` for any `B ≥ 0` with `ε_j ≤ B` |
+| `truncationBound_iff_of_decode`, `TailCertificate.transport`, `analyticField_encode` | OGF/EGF invariance: equal decoded series have the same field, window, premise and error |
+| `truncate_realizes`, `field_windowPoly`, `analyticField_truncate` | the truncated stream is realized by `windowPoly`, whose real `field` is `windowField` |
+| `prefix_cannot_certify` | with at least one axis, any finite set of observed coefficients is shared by a stream violating any given majorant |
+
+The error metric is the **absolute difference of the evaluated real scalar
+field, uniform over the closed box**. It is not a coefficientwise error or a
+statistical confidence. The union bound over axes counts some omitted indices
+more than once, but it bounds the whole tail, not just the next coefficient.
+Degenerate cases: a zero-radius box admits only the origin, where the field is
+the constant coefficient (`analyticField_zero`) and positive windows have
+`tailBound = 0` (`tailBound_radius_zero`); with zero axes the error is `0`
+(`tailBound_axes_zero`).
+
+[GeometricTail.lean](../Gimle/Asgard/Examples/GeometricTail.lean) certifies
+`a_(m,n) = 1` on `|t|, |x| ≤ 1/2` with `M = R_t = R_x = 1`. At window `(N, N)`
+the error is `8·2^(−N)` (`error_eq`, `bound`; `error_ten` evaluates `N = 10` to
+`1/128` in the kernel). The field is `1/((1−t)(1−x))` and at the corner
+`(1/2, 1/2)` the true error is `8·2^(−N) − 4·4^(−N)` (`corner_error`): the bound
+overcounts exactly the doubly omitted corner block. The EGF copy, with raw
+coefficients `m!·n!`, carries the same certificate.
+
+The tests build a stream equal to that one on the whole window `(N, N)` but with
+coefficients `4^m` along `x`-degree 0. Its series diverges at `(1/2, 0)`, so no
+certificate of any majorant covers that point (`hostile_uncertifiable`).
+Neither a finite prefix nor a radius estimated from one certifies anything.
+
+Scope: no majorant discovery, floating-point or JAX execution, roundoff budget,
+time-window re-expansion, or stability of the bound under differentiation or
+substitution. Numerical execution remains evidence.
+
+```sh
+lake build Gimle.Asgard.Tests.StreamTail
 ```
 
 ## Example
