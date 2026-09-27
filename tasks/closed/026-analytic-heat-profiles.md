@@ -1,9 +1,6 @@
 ---
 title: Heat streams for analytic initial profiles with certified coefficient majorants
-state: ongoing
-claimed_by: claude-026
-claimed_at: 2026-09-27T00:00:00Z
-branch: feat/analytic_heat_profiles
+state: closed
 priority: medium
 labels: [streams, heat, analysis, certificates]
 depends_on: ["024", "025"]
@@ -29,24 +26,24 @@ a `Majorizes` premise for `TailCertificate`.
 
 ## Outcome
 
-- [ ] An analytic profile is an infinite formal stream on the spatial axis,
+- [x] An analytic profile is an infinite formal stream on the spatial axis,
       given in either basis. Its heat stream is defined on axes `[t, x]`, and
       its coefficients are stated in both bases.
-- [ ] The heat stream of an analytic profile satisfies the existing heat
+- [x] The heat stream of an analytic profile satisfies the existing heat
       `circuit` relation with that profile as the full boundary input
       (`circuit_rel_iff`). For a polynomial profile it agrees with 024's
       `Heat.stream`.
-- [ ] A certified profile bound `|g_j| ≤ M·ρ^(−j)` (exact `M ≥ 0`, `ρ > 0`)
+- [x] A certified profile bound `|g_j| ≤ M·ρ^(−j)` (exact `M ≥ 0`, `ρ > 0`)
       yields `Majorizes` for the heat output with majorant `(M, [ρ², ρ])`, and
       hence a `TailCertificate` on every box strictly inside those radii.
-- [ ] Worked example: the profile `e^x` (`g_j = 1`, `M = ρ = 1`) has output
+- [x] Worked example: the profile `e^x` (`g_j = 1`, `M = ρ = 1`) has output
       `e^(x+t)`. It gets a certified truncation bound at a concrete window,
       computed exactly by `decide +kernel`, and the analytic field equals
       `exp (x + t)` on the box.
-- [ ] Hostile tests: a profile violating its claimed bound gets no
+- [x] Hostile tests: a profile violating its claimed bound gets no
       certificate, and a box on or beyond the radii is rejected. Every public
       theorem has a `#guard_msgs` axiom audit allowing only `propext`,
       `Classical.choice` and `Quot.sound`.
-- [ ] `lake build` is clean and `docs/formal-streams.md` states the new
+- [x] `lake build` is clean and `docs/formal-streams.md` states the new
       theorems. There is no release tag: the release is batched with
       gimle-forseti 083 into v1.4.0.
