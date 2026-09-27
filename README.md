@@ -27,6 +27,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Energy](Gimle/Asgard/Examples/EnergyDemo.lean) | Typed circuits and an exact energy identity |
 | [Equation compiler](Gimle/Asgard/Examples/PolynomialCompiler.lean) | Named equations compiled to primitive circuits |
 | [Three-state model](Gimle/Asgard/Examples/ThreeState.lean) | Coupled ODEs, exact initial data, and energy calculations |
+| [Differential isolation](Gimle/Asgard/Examples/DifferentialIsolation.lean) | `3*x' + x = y` isolated with its residual and initial data, and solved |
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |
