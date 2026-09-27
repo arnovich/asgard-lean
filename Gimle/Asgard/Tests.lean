@@ -18,6 +18,7 @@ import Gimle.Asgard.Tests.Approximation
 import Gimle.Asgard.Tests.EquationModels
 import Gimle.Asgard.Tests.Declarations
 import Gimle.Asgard.Tests.ModelCompiler
+import Gimle.Asgard.Tests.DifferentialIsolation
 import Gimle.Asgard.Tests.ThreeState
 import Gimle.Asgard.Tests.RationalInterchange
 import Gimle.Asgard.Tests.RationalSimulation
