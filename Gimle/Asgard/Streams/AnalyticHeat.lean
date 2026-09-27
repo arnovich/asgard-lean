@@ -337,4 +337,82 @@ theorem windowField_stream (basis : Basis) (g : ℕ → ℚ) (N : Fin 2 → ℕ)
     windowField basis N (stream basis g) = windowField .ogf N (series g) :=
   windowField_encode basis N _
 
+/-! ## Exponential sums
+
+The family `p(x) = Σᵢ cᵢ · e^(aᵢ x)` with exact rational `cᵢ, aᵢ` has raw EGF
+coefficients `g_j = Σᵢ cᵢ · aᵢ^j`, a computable term. Its profile bound is
+decided: `M = Σᵢ |cᵢ|` works for every `ρ > 0` with `|aᵢ| · ρ ≤ 1` for all `i`. -/
+
+/-- The raw EGF coefficients of `Σᵢ cᵢ · e^(aᵢ x)`, from the pairs `(cᵢ, aᵢ)`. -/
+def expSum (terms : List (ℚ × ℚ)) (j : ℕ) : ℚ :=
+  (terms.map fun term => term.1 * term.2 ^ j).sum
+
+/-- The bound `Σᵢ |cᵢ|`. -/
+def expSumWeight (terms : List (ℚ × ℚ)) : ℚ :=
+  (terms.map fun term => |term.1|).sum
+
+/-- The decidable side condition: `|aᵢ| · ρ ≤ 1` for every term. -/
+def expSumFits (terms : List (ℚ × ℚ)) (ρ : ℚ) : Bool :=
+  terms.all fun term => decide (|term.2| * ρ ≤ 1)
+
+theorem expSumWeight_nonneg (terms : List (ℚ × ℚ)) : 0 ≤ expSumWeight terms := by
+  unfold expSumWeight
+  induction terms with
+  | nil => simp
+  | cons head tail ih =>
+    simp only [List.map_cons, List.sum_cons]
+    exact add_nonneg (abs_nonneg _) ih
+
+/-- One term: `|c · a^j| ≤ |c| · ρ^(−j)` when `|a| · ρ ≤ 1`. -/
+theorem abs_term_le {c a ρ : ℚ} (hρ : 0 < ρ) (fits : |a| * ρ ≤ 1) (j : ℕ) :
+    |c * a ^ j| ≤ |c| * (ρ ^ j)⁻¹ := by
+  rw [abs_mul, abs_pow]
+  apply mul_le_mul_of_nonneg_left _ (abs_nonneg c)
+  have pos : 0 < ρ ^ j := pow_pos hρ j
+  rw [← one_div, le_div_iff₀ pos, ← mul_pow]
+  exact pow_le_one₀ (mul_nonneg (abs_nonneg a) hρ.le) fits
+
+/-- **Exponential sums are certified profiles.** -/
+theorem profileBound_expSum (terms : List (ℚ × ℚ)) {ρ : ℚ} (hρ : 0 < ρ)
+    (fits : expSumFits terms ρ = true) :
+    ProfileBound (expSum terms) (expSumWeight terms) ρ := by
+  intro j
+  unfold expSum expSumWeight
+  induction terms with
+  | nil => simp
+  | cons head tail ih =>
+    simp only [expSumFits, List.all_cons, Bool.and_eq_true, decide_eq_true_eq] at fits
+    simp only [List.map_cons, List.sum_cons, add_mul]
+    exact (abs_add_le _ _).trans (add_le_add (abs_term_le hρ fits.1 j) (ih fits.2))
+
+/-! ## Root claims -/
+
+/-- **Truncation of every reconstruction.** Whatever the heat circuit
+reconstructs from the boundary `boundary basis g` is the heat stream
+(`candidate_stream`), so a certified profile bound, a box inside `[ρ², ρ]` and
+a checked `tailBound ≤ ε` bound its truncation error at window `N` by `ε`. -/
+theorem circuit_truncation (basis : Basis) {g : ℕ → ℚ} {M ρ ε : ℚ} (hM : 0 ≤ M)
+    (hρ : 0 < ρ) (bound : ProfileBound g M ρ) (box : Box 2)
+    (inside : ∀ i, box.radius i < (heatMajorant M ρ hM hρ).radius i) (N : Fin 2 → ℕ)
+    (le : tailBound (heatMajorant M ρ hM hρ) box N ≤ ε) :
+    ∀ a unused v : Stream 2,
+      (Heat.circuit basis).Rel ![a, boundary basis g, unused] ![v, a] →
+        TruncationBound basis a box N ε := by
+  intro a unused v rel
+  rw [candidate_stream basis g a unused v rel]
+  exact (truncationBound basis hM hρ bound box inside N).mono le
+
+/-- `circuit_truncation` for an exponential sum, with every side condition a
+decidable check. -/
+theorem expSum_truncation (basis : Basis) (terms : List (ℚ × ℚ)) {ρ ε : ℚ} (hρ : 0 < ρ)
+    (fits : expSumFits terms ρ = true) (box : Box 2)
+    (inside : box.radius 0 < ρ ^ 2 ∧ box.radius 1 < ρ) (N : Fin 2 → ℕ)
+    (le : tailBound (heatMajorant (expSumWeight terms) ρ (expSumWeight_nonneg terms) hρ)
+      box N ≤ ε) :
+    ∀ a unused v : Stream 2,
+      (Heat.circuit basis).Rel ![a, boundary basis (expSum terms), unused] ![v, a] →
+        TruncationBound basis a box N ε :=
+  circuit_truncation basis (expSumWeight_nonneg terms) hρ (profileBound_expSum terms hρ fits)
+    box ((inside_iff _ _ _ _ box).mpr inside) N le
+
 end Gimle.Asgard.Streams.AnalyticHeat

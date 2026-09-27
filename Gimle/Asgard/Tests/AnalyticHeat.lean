@@ -287,4 +287,59 @@ info: 'Gimle.Asgard.Tests.AnalyticHeat.hostile_not_bounded'
 -/
 #guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Tests.AnalyticHeat.hostile_not_bounded
 
+
+/-! ### Exponential sums and root claims -/
+
+/-- `e^x` as an exponential sum is the example's profile. -/
+example : expSum [(1, 1)] = Examples.ExpHeat.g := by
+  funext j; simp [expSum, Examples.ExpHeat.g]
+
+/-- `cosh x = (e^x + e^(−x))/2`: raw coefficients alternate `1, 0, 1, 0, …`. -/
+example : expSum [(1 / 2, 1), (1 / 2, -1)] 3 = 0 ∧ expSum [(1 / 2, 1), (1 / 2, -1)] 4 = 1 := by
+  decide +kernel
+
+/-- The fit check refuses a rate too large for the radius: `e^(2x)` at `ρ = 1`. -/
+example : expSumFits [(1, 2)] 1 = false := by decide +kernel
+
+/-- The root claim for `e^x`, every side condition decided by the kernel: every
+reconstruction from the `e^x` boundary is within `1/1000` of its window on the
+example box. -/
+example (basis : Basis) :
+    ∀ a unused v : Stream 2,
+      (Heat.circuit basis).Rel ![a, boundary basis (expSum [(1, 1)]), unused] ![v, a] →
+        TruncationBound basis a Examples.ExpHeat.box Examples.ExpHeat.window (1 / 1000) :=
+  expSum_truncation basis [(1, 1)] (ρ := 1) (by decide +kernel) (by decide +kernel)
+    Examples.ExpHeat.box (by decide +kernel) Examples.ExpHeat.window (by decide +kernel)
+
+/-- `cosh x` on `|t| ≤ 1/4`, `|x| ≤ 1/2` at window `[8, 16]`: the weight is
+`1/2 + 1/2 = 1`, so the certified bound equals the `e^x` one. -/
+example (basis : Basis) :
+    ∀ a unused v : Stream 2,
+      (Heat.circuit basis).Rel
+          ![a, boundary basis (expSum [(1 / 2, 1), (1 / 2, -1)]), unused] ![v, a] →
+        TruncationBound basis a Examples.ExpHeat.box Examples.ExpHeat.window (1 / 12288) :=
+  expSum_truncation basis _ (ρ := 1) (by decide +kernel) (by decide +kernel)
+    Examples.ExpHeat.box (by decide +kernel) Examples.ExpHeat.window (by decide +kernel)
+
+/-- An `ε` below the certified bound has no proof by this route: the side
+condition is false. -/
+example : ¬ tailBound (heatMajorant (expSumWeight [(1, 1)]) 1 (expSumWeight_nonneg _)
+    (by decide +kernel)) Examples.ExpHeat.box Examples.ExpHeat.window ≤ 1 / 20000 := by
+  decide +kernel
+
+/--
+info: 'Gimle.Asgard.Streams.AnalyticHeat.profileBound_expSum'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.AnalyticHeat.profileBound_expSum
+/--
+info: 'Gimle.Asgard.Streams.AnalyticHeat.circuit_truncation'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.AnalyticHeat.circuit_truncation
+/--
+info: 'Gimle.Asgard.Streams.AnalyticHeat.expSum_truncation'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.AnalyticHeat.expSum_truncation
 end Gimle.Asgard.Tests.AnalyticHeat
