@@ -3,8 +3,11 @@ import Lean
 
 /-! Source notation for `Model.Term`, shaped like the Python source grammar.
 
-`diff(x, t)` is a derivative atom, `(λ w => body)(arg)` an applied lambda and
-`e / n` division by a positive numeral. The guarantees start at the resulting
+`diff(x, t)` is a derivative atom, `(λ w => body)(arg)` an applied lambda,
+`e / n` division by a positive numeral and `e ^ n` a positive numeral power,
+expanded to repeated multiplication. `^ 0` is refused so that no written term,
+derivative or reference, can disappear before it is checked. Unary `+` is the
+identity. The guarantees start at the resulting
 `Term` AST; this macro is tested, not a verified parser. -/
 namespace Gimle.Asgard.Model
 
@@ -24,6 +27,7 @@ syntax:65 asgardTerm:65 " - " asgardTerm:66 : asgardTerm
 syntax:70 asgardTerm:70 " * " asgardTerm:71 : asgardTerm
 syntax:70 asgardTerm:70 " / " num : asgardTerm
 syntax:75 "-" asgardTerm:75 : asgardTerm
+syntax:75 "+" asgardTerm:75 : asgardTerm
 syntax:80 asgardTerm:81 " ^ " num : asgardTerm
 syntax "term% " asgardTerm : term
 
@@ -45,7 +49,10 @@ macro_rules
       if n.getNat == 0 then Lean.Macro.throwErrorAt n "Division is by a positive numeral"
       `(Term.mul (term% $a) (.constant ((1 : ℚ) / $n)))
   | `(term% -$a:asgardTerm) => `(Term.neg (term% $a))
-  | `(term% $a:asgardTerm ^ $n:num) => `(Term.pow (term% $a) $n)
+  | `(term% +$a:asgardTerm) => `(term% $a)
+  | `(term% $a:asgardTerm ^ $n:num) => do
+      if n.getNat == 0 then Lean.Macro.throwErrorAt n "Exponent must be a positive numeral"
+      `(Term.pow (term% $a) $n)
 
 /-- Explicit assignments, each with an output port whose ID and name are the
 written identifier. -/

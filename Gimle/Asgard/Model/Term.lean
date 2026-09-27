@@ -12,9 +12,10 @@ argument that mentions an undefined name.
 
 A derivative atom `D_axis(state)` has no value of its own: the caller supplies
 `rates`, and `Model.Differential` fixes it to the declared derivative of the
-state. Every other derivative form evaluates to `none` here; it is outside the
-fragment, and the isolation pass rejects it with a diagnostic rather than
-giving it a meaning. -/
+state. A lambda binder shadows a state of the same name for derivatives too, so
+`(λ x => D_t(x))(y)` has no value. Every derivative form other than a free
+state variable evaluates to `none` here; it is outside the fragment, and the
+isolation pass rejects it with a diagnostic rather than giving it a meaning. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -41,7 +42,8 @@ noncomputable def Term.eval (env : String → Option ℝ)
   | .add a b => do return (← a.eval env rates) + (← b.eval env rates)
   | .mul a b => do return (← a.eval env rates) * (← b.eval env rates)
   | .neg a => do return -(← a.eval env rates)
-  | .apply x body arg => body.eval (rebind env x (arg.eval env rates)) rates
+  | .apply x body arg =>
+      body.eval (rebind env x (arg.eval env rates)) (fun a s => if s = x then none else rates a s)
   | .derivative axis operand =>
       match operand with
       | .var state => rates axis state
@@ -92,44 +94,26 @@ defined and undefined values alike, and whatever derivative interpretation. -/
 theorem Term.beta_correct (t : Term) (e : NamedExpr) (h : t.beta = some e)
     (env : String → Option ℝ) (rates : String → String → Option ℝ) :
     e.eval env = t.eval env rates := by
-  induction t generalizing e env with
+  induction t generalizing e env rates with
   | var name => cases h; rfl
   | constant q => cases h; rfl
   | add a b ha hb =>
       cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA, hb _ hB]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates, hb _ hB env rates]
   | mul a b ha hb =>
       cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA, hb _ hB]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates, hb _ hB env rates]
   | neg a ha =>
       cases hA : a.beta <;> simp [beta, hA] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates]
   | apply x body arg hbody harg =>
       cases hB : body.beta <;> cases hA : arg.beta <;> simp [beta, hB, hA] at h
       subst h
-      rw [NamedExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA]
+      rw [NamedExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA env rates]
   | derivative axis operand _ => simp [beta] at h
-
-theorem Term.beta_isSome (t : Term) (h : t.derivatives = 0) : (t.beta).isSome := by
-  induction t with
-  | var _ | constant _ => rfl
-  | add a b ha hb | mul a b ha hb =>
-      simp only [derivatives, Nat.add_eq_zero_iff] at h
-      obtain ⟨ea, hea⟩ := Option.isSome_iff_exists.mp (ha h.1)
-      obtain ⟨eb, heb⟩ := Option.isSome_iff_exists.mp (hb h.2)
-      simp [beta, hea, heb]
-  | neg a ha =>
-      obtain ⟨ea, hea⟩ := Option.isSome_iff_exists.mp (ha h)
-      simp [beta, hea]
-  | apply x body arg hb ha =>
-      simp only [derivatives, Nat.add_eq_zero_iff] at h
-      obtain ⟨eb, heb⟩ := Option.isSome_iff_exists.mp (hb h.1)
-      obtain ⟨ea, hea⟩ := Option.isSome_iff_exists.mp (ha h.2)
-      simp [beta, heb, hea]
-  | derivative => simp [derivatives] at h
 
 /-- An exact signed literal product, such as `-2 * rat(1,4)`. Sums of literals
 are deliberately not scales, matching the pinned Python fragment. -/
@@ -153,6 +137,15 @@ theorem Term.literal_correct (t : Term) (q : ℚ) (h : t.literal = some q)
       subst h
       simp [Term.eval, ha _ hA, hb _ hB]
   | _ => simp [literal] at h
+
+/-- Whether `name` occurs free, outside any binder of the same name. -/
+def Term.mentions (name : String) : Term → Bool
+  | .var n => n == name
+  | .constant _ => false
+  | .add a b | .mul a b => a.mentions name || b.mentions name
+  | .neg a => a.mentions name
+  | .apply x body arg => arg.mentions name || (x != name && body.mentions name)
+  | .derivative _ operand => operand.mentions name
 
 /-- Every free name must be declared. Binders extend the scope of their body
 only, never of their argument. A derivative's operand is checked the same way. -/

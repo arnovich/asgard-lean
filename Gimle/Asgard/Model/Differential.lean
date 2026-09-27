@@ -211,7 +211,7 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
                 ring
 
 /-- `(opposite - remainder) / scale`, written without a unit factor. -/
-def solution (scale : ℚ) (opposite : NamedExpr) (remainder : Option NamedExpr) :
+def isolatedRhs (scale : ℚ) (opposite : NamedExpr) (remainder : Option NamedExpr) :
     NamedExpr :=
   let difference := match remainder with
     | none => opposite
@@ -233,7 +233,7 @@ structure Isolated (c : Context) (output : String) (lhs rhs : Term) where
 
 def Isolated.expr {c : Context} {output : String} {lhs rhs : Term}
     (i : Isolated c output lhs rhs) : NamedExpr :=
-  solution i.affine.scale i.other i.affine.remainder
+  isolatedRhs i.affine.scale i.other i.affine.remainder
 
 private def orient (lhs rhs : Term) :
     Except ErrorCode {sides : Term × Term //
@@ -271,13 +271,13 @@ private theorem solve_scaled (q w y z : ℝ) (hq : q ≠ 0) :
   · intro h; rw [← h]; field_simp; ring
 
 /-- The isolated right-hand side is `(opposite - remainder) / scale`. -/
-theorem solution_eval (q : ℚ) (o : NamedExpr) (r : Option NamedExpr)
+theorem isolatedRhs_eval (q : ℚ) (o : NamedExpr) (r : Option NamedExpr)
     (env : String → Option ℝ) :
-    (solution q o r).eval env =
+    (isolatedRhs q o r).eval env =
       (match r with
         | none => o.eval env
         | some r => do return (← o.eval env) + -(← r.eval env)).map (fun d => (q : ℝ)⁻¹ * d) := by
-  unfold solution
+  unfold isolatedRhs
   cases r with
   | none =>
       cases h : o.eval env <;> by_cases h1 : q = 1 <;> simp [h1, NamedExpr.eval, h]
@@ -303,7 +303,7 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
     have hq : (i.affine.scale : ℝ) ≠ 0 := by exact_mod_cast i.nonzero
     have key : (∃ v, i.side.eval env (c.rates env) = some v ∧
         i.opposite.eval env (c.rates env) = some v) ↔ i.expr.eval env = some w := by
-      rw [hside, ← hopp, Isolated.expr, solution_eval]
+      rw [hside, ← hopp, Isolated.expr, isolatedRhs_eval]
       cases hr : i.affine.remainder with
       | none =>
           cases ho : i.other.eval env with

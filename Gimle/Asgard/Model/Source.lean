@@ -13,7 +13,7 @@ and the `Evolution` (axis, start, states and initial values) is used as given.
 `SourceBody.Solves` is independent of lowering and of every circuit. There
 `D_t(x)` is the value of `x`'s declared derivative port, and that value is
 required to be the derivative of `x` on the forward domain
-(`Solves.derivative_denotes`). The main results are `solves_iff_lowered` and
+(`Solves.derivative_denotes`). The main results are `Lowered.solves_iff` and
 the composed `SourceContinuousModel.solves_iff_realizes`. -/
 namespace Gimle.Asgard.Model
 open Polynomial
@@ -127,6 +127,19 @@ theorem SourceBody.Solves.derivative_denotes {sb : SourceBody} {e : Evolution}
         rw [hr, Option.some.injEq] at hv
         exact hv ▸ hd
 
+/-- The same fact stated from a solution: at every time in the domain, the
+environment that witnesses the source equations reads each atom `D_t(x)` as the
+derivative of the state named `x`. -/
+theorem SourceBody.Solves.derivative_at {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state) {t : ℝ}
+    (ht : t ∈ e.time.domain) :
+    ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+      ∀ x r, (sb.context e).rates env e.axis.name x = some r →
+        ∃ p i, sb.inputs.find? (fun p => p.name == x && p.role == .state) = some p ∧
+          e.stateIds i = p.id ∧ HasDerivWithinAt (fun t => state t i) r e.time.domain t := by
+  obtain ⟨env, source, rates⟩ := h.2 t ht
+  exact ⟨env, source, fun x r hr => derivative_denotes rates x r hr⟩
+
 /-! ## Lowering -/
 
 /-- A lowered body, with the source/target correspondence of its equations. -/
@@ -152,7 +165,9 @@ private def lowerDifferential (c : Context) (d : DifferentialEquation) :
       (env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) = some v ∧
           d.rhs.eval env (c.rates env) = some v) ↔
         (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name)} :=
-  match isolate c d.output.name d.lhs d.rhs with
+  if d.lhs.mentions d.output.name || d.rhs.mentions d.output.name then
+    .error ⟨.repeatedDerivative, d.output.id, "derivative port named in its own equation"⟩
+  else match isolate c d.output.name d.lhs d.rhs with
   | .error code => .error ⟨code, d.output.id, d.output.name⟩
   | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env => i.correct env⟩
 
@@ -228,6 +243,11 @@ def SourceBody.ObservedSolution (sb : SourceBody) (e : Evolution)
 
 /-! ## Compilation -/
 
+/-- The declared interface with every right-hand side erased. Validating it
+first reports malformed ports, bindings and axes before any source term is read. -/
+def SourceBody.interface (sb : SourceBody) : Body :=
+  sb.withAssignments (sb.outputs.map fun p => ⟨p, .constant 0⟩)
+
 structure SourcePolynomialModel (sb : SourceBody) where
   lowered : Lowered sb Context.empty
   model : PolynomialModel lowered.body
@@ -238,6 +258,7 @@ def compileSourcePolynomial (sb : SourceBody) :
     Except Diagnostic (SourcePolynomialModel sb) := do
   if let some d := sb.differentials.head? then
     throw ⟨.unsupportedDerivative, d.output.id, "differential equation without an evolution axis"⟩
+  (Declaration.polynomial sb.interface).validate
   let lowered ← sb.lower Context.empty
   let model ← compilePolynomial lowered.body
   return ⟨lowered, model⟩
@@ -256,6 +277,7 @@ structure SourceContinuousModel (sb : SourceBody) (e : Evolution) where
 
 def compileSourceContinuous (sb : SourceBody) (e : Evolution) :
     Except Diagnostic (SourceContinuousModel sb e) := do
+  (Declaration.continuous sb.interface e).validate
   let lowered ← sb.lower (sb.context e)
   let model ← compileContinuous lowered.body e
   return ⟨lowered, model⟩
@@ -267,9 +289,11 @@ theorem SourceContinuousModel.solves_iff_realizes {sb : SourceBody} {e : Evoluti
     sb.Solves e state ↔ p.model.Realizes state := by
   rw [p.lowered.solves_iff, p.model.solves_iff_realizes]
 
-/-- Any further obligation on the whole trajectory, such as a boundary or
-terminal condition, is carried unchanged: the trajectory itself is not
-transformed by isolation. -/
+/-- A corollary of `solves_iff_realizes`, stated because isolation must not
+lose obligations: the solution sets coincide and the trajectory is not
+transformed, so any further predicate on it, such as a terminal condition, is
+preserved. This fragment itself is an initial-value problem; it has no
+boundary-condition semantics of its own. -/
 theorem SourceContinuousModel.constrained_iff {sb : SourceBody} {e : Evolution}
     (p : SourceContinuousModel sb e) (constraint : Dynamics.Signal e.states.length → Prop)
     (state : Dynamics.Signal e.states.length) :

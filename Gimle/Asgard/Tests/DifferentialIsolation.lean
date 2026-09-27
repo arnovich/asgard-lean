@@ -58,6 +58,9 @@ example : solve (term% 2 * (3 * diff(f, t))) (term% f) =
     some (.mul (.constant (1 / 6)) (.var "f")) := by decide +kernel
 example : solve (term% (2 * 3) * diff(f, t)) (term% f) =
     some (.mul (.constant (1 / 6)) (.var "f")) := by decide +kernel
+example : solve (term% 2 * 3 * diff(f, t)) (term% f) =
+    some (.mul (.constant (1 / 6)) (.var "f")) := by decide +kernel
+example : solve (term% +diff(f, t)) (term% f) = some (.var "f") := by decide +kernel
 example : solve (term% (-2 * -3) * diff(f, t)) (term% f) =
     some (.mul (.constant (1 / 6)) (.var "f")) := by decide +kernel
 example : solve (term% (2 / 4) * diff(f, t)) (term% f) =
@@ -67,6 +70,16 @@ example : solve (term% g) (term% (diff(f, t))) = some (.var "g") := by decide +k
 example : solve (term% diff(f, t)) (term% f + g) = some (.add (.var "f") (.var "g")) := by decide +kernel
 example : solve (term% diff(f, t)) (term% rat(1, 2) * f) =
     some (.mul (.constant (1 / 2)) (.var "f")) := by decide +kernel
+
+-- Python's "decay" forcing case, solved for the differentiated state.
+example : solve (term% g) (term% diff(f, t) + f) =
+    some (.add (.var "g") (.neg (.var "f"))) := by decide +kernel
+-- Nested literal factors and a residual after them.
+example : solve (term% (2 * diff(f, t)) * 3 + f) (term% g) =
+    some (.mul (.constant (1 / 6)) (.add (.var "g") (.neg (.var "f")))) := by decide +kernel
+-- Negation distributes over a residual sum; only a literal factor around one is refused.
+example : solve (term% -(diff(f, t) + f)) (term% g) =
+    some (.mul (.constant (-1)) (.add (.var "g") (.neg (.neg (.var "f"))))) := by decide +kernel
 
 -- Python accepts grouped residuals; every residual term is retained, in order.
 example : solve (term% f + (2) * (diff(f, t)) - 3) (term% 0) =
@@ -116,6 +129,20 @@ example : reject (term% diff(diff(f, t), t)) (term% g) = some .higherOrderDeriva
 example : reject (term% 2 * diff(f, t)) (term% diff(diff(f, x), x)) =
     some .mixedDerivative := by decide +kernel
 
+-- A lambda that reduces to a literal is not a scale; Python rejects it too.
+example : reject (term% (λ w => 2)(1) * diff(f, t)) (term% f) =
+    some .nonlinearDerivative := by decide +kernel
+
+-- Python accepts, and these are not yet in Lean notation (asgard-lean 030):
+-- `diff(f,t) / (2 * 3)`, `diff(f,t) / (-(2 * 3))` and `(-2 / -4) * diff(f,t)`.
+-- The equal scales `rat(1,6)`, `-rat(1,6)` and `rat(1,2)` are written as literals:
+example : solve (term% diff(f, t) * rat(1, 6)) (term% f) =
+    some (.mul (.constant 6) (.var "f")) := by decide +kernel
+-- Python keeps `diff(a,t) = diff($z,t)` with `$z` an external forcing
+-- parameter; a time-varying driver is outside the autonomous adapter (031).
+example : reject (term% diff(f, t)) (term% diff(a, t)) = some .unsupportedDerivative := by
+  decide +kernel
+
 -- Beyond the Python table.
 example : reject (term% f) (term% 1) = some .missingDerivative := by decide +kernel
 -- A derivative of a non-state name.
@@ -134,6 +161,16 @@ example : reject (term% diff(f, t) ^ 2) (term% f) = some .repeatedDerivative := 
 /-- error: Division is by a positive numeral -/
 #guard_msgs in
 #check term% diff(f, t) / 0
+
+-- `^ 0` would erase the written atom, so the notation refuses it; Python rejects too.
+/-- error: Exponent must be a positive numeral -/
+#guard_msgs in
+#check term% diff(f, t) ^ 0 + diff(f, t)
+
+-- A derivative under a binder of the same name is not the outer state's rate.
+example : (term% (λ f => diff(f, t))(g)).eval (fun _ => none)
+    (fun _ s => if s = "f" then some 7 else none) = none := by
+  simp [Term.eval]
 
 /-! ## Scoped beta normalization -/
 
@@ -256,6 +293,23 @@ example : code (compileSourceContinuous forced
 example : continuous { forced with differentials := differentials% {
     dg : f = 0 * diff(g, t); dh : diff(h, t) = g; } } =
     some ⟨.zeroScale, "dg", "dg"⟩ := by decide +kernel
+-- Malformed: two equations for the same state (Python: failed binding).
+example : continuous { forced with differentials := differentials% {
+    dg : f = 2 * diff(g, t); dg : f = 2 * diff(g, t); dh : diff(h, t) = g; } } =
+    some ⟨.duplicateId, "source", "dg"⟩ := by decide +kernel
+-- Malformed: a declared parameter differentiated.
+example : continuous { forced with differentials := differentials% {
+    dg : f = 2 * diff(g, t); dh : diff(h, t) = diff(f, t); } } =
+    some ⟨.unsupportedDerivative, "dh", "dh"⟩ := by decide +kernel
+-- Malformed: the derivative port named inside its own equation, where it would
+-- stand for the atom a second time.
+example : continuous { forced with differentials := differentials% {
+    dg : f = 2 * diff(g, t); dh : 3 * diff(h, t) + dh = g; } } =
+    some ⟨.repeatedDerivative, "dh", "derivative port named in its own equation"⟩ := by
+  decide +kernel
+-- Malformed interfaces are reported before any term is read: two states named `g`.
+example : continuous { forced with inputs := forced.inputs ++ [⟨"state-g2", "g", .state⟩] } =
+    some ⟨.duplicateName, "source", "g"⟩ := by decide +kernel
 -- Malformed: a state without its derivative equation.
 example : continuous { forced with differentials := differentials% {
     dg : f = 2 * diff(g, t); } } =
@@ -268,6 +322,14 @@ info: 'Gimle.Asgard.Model.Term.beta_correct' depends on axioms: [propext, Classi
 -/
 #guard_msgs (whitespace := lax) in #print axioms Term.beta_correct
 /--
+info: 'Gimle.Asgard.Polynomial.NamedExpr.subst_eval' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms NamedExpr.subst_eval
+/--
+info: 'Gimle.Asgard.Model.Term.literal_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.literal_correct
+/--
 info: 'Gimle.Asgard.Model.Term.affine_correct' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms Term.affine_correct
@@ -279,6 +341,10 @@ info: 'Gimle.Asgard.Model.Isolated.correct' depends on axioms: [propext, Classic
 info: 'Gimle.Asgard.Model.SourceBody.Solves.derivative_denotes' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.derivative_denotes
+/--
+info: 'Gimle.Asgard.Model.SourceBody.Solves.derivative_at' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.derivative_at
 /--
 info: 'Gimle.Asgard.Model.Lowered.solves_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
