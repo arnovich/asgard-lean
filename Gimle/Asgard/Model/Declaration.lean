@@ -62,6 +62,11 @@ inductive ErrorCode where
   | emptyId | emptyName | duplicateId | duplicateName | unsupportedRole
   | unknownReference | duplicateBinding | missingBinding | wrongAxis
   | cyclicDependency | incompleteResolution
+  -- Differential isolation (`Model.Differential`); each names a form outside
+  -- the accepted first-order fragment, never an unsatisfiable model.
+  | missingDerivative | competingDerivative | repeatedDerivative
+  | nonlinearDerivative | higherOrderDerivative | mixedDerivative
+  | unsupportedDerivative | zeroScale
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
