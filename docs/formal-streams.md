@@ -226,6 +226,9 @@ and `coeffs basis p` recovers `g` from any one-axis stream (`coeffs_profile`,
 | `stream_ofPolynomial`, `boundary_ofPolynomial` | for a polynomial `p` and `g_j = j!·p_j` (`ofPolynomial p`), exactly `Heat.stream basis p` and `Heat.boundary basis p` |
 | `majorizes_stream` | `ProfileBound g M ρ` (`∀ j, \|g_j\| ≤ M·ρ^(−j)`, exact `M ≥ 0`, `ρ > 0`) gives `Majorizes basis (stream basis g) (heatMajorant M ρ _ _)`: bound `M`, radii `[ρ², ρ]` |
 | `certificate`, `truncationBound` | with a box strictly inside `[ρ², ρ]` (`inside_iff`: `r_t < ρ²`, `r_x < ρ`), a `TailCertificate` and `TruncationBound basis (stream basis g) box N (tailBound (heatMajorant M ρ _ _) box N)` at every window `N` |
+| `profileBound_expSum` | for `expSum terms` (`g_j = Σᵢ cᵢ·aᵢ^j`, the profile `Σᵢ cᵢ·e^(aᵢx)`), `ProfileBound _ (Σᵢ \|cᵢ\|) ρ` whenever `expSumFits terms ρ` (every `\|aᵢ\|·ρ ≤ 1`, a `Bool` the kernel decides) |
+| `circuit_truncation` | every `a` the heat circuit reconstructs from `boundary basis g` satisfies `TruncationBound basis a box N ε`, given a profile bound, a box inside `[ρ², ρ]` and `tailBound … box N ≤ ε` |
+| `expSum_truncation` | `circuit_truncation` for an exponential sum, with every side condition (`0 < ρ`, the fit, the box, `tailBound ≤ ε`) decidable, so a root claim closes by `decide +kernel` |
 
 The transfer drops the factorials (`n!·k! ≥ 1`): decoded coefficients satisfy
 `|g_(k+2n)|/(n!·k!) ≤ M·ρ^(−(k+2n)) = M·(ρ²)^(−n)·ρ^(−k)`. It is sound but
