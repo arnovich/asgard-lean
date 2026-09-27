@@ -28,15 +28,28 @@ with source terms (`term%`, `assignments%`, `differentials%` from
 `Gimle.Asgard.Model.SourceSyntax`). Lowering produces an ordinary `Body`, which the
 compiler above then handles unchanged.
 
+- `term%` adds `diff(e, t)`, `(λ w => body)(arg)` at its application site only, unary `+`,
+  `/` by a positive numeral, and `^` by a positive numeral.
+- A binder shadows a state of the same name, for derivatives too.
+
 | Accepted | Lowered to |
 | --- | --- |
 | `z := (λ w => body)(arg)` in any derivative-free term | Beta-normalized `NamedExpr`; inner binders first, no capture |
-| `dx : q * diff(x, t) + r = rhs` or `rhs = q * diff(x, t) + r` | `dx := (rhs - r) / q`, every residual term kept in source order |
+| `dx : side = rhs` or `dx : rhs = side`, one side holding the only atom | `dx := (rhs - r) / q`, every residual term kept in source order |
 
-- `q` is an exact nonzero signed literal product: `3`, `-2 * rat(1,4)`, `diff(x,t) / 2`.
-- `r` and `rhs` are derivative-free terms; lambdas are allowed there.
+```text
+side := A | side + r | r + side | side - r | r - side | -side
+A    := diff(x, t) | lit * A | A * lit | A / n | -A
+lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
+```
+
+- `q` is the product of the literals and signs around the atom, and must be nonzero.
+  A literal factor wraps only a residual-free `A`; a negation may wrap a whole side.
+- `r` and `rhs` are derivative-free terms, lambdas allowed. A lambda that reduces to a
+  literal is not a scale.
 - `x` is a declared state, `t` the evolution axis name, and `dx` the derivative port
-  its `StateBinding` names.
+  its `StateBinding` names; `dx` may not be referenced in its own equation.
+- The interface (ports, bindings, axis) is validated before any term is read.
 - Axis, start and initial values stay in the unchanged `Evolution`. There is no integral,
   so no inverse rewrite can drop a boundary term.
 
@@ -49,7 +62,10 @@ compiler above then handles unchanged.
 | `diff(diff(x,t),t)` | `higherOrderDerivative` |
 | Another axis, or a mixed chain | `mixedDerivative` |
 | `diff(x + y, t)`, a non-state, `2 * (diff(x,t) + x)`, a derivative in a lambda or an explicit assignment | `unsupportedDerivative` |
-| No atom, or the atom of another state | `missingDerivative` |
+| Any differential equation in a polynomial declaration | `unsupportedDerivative` |
+| `dx` named inside its own equation | `repeatedDerivative` |
+| No atom, or the atom of a state whose derivative port is not `dx` | `missingDerivative` |
+| A name outside its binder's scope, even in an unused argument | `unknownReference` |
 
 A rejection names unsupported structure, not an unsatisfiable model.
 
@@ -63,7 +79,7 @@ derivative port, and requires that value to be the actual derivative on `t ≥ s
 | `Isolated.correct` | The isolated assignment holds exactly when the source equation does |
 | `Lowered.solves_iff` | Source solutions are the lowered body's solutions, with the same `Evolution` |
 | `SourceContinuousModel.solves_iff_realizes` | Source solutions are the compiled initialized feedback's realizations |
-| `SourceContinuousModel.constrained_iff` | Any further trajectory obligation is carried unchanged |
+| `SourceContinuousModel.constrained_iff` | Corollary: any further predicate on the trajectory is preserved |
 | `SourceContinuousModel.observations_correct` | Observed source solutions are observed realizations |
 | `SourcePolynomialModel.correct` | Lambda-bearing polynomial sources against compiled outputs |
 
@@ -75,7 +91,7 @@ also proves the unique solution `x = 2 + 3e^(-t/3)`. The
 accept/reject cases. The fragments deliberately differ in two ways:
 
 - Lean `^ n` is repeated multiplication, so `(2 ^ 3) * diff(x,t)` and `diff(x,t) ^ 1`
-  are accepted. Python rejects both.
+  are accepted. Python rejects both. Both refuse `^ 0`.
 - Scales are exact rationals, so Python's binary64 overflow rejections have no Lean
   counterpart.
 
@@ -84,9 +100,9 @@ Not yet in the source grammar (open tasks):
 - higher-order chains such as `diff(diff(f,t),t) = g` (027);
 - integrals and `diff(int(X,t),t)` (028);
 - multi-axis equations such as heat (029);
-- real atomics, division by expressions and decimal literals (030).
-
-Time-varying drivers remain outside the autonomous continuous adapter.
+- real atomics, division by expressions, literal products or negative numerals, and
+  decimal literals (030);
+- time-varying drivers, such as Python's `diff(a,t) = diff($z,t)` (031).
 
 ## Guarantees and limits
 
