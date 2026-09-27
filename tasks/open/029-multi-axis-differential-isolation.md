@@ -3,7 +3,7 @@ title: Connect multi-axis differential isolation to the stream interpretation
 state: open
 priority: low
 labels: [compiler, isolation, streams, migration]
-related: ["027", "028"]
+related: ["027", "028", "030"]
 ---
 
 ## Context
