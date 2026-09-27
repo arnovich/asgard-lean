@@ -30,6 +30,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |
+| [Exponential heat](Gimle/Asgard/Examples/ExpHeat.lean) | The analytic profile `e^x` evolves to `e^(x+t)`, with a kernel-computed certified truncation bound |
 | [Circuit gallery](Gimle/Asgard/Examples/CircuitGallery.lean) | Interactive diagrams in Lean Infoview |
 
 Check an individual example with `lake env lean Gimle/Asgard/Examples/EnergyDemo.lean`.
