@@ -17,6 +17,7 @@ import Gimle.Asgard.Examples.RealAtomics
 import Gimle.Asgard.Examples.FormalHeat
 import Gimle.Asgard.Examples.PolynomialHeat
 import Gimle.Asgard.Examples.GeometricTail
+import Gimle.Asgard.Examples.ExpHeat
 import Gimle.Asgard.Examples.ExternalBlend
 import Gimle.Asgard.Examples.Approximation
 import Gimle.Asgard.Examples.EquationModels

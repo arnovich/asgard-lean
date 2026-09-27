@@ -127,7 +127,8 @@ tail along `t = 0` has no finite support, so it is not realized
 Scope: no infinite-series summation, spatial boundary-value problem, maximum
 principle or numerical claim; bounds on a strip are properties of this explicit
 solution. Infinite streams with a proved majorant are covered by *Certified
-analytic truncation* below.
+analytic truncation* below, and infinite (analytic) profiles by *Analytic heat
+profiles*.
 
 ```sh
 lake build Gimle.Asgard.Tests.StreamRealization
@@ -200,6 +201,59 @@ substitution. Numerical execution remains evidence.
 
 ```sh
 lake build Gimle.Asgard.Tests.StreamTail
+```
+
+## Analytic heat profiles
+
+[`Streams.AnalyticHeat`](../Gimle/Asgard/Streams/AnalyticHeat.lean), axes
+`[t, x]`, connects the heat circuit to certified truncation. An analytic profile
+is given by its raw EGF coefficients `g : ℕ → ℚ` (`p(x) = Σ g_j x^j/j!`,
+`g_j = p^(j)(0)`); as a one-axis stream in either basis it is `profile basis g`,
+and `coeffs basis p` recovers `g` from any one-axis stream (`coeffs_profile`,
+`profile_coeffs`). The heat stream is `stream basis g`, the boundary input
+`boundary basis g` (the profile on `t = 0`, zero at positive `t`-degree):
+
+| Basis | Coefficient at `(n, k)` of `stream basis g` | Theorem |
+| --- | --- | --- |
+| EGF | `g_(k+2n)` | `stream_egf_apply` |
+| OGF | `g_(k+2n) / (n!·k!)` | `stream_ogf_apply` |
+
+| Theorem | Statement |
+| --- | --- |
+| `stream_pde`, `stream_slice` | `D_t u = D_x² u`; on `t = 0` the stream is the boundary |
+| `circuit_stream` | `(Heat.circuit basis).Rel ![stream basis g, boundary basis g, unused] ![D_x² (stream basis g), stream basis g]` |
+| `candidate_stream` | any `a` the circuit reconstructs from `boundary basis g` is `stream basis g` |
+| `stream_ofPolynomial`, `boundary_ofPolynomial` | for a polynomial `p` and `g_j = j!·p_j` (`ofPolynomial p`), exactly `Heat.stream basis p` and `Heat.boundary basis p` |
+| `majorizes_stream` | `ProfileBound g M ρ` (`∀ j, \|g_j\| ≤ M·ρ^(−j)`, exact `M ≥ 0`, `ρ > 0`) gives `Majorizes basis (stream basis g) (heatMajorant M ρ _ _)`: bound `M`, radii `[ρ², ρ]` |
+| `certificate`, `truncationBound` | with a box strictly inside `[ρ², ρ]` (`inside_iff`: `r_t < ρ²`, `r_x < ρ`), a `TailCertificate` and `TruncationBound basis (stream basis g) box N (tailBound (heatMajorant M ρ _ _) box N)` at every window `N` |
+
+The transfer drops the factorials (`n!·k! ≥ 1`): decoded coefficients satisfy
+`|g_(k+2n)|/(n!·k!) ≤ M·ρ^(−(k+2n)) = M·(ρ²)^(−n)·ρ^(−k)`. It is sound but
+conservative. A bound on *raw EGF* coefficients says the profile is entire of
+exponential type at most `1/ρ`; a profile with a finite radius of convergence,
+such as `1/(1 − 4x)` (`g_j = j!·4^j`), has none, and its heat series diverges at
+`(0, 1/2)`, so no certificate of any majorant covers that point
+(`hostile_uncertifiable`, `hostile_not_bounded`).
+
+[ExpHeat.lean](../Gimle/Asgard/Examples/ExpHeat.lean) takes `e^x`: `g_j = 1`,
+`M = ρ = 1`, radii `[1, 1]`. Every raw EGF coefficient of the output is `1`
+(`stream_egf`), and at every real point its analytic field is `exp (x + t)`
+(`analyticField_eq`). On the box `|t| ≤ 1/4`, `|x| ≤ 1/2` at window `(8, 16)`:
+
+```text
+ε = 1 · (4^(−8) + 2^(−16)) · (4/3) · 2 = 1/12288        (error_eq, decide +kernel)
+exp_bound : box.Mem y → |exp (y 1 + y 0) − windowField basis ![8, 16] (stream basis g) y| ≤ 1/12288
+```
+
+The tests also reject a claimed bound the profile violates (`2^j` with
+`M = ρ = 1`), boxes on or beyond the radii, and a box with `ρ > r_t ≥ ρ²`.
+
+Scope: no majorant discovery, no statement that the analytic field solves the
+PDE as a real function (only the formal circuit relation and the certified
+convergence), and no finite-radius profiles.
+
+```sh
+lake build Gimle.Asgard.Tests.AnalyticHeat
 ```
 
 ## Example
