@@ -1,9 +1,12 @@
 ---
 title: Certify analytic stream truncation from explicit coefficient majorants
-state: open
+state: ongoing
 priority: medium
 labels: [streams, approximation, analysis, certificates]
 related: ["023", "024"]
+claimed_by: claude-025
+claimed_at: 2026-09-27T18:44:58Z
+branch: feat/certified_stream_tail_bounds
 ---
 
 # Certify analytic stream truncation from explicit coefficient majorants
