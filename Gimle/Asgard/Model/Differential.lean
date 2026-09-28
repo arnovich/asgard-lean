@@ -195,6 +195,44 @@ theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
           · simp only [readVelocities, if_neg hc]
       | _ => rfl
 
+/-- Read every first-order evolution-axis atom `D_t(y)` of a state `y` as the name
+of its derivative port. Unlike `readVelocities`, this is exact in every environment
+(`Term.readPorts_eval`): `Context.rates` reads `D_t(y)` as that port's value. The
+lowered assignment then refers to the port, which the lowered body defines.
+Lambda applications are left untouched. -/
+def Term.readPorts (c : Context) : Term → Term
+  | .add a b => .add (a.readPorts c) (b.readPorts c)
+  | .mul a b => .mul (a.readPorts c) (b.readPorts c)
+  | .neg a => .neg (a.readPorts c)
+  | .derivative axis (.var y) =>
+      if axis = c.axis then
+        match c.locate y with
+        | some port => .var port
+        | none => .derivative axis (.var y)
+      else .derivative axis (.var y)
+  | t => t
+
+/-- Reading first-order atoms as their ports preserves meaning in every environment. -/
+theorem Term.readPorts_eval (c : Context) (t : Term) (env : String → Option ℝ)
+    (atoms : Term → Option ℝ) :
+    (t.readPorts c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
+  induction t with
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
+  | add a b ha hb => simp only [readPorts, Term.eval, ha, hb]
+  | mul a b ha hb => simp only [readPorts, Term.eval, ha, hb]
+  | neg a ha => simp only [readPorts, Term.eval, ha]
+  | derivative axis operand _ =>
+      cases operand with
+      | var y =>
+          by_cases hc : axis = c.axis
+          · cases hl : c.locate y with
+            | none => simp only [readPorts, if_pos hc, hl]
+            | some port =>
+                simp only [readPorts, if_pos hc, hl, Term.eval, Term.chain, Context.rates]
+                simp [Context.lift, hc, hl]
+          · simp only [readPorts, if_neg hc]
+      | _ => rfl
+
 /-- Classify every derivative node, before counting. An integral, anywhere, is
 outside this pass. -/
 def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
@@ -497,6 +535,7 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
 
 #print axioms Term.collapse_eval
 #print axioms Term.readVelocities_eval
+#print axioms Term.readPorts_eval
 #print axioms Term.affine_correct
 #print axioms Isolated.correct
 end Gimle.Asgard.Model
