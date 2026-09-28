@@ -11,7 +11,9 @@ itself such an equation, lowered to `dx := v`; it also licenses the chain
 `D_t(D_t(x))`, which isolation reads as `D_t(v)`. A higher-order equation is
 thus lowered to a first-order system over explicitly declared states: the velocity
 `v` is an ordinary state with its own `StateBinding` and initial value, and
-nothing about it is inferred from names. The lowered body then goes through the
+nothing about it is inferred from names. A lower-order atom `D_t(x)` beside the
+chain is read as `v`; that reading needs the velocity equations, which the
+declarations themselves supply for the whole system (`SourceBody.velocitiesHold`). The lowered body then goes through the
 existing verified compiler unchanged. Inputs, parameters and observations are
 copied, and the `Evolution` (axis, start, states and initial values) is used as
 given.
@@ -619,10 +621,54 @@ theorem SourceBody.solves_iff_classical {sb : SourceBody} {e : Evolution}
     · obtain ⟨hdiff, hv⟩ := ports.2 i
       exact ⟨_, hv, hdiff.hasDerivWithinAt⟩
 
+/-! ## Velocity equations as a premise
+
+A lower-order atom `D_t(x)` beside a declared chain is read as the declared
+velocity `v` of `x` (`Term.readVelocities`). That is exact only where the
+velocity equation `D_t(x) = v` holds, so the per-equation correspondence of a
+differential takes the velocity equations as a premise. Every velocity
+declaration is itself a source equation, lowered with no premise, so the
+premise is discharged for the whole system on both sides of `Lowered.equations`. -/
+
+/-- Every velocity the context reads is declared in the body, on its axis. -/
+def SourceBody.Declares (sb : SourceBody) (c : Context) : Prop :=
+  ∀ x y, c.velocity x = some y →
+    ∃ d ∈ sb.velocities, d.state = x ∧ d.velocity = y ∧ d.axis = c.axis
+
+theorem SourceBody.declares_context (sb : SourceBody) (e : Evolution) :
+    sb.Declares (sb.context e) := by
+  intro x y h
+  simp only [SourceBody.context, Option.map_eq_some_iff] at h
+  obtain ⟨d, hd, rfl⟩ := h
+  have named := List.find?_some hd
+  simp only [Bool.and_eq_true, beq_iff_eq] at named
+  exact ⟨d, List.mem_of_find?_eq_some hd, named.1, rfl, named.2⟩
+
+theorem SourceBody.declares_empty (sb : SourceBody) : sb.Declares Context.empty := by
+  intro x y h
+  simp [Context.empty] at h
+
+/-- The velocity equations of the source discharge the premise of
+`Term.readVelocities_eval`. -/
+theorem SourceBody.velocitiesHold {sb : SourceBody} {c : Context} (declares : sb.Declares c)
+    {env : String → Option ℝ}
+    (h : ∀ d ∈ sb.velocities, env d.equation.output.name ≠ none ∧
+      ∃ v, d.equation.lhs.eval env (c.rates env) = some v ∧
+        d.equation.rhs.eval env (c.rates env) = some v) :
+    c.VelocitiesHold env := by
+  intro x y hxy
+  obtain ⟨d, hd, rfl, rfl, haxis⟩ := declares x y hxy
+  obtain ⟨-, w, hl, hr⟩ := h d hd
+  simp only [VelocityDeclaration.equation, Term.eval, Term.chain, Context.rates, haxis] at hl hr
+  simp [Context.lift] at hl
+  rw [hl, hr]
+
 /-! ## Lowering -/
 
 /-- A lowered body, with the source/target correspondence of its equations and
-the checked velocity states. -/
+the checked velocity states. The correspondence is for the whole system and in
+every environment, although a single differential's correspondence may need the
+velocity equations: the system contains them on both sides. -/
 structure Lowered (sb : SourceBody) (c : Context) where
   assignments : List Assignment
   outputs : assignments.map (·.output) = sb.outputs
@@ -641,33 +687,63 @@ private def lowerAssignment (c : Context) (a : SourceAssignment) :
   | some e => .ok ⟨⟨a.output, e⟩, rfl, fun env => by
       rw [a.rhs.beta_correct e h env (c.rates env)]⟩
 
+/-- Lower a differential equation: collapse declared chains, read lower-order
+atoms as their declared velocities, then isolate. The correspondence holds
+wherever the velocity equations hold. -/
 private def lowerDifferential (c : Context) (d : DifferentialEquation) :
-    Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ env,
-      (env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) = some v ∧
+    Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ env, c.VelocitiesHold env →
+      ((env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) = some v ∧
           d.rhs.eval env (c.rates env) = some v) ↔
-        (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name)} :=
+        (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
+  if d.lhs.mentions d.output.name || d.rhs.mentions d.output.name then
+    .error ⟨.repeatedDerivative, d.output.id, "derivative port named in its own equation"⟩
+  else match isolate c d.output.name ((d.lhs.collapse c).readVelocities c d.output.name)
+      ((d.rhs.collapse c).readVelocities c d.output.name) with
+  | .error code => .error ⟨code, d.output.id, d.output.name⟩
+  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env hold => by
+      rw [← i.correct env, Term.readVelocities_eval c _ _ env hold,
+        Term.readVelocities_eval c _ _ env hold, Term.collapse_eval, Term.collapse_eval]⟩
+
+/-- Lower a velocity declaration as the first-order equation it states, with no
+premise: its only atom defines its own port, so no velocity is read. -/
+private def lowerVelocity (c : Context) (v : VelocityDeclaration) :
+    Except Diagnostic {out : Assignment // out.output = v.output ∧ ∀ env, True →
+      ((env v.equation.output.name ≠ none ∧ ∃ w, v.equation.lhs.eval env (c.rates env) = some w ∧
+          v.equation.rhs.eval env (c.rates env) = some w) ↔
+        (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
+  let d := v.equation
   if d.lhs.mentions d.output.name || d.rhs.mentions d.output.name then
     .error ⟨.repeatedDerivative, d.output.id, "derivative port named in its own equation"⟩
   else match isolate c d.output.name d.lhs d.rhs with
   | .error code => .error ⟨code, d.output.id, d.output.name⟩
-  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env => i.correct env⟩
+  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env _ => i.correct env⟩
 
-private def lowerList {α : Type} (P : α → (String → Option ℝ) → Prop) (port : α → Port)
-    (f : (a : α) → Except Diagnostic {out : Assignment // out.output = port a ∧ ∀ env,
-      P a env ↔ (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name)}) :
+private def lowerList {α : Type} (H : (String → Option ℝ) → Prop)
+    (P : α → (String → Option ℝ) → Prop) (port : α → Port)
+    (f : (a : α) → Except Diagnostic {out : Assignment // out.output = port a ∧ ∀ env, H env →
+      (P a env ↔ (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))}) :
     (as : List α) → Except Diagnostic {out : List Assignment //
-      out.map (·.output) = as.map port ∧ ∀ env, (∀ a ∈ as, P a env) ↔ Equations out env}
-  | [] => .ok ⟨[], rfl, fun env => by simp [Equations]⟩
+      out.map (·.output) = as.map port ∧ ∀ env, H env → ((∀ a ∈ as, P a env) ↔ Equations out env)}
+  | [] => .ok ⟨[], rfl, fun env _ => by simp [Equations]⟩
   | a :: rest => do
       let ⟨x, hx, px⟩ ← f a
-      let ⟨xs, hxs, pxs⟩ ← lowerList P port f rest
-      return ⟨x :: xs, by simp [hx, hxs], fun env => by
+      let ⟨xs, hxs, pxs⟩ ← lowerList H P port f rest
+      return ⟨x :: xs, by simp [hx, hxs], fun env hold => by
+        have h1 := px env hold
+        have h2 := pxs env hold
         simp only [List.forall_mem_cons, Equations] at *
-        rw [px env, pxs env]⟩
+        rw [h1, h2]⟩
 
-/-- Check scopes and velocity states, beta-normalize explicit assignments and
-isolate differentials, velocity declarations included. -/
-def SourceBody.lower (sb : SourceBody) (c : Context) : Except Diagnostic (Lowered sb c) := do
+private theorem equations_append (l r : List Assignment) (env : String → Option ℝ) :
+    Equations (l ++ r) env ↔ Equations l env ∧ Equations r env := by
+  simp only [Equations, List.forall_mem_append]
+
+/-- Check scopes and velocity states, beta-normalize explicit assignments,
+isolate differentials with lower-order atoms read as declared velocities, and
+isolate velocity declarations. `declares` ties the velocities `c` reads to the
+body's declarations, whose equations discharge that reading. -/
+def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) :
+    Except Diagnostic (Lowered sb c) := do
   let names := (sb.inputs ++ sb.outputs).map Port.name
   for a in sb.assignments do
     match a.rhs.checkScope names with
@@ -678,13 +754,23 @@ def SourceBody.lower (sb : SourceBody) (c : Context) : Except Diagnostic (Lowere
     | .error name, _ | _, .error name => throw ⟨.unknownReference, d.output.id, name⟩
     | .ok (), .ok () => pure ()
   if states : sb.VelocityStates then
-    let ⟨as, has, pas⟩ ← lowerList _ (·.output) (lowerAssignment c) sb.assignments
-    let ⟨ds, hds, pds⟩ ← lowerList _ (·.output) (lowerDifferential c) sb.equations
-    return ⟨as ++ ds, by simp [SourceBody.outputs, has, hds], fun env => by
-      rw [SourceBody.Equations, pas env, pds env]
-      exact ⟨fun ⟨h1, h2⟩ a ha => (List.mem_append.mp ha).elim (h1 a) (h2 a),
-        fun h => ⟨fun a ha => h a (List.mem_append_left _ ha),
-          fun a ha => h a (List.mem_append_right _ ha)⟩⟩, states⟩
+    let ⟨as, has, pas⟩ ← lowerList (fun _ => True) _ (·.output)
+      (fun a => (lowerAssignment c a).map fun ⟨o, ho, po⟩ => ⟨o, ho, fun env _ => po env⟩)
+      sb.assignments
+    let ⟨ds, hds, pds⟩ ← lowerList c.VelocitiesHold _ (·.output) (lowerDifferential c)
+      sb.differentials
+    let ⟨vs, hvs, pvs⟩ ← lowerList (fun _ => True) _ (·.output) (lowerVelocity c) sb.velocities
+    return ⟨as ++ ds ++ vs, by
+      simp [SourceBody.outputs, SourceBody.equations, has, hds, hvs, Function.comp_def,
+        VelocityDeclaration.equation], fun env => by
+      rw [SourceBody.Equations, SourceBody.equations, List.forall_mem_append,
+        List.forall_mem_map, equations_append, equations_append, ← pas env trivial,
+        ← pvs env trivial]
+      constructor
+      · rintro ⟨ha, hd, hv⟩
+        exact ⟨⟨ha, (pds env (velocitiesHold declares hv)).mp hd⟩, hv⟩
+      · rintro ⟨⟨ha, hd⟩, hv⟩
+        exact ⟨ha, (pds env (velocitiesHold declares hv)).mpr hd, hv⟩, states⟩
   else
     match sb.velocities.find? (fun v =>
         !(sb.inputs.find? (·.name == v.velocity)).any (·.role == .state)) with
@@ -748,7 +834,7 @@ def compileSourcePolynomial (sb : SourceBody) :
   if let some d := sb.equations.head? then
     throw ⟨.unsupportedDerivative, d.output.id, "differential equation without an evolution axis"⟩
   (Declaration.polynomial sb.interface).validate
-  let lowered ← sb.lower Context.empty
+  let lowered ← sb.lower Context.empty sb.declares_empty
   let model ← compilePolynomial lowered.body
   return ⟨lowered, model⟩
 
@@ -767,7 +853,7 @@ structure SourceContinuousModel (sb : SourceBody) (e : Evolution) where
 def compileSourceContinuous (sb : SourceBody) (e : Evolution) :
     Except Diagnostic (SourceContinuousModel sb e) := do
   (Declaration.continuous sb.interface e).validate
-  let lowered ← sb.lower (sb.context e)
+  let lowered ← sb.lower (sb.context e) (sb.declares_context e)
   let model ← compileContinuous lowered.body e
   return ⟨lowered, model⟩
 
@@ -829,6 +915,8 @@ theorem SourceContinuousModel.classical_iff_realizes {sb : SourceBody} {e : Evol
     sb.SolvesClassical e state ↔ p.model.Realizes state := by
   rw [← sb.solves_iff_classical p.lowered.velocityStates, p.solves_iff_realizes]
 
+#print axioms SourceBody.velocitiesHold
+#print axioms SourceBody.declares_context
 #print axioms SourceBody.solves_iff_classical
 #print axioms SourceContinuousModel.classical_iff_realizes
 #print axioms SourceBody.Solves.derivative_denotes
