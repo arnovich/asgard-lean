@@ -1,6 +1,7 @@
 import Gimle.Asgard.Examples.IntegralStates
+import Gimle.Asgard.Examples.NestedIntegralStates
 
-/-! Regression tests for declared integral states (task 034).
+/-! Regression tests for declared integral states (tasks 034 and 036).
 
 All Python cases were probed (none is a pinned Python test fixture) at
 gimle-asgard `fba931e` with `compile_equation_to_circuit(Equation.from_string(
@@ -13,7 +14,7 @@ declaration Python infers; with it, Lean lowers to the rates noted.
 
 Every body has states `f`, `g` and `F`, with `g' = 0`, and the parameter `p = 3`,
 on the axis `t` from `0`, with `f(0) = 2`, `g(0) = 1` and, unless stated,
-`F(0) = 0`. -/
+`F(0) = 0`. The nested section uses its own states `f`, `F` and `G`. -/
 namespace Gimle.Asgard.Tests.IntegralStates
 open Polynomial Model
 
@@ -91,21 +92,22 @@ example : lowered (body (differentials% { df : diff(f, t) = int(f + 1, t); })
     (integrals% { dF : F = int(f + 1, t); })) "dF" =
     some (.add (.var "f") (.constant 1)) := by decide +kernel
 -- `diff(f,t) = int(int(f,t),t)`. Python: accepted, two hidden states. DIFFERS:
--- a declaration reads `I_t(X)` only for a polynomial `X`, and an integrand is
--- never rewritten, so the outer integral stays and is rejected even with the
--- inner one declared...
+-- Lean needs both integrals declared (see "Nested and non-polynomial integrands"
+-- below). With only the inner one declared, the outer integral stays and is
+-- rejected...
 example : rejected (body (differentials% { df : diff(f, t) = int(int(f, t), t); })
     (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
   decide +kernel
--- ...and declaring the outer one is rejected at its integrand.
+-- ...and with only the outer one declared, its integrand `int(f,t)` is an
+-- integral no declaration reads, so it is rejected there.
 example : rejected (body (differentials% { df : diff(f, t) = int(int(f, t), t); })
     (integrals% { dF : F = int(int(f, t), t); })) =
     some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
 
 -- `diff(f,t) = diff(int(int(f,t),t),t)`. Python: accepted, `f' = int(f,t)` with
 -- hidden states. DIFFERS: the integrand `int(f,t)` of the inverse pair is not
--- tame, and integrands are never rewritten, so even with `F` declared it is
--- rejected (task 036).
+-- tame, and an inverse pair's integrand is never rewritten, so even with `F`
+-- declared it is rejected (task 035).
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(int(f, t), t), t); })
     (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
   decide +kernel
@@ -190,7 +192,9 @@ example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })
 example : rejected (body (differentials% { df : diff(f, t) = int(g, t); })
     (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
   decide +kernel
--- Matching is syntactic: `int(1 * f, t)` is not the declared `int(f, t)`.
+-- Matching is syntactic: `int(1 * f, t)` is not the declared `int(f, t)`. Python:
+-- accepted (probed). Kept rejected: a semantic match needs a proof that the two
+-- integrands read the same at every time, which nothing here decides.
 example : rejected (body (differentials% { df : diff(f, t) = int(1 * f, t); })
     (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
   decide +kernel
@@ -217,14 +221,9 @@ example : rejected (body (differentials% { df : diff(f, t) = F; dF : diff(F, t) 
 example : rejected (body (differentials% { df : diff(f, t) = F; })
     (integrals% { dF : F = int(f, x); })) = some ⟨.unsupportedIntegral, "dF", "x"⟩ := by
   decide +kernel
--- An integrand that is not a polynomial in states and bound parameters: a
--- derivative, a lambda, an auxiliary.
-example : rejected (body (differentials% { df : diff(f, t) = F; })
-    (integrals% { dF : F = int(diff(g, t), t); })) =
-    some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
-example : rejected (body (differentials% { df : diff(f, t) = F; })
-    (integrals% { dF : F = int((λ w => w)(f), t); })) =
-    some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
+-- An integrand naming an auxiliary: the trajectory reading of `Solves` names only
+-- states and bound parameters, so the integral would have no value in the source
+-- while the lowered state would.
 example : rejected (body (differentials% { df : diff(f, t) = F; })
     (integrals% { dF : F = int(z, t); }) (assignments% { z := f; })) =
     some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
@@ -280,6 +279,161 @@ example : (match compileSourcePolynomial polynomial with
     | .error d => some d | .ok _ => none) =
     some ⟨.unsupportedIntegral, "dF", "integral without an evolution axis"⟩ := by decide +kernel
 
+/-! ## Nested and non-polynomial integrands (task 036)
+
+A declared integrand need not be a polynomial. It must be pointwise
+(`Term.pointwise`): its reading at one time, with atoms read along the signal,
+is its reading along the signal. Nested integrals are read through their own
+declarations, so `dG : G = int(int(f,t),t)` with `dF : F = int(f,t)` lowers to
+`dG := F`; first-order atoms are read as derivative ports, `D_t(g)` as `dg`. -/
+
+/-- States `f`, `F` and `G`, with `f(0) = 2` and `F(0) = G(0) = 0`. -/
+def nested (equations : List DifferentialEquation) (integrals : List IntegralDeclaration) :
+    SourceBody := {
+  inputs := [⟨"state-f", "f", .state⟩, ⟨"state-F", "F", .state⟩, ⟨"state-G", "G", .state⟩]
+  assignments := []
+  differentials := equations
+  integrals := integrals
+}
+
+def nestedEvolution : Evolution := {
+  states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-F", "dF", "initial-F"⟩,
+    ⟨"state-G", "dG", "initial-G"⟩]
+  initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-F", "F0", .initial⟩,
+    ⟨"initial-G", "G0", .initial⟩]
+  initialValues := [⟨"initial-f", 2⟩, ⟨"initial-F", 0⟩, ⟨"initial-G", 0⟩]
+  axis := ⟨"time", "t"⟩
+  evolveAlong := "time"
+  start := 0
+}
+
+def nestedLowered (sb : SourceBody) : Option (List NamedExpr) :=
+  (compileSourceContinuous sb nestedEvolution).toOption.map
+    (·.lowered.assignments.map (·.rhs))
+
+-- The task fixture. Python: accepted with two hidden zero-start states (probed).
+-- DIFFERS only in that Lean requires both declarations;
+-- with them it lowers to `df := G`, `dF := f`, `dG := F`, in either order.
+example : nestedLowered (nested (differentials% { df : diff(f, t) = int(int(f, t), t); })
+    (integrals% { dF : F = int(f, t); dG : G = int(int(f, t), t); })) =
+    some [.var "G", .var "f", .var "F"] := by decide +kernel
+example : nestedLowered (nested (differentials% { df : diff(f, t) = int(int(f, t), t); })
+    (integrals% { dG : G = int(int(f, t), t); dF : F = int(f, t); })) =
+    some [.var "G", .var "F", .var "f"] := by decide +kernel
+-- The compiled field over state order [f, F, G]: `f' = G`, `F' = f`, `G' = F`.
+example : ((compileSourceContinuous
+    (nested (differentials% { df : diff(f, t) = int(int(f, t), t); })
+    (integrals% { dF : F = int(f, t); dG : G = int(int(f, t), t); })) nestedEvolution).map
+    (·.model.rates.expressions)).toOption =
+    some (![.var 2, .var 0, .var 1] : Fin 3 → Expr 3) := by decide +kernel
+-- A nested integral in an explicit assignment, read through the outer declaration.
+example : nestedLowered { nested (differentials% { df : diff(f, t) = G; })
+    (integrals% { dF : F = int(f, t); dG : G = int(int(f, t), t); }) with
+    assignments := assignments% { h := int(int(f, t), t) + int(f, t); } } =
+    some [.add (.var "G") (.var "F"), .var "G", .var "f", .var "F"] := by decide +kernel
+
+-- A first-order atom in a declared integrand, read as its derivative port.
+-- Python: `diff(f,t) = int(diff(g,t) + f, t)` accepted (probed). DIFFERS only in
+-- the declaration.
+example : lowered (body (differentials% { df : diff(f, t) = int(diff(g, t) + f, t); })
+    (integrals% { dF : F = int(diff(g, t) + f, t); })) = some (.var "F") := by decide +kernel
+example : lowered (body (differentials% { df : diff(f, t) = int(diff(g, t) + f, t); })
+    (integrals% { dF : F = int(diff(g, t) + f, t); })) "dF" =
+    some (.add (.var "dg") (.var "f")) := by decide +kernel
+-- A declared `int(diff(g,t),t)` is `dF := dg`; written in an equation, the inverse
+-- rewrite `g - g0` applies first. Python: `diff(f,t) = int(diff(g,t), t)` accepted
+-- (probed).
+example : lowered (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(g, t), t); })) "dF" = some (.var "dg") := by decide +kernel
+-- An applied lambda that beta-normalizes to a polynomial in inputs. Python:
+-- `diff(f,t) = int(apply(λw.w * w, f), t)` accepted (probed).
+example : lowered (body (differentials% { df : diff(f, t) = int((λ w => w * w)(f), t); })
+    (integrals% { dF : F = int((λ w => w * w)(f), t); })) = some (.var "F") := by decide +kernel
+example : lowered (body (differentials% { df : diff(f, t) = int((λ w => w * w)(f), t); })
+    (integrals% { dF : F = int((λ w => w * w)(f), t); })) "dF" =
+    some (.mul (.var "f") (.var "f")) := by decide +kernel
+example : lowered (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int((λ w => w)(f), t); })) "dF" = some (.var "f") := by decide +kernel
+-- An inverse pair inside a declared integrand is rewritten: `D_t(I_t(f))` is `f`.
+example : lowered (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(int(f, t), t) + p, t); })) "dF" =
+    some (.add (.var "f") (.var "p")) := by decide +kernel
+
+-- Still rejected. Only the outer integral declared: its integrand holds an
+-- integral no declaration reads, even with `F' = f` written as a differential.
+example : rejected (nested (differentials% {
+    df : diff(f, t) = int(int(f, t), t); dF : diff(F, t) = f; })
+    (integrals% { dG : G = int(int(f, t), t); })) nestedEvolution =
+    some ⟨.unsupportedIntegral, "dG", "integrand"⟩ := by decide +kernel
+-- A lambda with an atom inside is not pointwise. Python: rejected (probed).
+example : rejected (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int((λ w => diff(w, t))(f), t); })) =
+    some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
+-- A higher-order chain is read through velocities that only a solution ties to
+-- the iterated derivative, so it is not pointwise. Python rejects
+-- `diff(f,t) = int(diff(diff(f,t),t),t)` as competing derivatives, but accepts
+-- `diff(f,t) = int(diff(diff(g,t),t),t)` (probed): DIFFERS.
+example : rejected (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(diff(f, t), t), t); })) =
+    some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
+-- A derivative of a non-chain is pointwise, but no rewrite removes it. Python
+-- rejects `diff(f,t) = int(diff(f + g,t),t)` as competing derivatives, but accepts
+-- `diff(f,t) = int(diff(g + h,t),t)` (probed): DIFFERS.
+example : rejected (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(f + g, t), t); })) =
+    some ⟨.unsupportedDerivative, "dF", "integrand"⟩ := by decide +kernel
+-- A derivative of a parameter is not a first-order state atom. Python rejects
+-- `int(diff(p,t),t)` as well (`Tests.SourceIntegrals`).
+example : rejected (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(p, t), t); })) =
+    some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
+-- The state's own atom in its integrand reads its own port.
+example : rejected (body (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(F, t) + f, t); })) =
+    some ⟨.repeatedDerivative, "dF", "derivative port named in its own equation"⟩ := by
+  decide +kernel
+
+-- Three levels, in either order: `df := H`, `dF := f`, `dG := F`, `dH := G`.
+def threeLevels (integrals : List IntegralDeclaration) : SourceBody :=
+  { nested (differentials% { df : diff(f, t) = int(int(int(f, t), t), t); }) integrals with
+    inputs := [⟨"state-f", "f", .state⟩, ⟨"state-F", "F", .state⟩, ⟨"state-G", "G", .state⟩,
+      ⟨"state-H", "H", .state⟩] }
+def threeEvolution : Evolution := { nestedEvolution with
+  states := nestedEvolution.states ++ [⟨"state-H", "dH", "initial-H"⟩]
+  initialPorts := nestedEvolution.initialPorts ++ [⟨"initial-H", "H0", .initial⟩]
+  initialValues := nestedEvolution.initialValues ++ [⟨"initial-H", 0⟩] }
+example : ((compileSourceContinuous (threeLevels (integrals% { dF : F = int(f, t);
+    dG : G = int(int(f, t), t); dH : H = int(int(int(f, t), t), t); })) threeEvolution).map
+    (·.lowered.assignments.map (·.rhs))).toOption =
+    some [.var "H", .var "f", .var "F", .var "G"] := by decide +kernel
+example : ((compileSourceContinuous (threeLevels (integrals% {
+    dH : H = int(int(int(f, t), t), t); dG : G = int(int(f, t), t); dF : F = int(f, t); }))
+    threeEvolution).map (·.lowered.assignments.map (·.rhs))).toOption =
+    some [.var "H", .var "G", .var "F", .var "f"] := by decide +kernel
+-- A nested integral beside a declared velocity: `f'' = I_t(I_t(f))` with `f' = F`
+-- lowers to `dF := H`, `df := F`, `dG := f`, `dH := G`.
+example : ((compileSourceContinuous { threeLevels (integrals% { dG : G = int(f, t);
+    dH : H = int(int(f, t), t); }) with
+    differentials := differentials% { dF : diff(diff(f, t), t) = int(int(f, t), t); }
+    velocities := velocities% { df : diff(f, t) = F; } } threeEvolution).map
+    (·.lowered.assignments.map (·.rhs))).toOption =
+    some [.var "H", .var "F", .var "f", .var "G"] := by decide +kernel
+-- Declarations that read each other: `F = I_t(I_t(F))` through `G = I_t(F)`. Both
+-- start at `0`, so `F = G = 0` is the solution the lowered `F' = G`, `G' = F` has.
+example : nestedLowered (nested (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(int(F, t), t); dG : G = int(F, t); })) =
+    some [.var "F", .var "G", .var "F"] := by decide +kernel
+-- Ports that read each other form an auxiliary cycle, which the compiler rejects.
+example : rejected (nested (differentials% { df : diff(f, t) = F; })
+    (integrals% { dF : F = int(diff(G, t), t); dG : G = int(diff(F, t), t); }))
+    nestedEvolution = some ⟨.cyclicDependency, "dF", "dF"⟩ := by decide +kernel
+-- A declaration's own checks come first, whatever the order: `F(0) = 1` is
+-- reported at `F`, not at `G`, whose integrand reads it.
+example : rejected (nested (differentials% { df : diff(f, t) = int(int(f, t), t); })
+    (integrals% { dG : G = int(int(f, t), t); dF : F = int(f, t); }))
+    { nestedEvolution with initialValues := [⟨"initial-f", 2⟩, ⟨"initial-F", 1⟩,
+      ⟨"initial-G", 0⟩] } = some ⟨.nonzeroInitial, "dF", "F"⟩ := by decide +kernel
+
 /-! ## The reading of a declared integral state
 
 `primitiveFrom_iff`: a function is the integral from the start at every time
@@ -303,6 +457,14 @@ example (state : Dynamics.Signal 2)
     Examples.IntegralStates.body.atoms (Examples.IntegralStates.evolution 1 0) state t
       (term% int(f, t)) = some (state t 1) :=
   Examples.IntegralStates.integral_reads_state state h t ht
+
+-- The nested worked example: both integrals read their states in every solution.
+example (state : Dynamics.Signal 3)
+    (h : Examples.NestedIntegralStates.body.Solves Examples.NestedIntegralStates.evolution state)
+    (t : ℝ) (ht : 0 ≤ t) :
+    Examples.NestedIntegralStates.body.atoms Examples.NestedIntegralStates.evolution state t
+      (term% int(int(f, t), t)) = some (state t 2) :=
+  (Examples.NestedIntegralStates.integrals_read_states state h t ht).2
 
 /-! ## Axiom audits -/
 
@@ -374,4 +536,48 @@ info: 'Gimle.Asgard.Examples.IntegralStates.integral_reads_state' depends on axi
 info: 'Gimle.Asgard.Examples.IntegralStates.integral_is_interval_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms Examples.IntegralStates.integral_is_interval_integral
+/--
+info: 'Gimle.Asgard.Model.Term.pointwise_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.pointwise_agrees
+/--
+info: 'Gimle.Asgard.Model.Term.beta_along' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.beta_along
+/--
+info: 'Gimle.Asgard.Model.Term.cancel_eval_upTo' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.cancel_eval_upTo
+/--
+info: 'Gimle.Asgard.Model.Context.cancelsUpTo' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Context.cancelsUpTo
+/--
+info: 'Gimle.Asgard.Model.Term.cancelAtom_below' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.cancelAtom_below
+/--
+info: 'Gimle.Asgard.Model.Term.readPorts_eval' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.readPorts_eval
+/--
+info: 'Gimle.Asgard.Model.SourceBody.regular_below' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceBody.regular_below
+/--
+info: 'Gimle.Asgard.Examples.NestedIntegralStates.solution_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.NestedIntegralStates.solution_solves
+/--
+info: 'Gimle.Asgard.Examples.NestedIntegralStates.source_unique' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.NestedIntegralStates.source_unique
+/--
+info: 'Gimle.Asgard.Examples.NestedIntegralStates.integrals_read_states' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.NestedIntegralStates.integrals_read_states
+/--
+info: 'Gimle.Asgard.Examples.NestedIntegralStates.nested_integral_value' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.NestedIntegralStates.nested_integral_value
 end Gimle.Asgard.Tests.IntegralStates

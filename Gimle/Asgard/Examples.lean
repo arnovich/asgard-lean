@@ -18,6 +18,7 @@ import Gimle.Asgard.Examples.HigherOrderIsolation
 import Gimle.Asgard.Examples.DampedOscillator
 import Gimle.Asgard.Examples.SourceIntegrals
 import Gimle.Asgard.Examples.IntegralStates
+import Gimle.Asgard.Examples.NestedIntegralStates
 import Gimle.Asgard.Examples.RealAtomics
 import Gimle.Asgard.Examples.FormalHeat
 import Gimle.Asgard.Examples.PolynomialHeat

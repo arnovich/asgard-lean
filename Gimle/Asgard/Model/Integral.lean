@@ -52,7 +52,10 @@ boundary declares `F` as the integral of `X` (`Boundary.integral`), `I_t(X)`
 becomes `F`. Nothing is inferred. The trajectory must make `F` the
 antiderivative of the reading of `X` that vanishes at the start
 (`Trajectory.Regular.integral`); then `I_t(X)` reads `F` at every time, because
-the antiderivative from the start is unique (`primitiveFrom_iff`).
+the antiderivative from the start is unique (`primitiveFrom_iff`). A declaration's
+own equation gives that only for a pointwise `X` (`Term.pointwise_agrees`), and an
+integrand holding an integral is read through the declaration of that smaller
+integral, so declarations are discharged in order of size (`Context.cancelsUpTo`).
 
 `Term.cancel` applies all four at the atom positions of a sum, product or
 negation. Every other integral is left in place and rejected by lowering. The
@@ -356,26 +359,64 @@ theorem Term.cancelAtom_eval {c : Context} {u v : Term} (h : u.cancelAtom c = so
   unfold Term.cancelAtom at h
   split at h <;> first | simp at h | simp [Term.eval, Term.chain]
 
-/-- The rewrites preserve meaning wherever the atoms read them as they are
-rewritten. -/
-theorem Term.cancel_eval (c : Context) (t : Term) (env : String → Option ℝ)
-    (atoms : Term → Option ℝ) (h : c.Cancels atoms env) :
+/-- Number of nodes, counting every name, literal and operator once. -/
+def Term.size : Term → Nat
+  | .var _ | .constant _ => 1
+  | .add a b | .mul a b => a.size + b.size + 1
+  | .neg a => a.size + 1
+  | .apply _ body arg => body.size + arg.size + 1
+  | .derivative _ op | .integral _ op => op.size + 1
+
+/-- The atoms read the rewritten shapes of at most `n` nodes as they are
+rewritten. A declared integral state's own equation needs this only below the
+size of its integrand, which is what lets nested declarations be discharged one
+level at a time (`Context.cancelsUpTo`). -/
+def Context.CancelsUpTo (c : Context) (n : Nat) (atoms : Term → Option ℝ)
+    (env : String → Option ℝ) : Prop :=
+  ∀ u v, u.size ≤ n → u.cancelAtom c = some v → atoms u = v.eval env (c.rates env) atoms
+
+theorem Context.Cancels.upTo {c : Context} {atoms : Term → Option ℝ} {env : String → Option ℝ}
+    (h : c.Cancels atoms env) (n : Nat) : c.CancelsUpTo n atoms env :=
+  fun u v _ hu => h u v hu
+
+theorem Context.CancelsUpTo.mono {c : Context} {atoms : Term → Option ℝ}
+    {env : String → Option ℝ} {m n : Nat} (h : c.CancelsUpTo n atoms env) (hmn : m ≤ n) :
+    c.CancelsUpTo m atoms env :=
+  fun u v hu => h u v (hu.trans hmn)
+
+/-- The rewrites of a term preserve meaning wherever the atoms read its rewritten
+shapes as they are rewritten; those shapes are no larger than the term. -/
+theorem Term.cancel_eval_upTo (c : Context) (t : Term) (env : String → Option ℝ)
+    (atoms : Term → Option ℝ) {n : Nat} (hn : t.size ≤ n) (h : c.CancelsUpTo n atoms env) :
     (t.cancel c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
   induction t with
-  | add a b ha hb => simp only [cancel, Term.eval, ha, hb]
-  | mul a b ha hb => simp only [cancel, Term.eval, ha, hb]
-  | neg a ha => simp only [cancel, Term.eval, ha]
+  | add a b ha hb =>
+      simp only [size] at hn
+      simp only [cancel, Term.eval, ha (by omega), hb (by omega)]
+  | mul a b ha hb =>
+      simp only [size] at hn
+      simp only [cancel, Term.eval, ha (by omega), hb (by omega)]
+  | neg a ha =>
+      simp only [size] at hn
+      simp only [cancel, Term.eval, ha (by omega)]
   | var _ | constant _ | apply _ _ _ => simp [cancel, cancelAtom]
   | derivative a op _ =>
       simp only [cancel]
       cases hc : (Term.derivative a op).cancelAtom c with
       | none => rfl
-      | some v => rw [Option.getD_some, ← h _ _ hc, cancelAtom_eval hc]
+      | some v => rw [Option.getD_some, ← h _ _ hn hc, cancelAtom_eval hc]
   | integral a op _ =>
       simp only [cancel]
       cases hc : (Term.integral a op).cancelAtom c with
       | none => rfl
-      | some v => rw [Option.getD_some, ← h _ _ hc, cancelAtom_eval hc]
+      | some v => rw [Option.getD_some, ← h _ _ hn hc, cancelAtom_eval hc]
+
+/-- The rewrites preserve meaning wherever the atoms read them as they are
+rewritten. -/
+theorem Term.cancel_eval (c : Context) (t : Term) (env : String → Option ℝ)
+    (atoms : Term → Option ℝ) (h : c.Cancels atoms env) :
+    (t.cancel c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms :=
+  t.cancel_eval_upTo c env atoms le_rfl (h.upTo _)
 
 /-! ## Discharging the premise along a trajectory -/
 
@@ -636,6 +677,214 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
       exact (hat.base F _ (hg t ht).1).symm
   · simp at h
 
+/-! ## Pointwise integrands
+
+A declared integral state `F` of `I_t(X)` is read through its own equation
+`D_t(F) = X` at each time. That makes `F` the antiderivative of the trajectory
+reading of `X` only where the one-time reading of `X` agrees with its trajectory
+reading. It does for every `Term.pointwise` term: polynomials in inputs, first-order
+evolution derivatives of states (read through the ports), every integral and every
+derivative of a non-chain (both are atoms, read along the trajectory by
+definition), and applied lambdas that beta-normalize to a polynomial in inputs. A
+name that is not an input, such as an auxiliary, has no trajectory reading, and a
+higher-order chain is read through velocities that only a solution ties to the
+iterated derivative, so neither is pointwise. -/
+
+/-- Every name of a named expression satisfies `p`. -/
+def _root_.Gimle.Asgard.Polynomial.NamedExpr.reads (p : String → Bool) : NamedExpr → Bool
+  | .var n => p n
+  | .constant _ => true
+  | .add a b | .mul a b => a.reads p && b.reads p
+  | .neg a => a.reads p
+
+/-- A named expression over defined inputs reads the same through any environment
+that extends them. -/
+theorem _root_.Gimle.Asgard.Polynomial.NamedExpr.eval_reads {e : NamedExpr}
+    {p : String → Bool} {base env : String → Option ℝ} (h : e.reads p = true)
+    (input : ∀ n, p n = true → (base n).isSome = true) (agrees : Agrees base env) :
+    e.eval env = e.eval base := by
+  induction e with
+  | var n =>
+      obtain ⟨w, hw⟩ := Option.isSome_iff_exists.mp (input n h)
+      simp only [NamedExpr.eval, hw]
+      exact agrees n w hw
+  | constant _ => rfl
+  | add a b ha hb =>
+      simp only [NamedExpr.reads, Bool.and_eq_true] at h
+      simp only [NamedExpr.eval, ha h.1, hb h.2]
+  | mul a b ha hb =>
+      simp only [NamedExpr.reads, Bool.and_eq_true] at h
+      simp only [NamedExpr.eval, ha h.1, hb h.2]
+  | neg a ha => simp only [NamedExpr.eval, ha h]
+
+/-- Beta normalization preserves the trajectory reading too: a lambda rebinds its
+binder along the whole trajectory, and a beta-normal term has no atom. -/
+theorem Term.beta_along (t : Term) (e : NamedExpr) (h : t.beta = some e) (T : Trajectory)
+    (s : ℝ) : t.along T s = e.eval (T.base s) := by
+  induction t generalizing e T with
+  | var name => cases h; rfl
+  | constant q => cases h; rfl
+  | add a b ha hb =>
+      cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
+      subst h
+      simp [NamedExpr.eval, Term.along, ha _ hA, hb _ hB]
+  | mul a b ha hb =>
+      cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
+      subst h
+      simp [NamedExpr.eval, Term.along, ha _ hA, hb _ hB]
+  | neg a ha =>
+      cases hA : a.beta <;> simp [beta, hA] at h
+      subst h
+      simp [NamedExpr.eval, Term.along, ha _ hA]
+  | apply x body arg hbody harg =>
+      cases hB : body.beta <;> cases hA : arg.beta <;> simp [beta, hB, hA] at h
+      subst h
+      rw [NamedExpr.subst_eval, Term.along, hbody _ hB]
+      simp only [harg _ hA]
+  | derivative _ _ _ => simp [beta] at h
+  | integral _ _ _ => simp [beta] at h
+
+/-- A term whose reading at one time, through an environment that extends the
+trajectory's inputs and ports at that time and reads atoms along the trajectory,
+is its trajectory reading (`Term.pointwise_agrees`). `axis` and `locate` are those
+of the context, and `input` the boundary's. -/
+def Term.pointwise (axis : String) (locate : String → Option String) (input : String → Bool) :
+    Term → Bool
+  | .var n => input n
+  | .constant _ => true
+  | .add a b | .mul a b => a.pointwise axis locate input && b.pointwise axis locate input
+  | .neg a => a.pointwise axis locate input
+  | .apply x body arg => ((Term.apply x body arg).beta.map (·.reads input)).getD false
+  | .derivative a op =>
+      match op with
+      | .var y => a == axis && (locate y).isSome
+      | _ => op.chain.isNone
+  | .integral _ _ => true
+
+/-- A pointwise term reads the same at `t` through `env` as along the trajectory,
+wherever `env` extends the trajectory's inputs at `t`, every input has a value there
+and the ports read first-order chains as the trajectory does. -/
+theorem Term.pointwise_agrees {c : Context} {input : String → Bool} {T : Trajectory} {t : ℝ}
+    {env : String → Option ℝ} {u : Term} (h : u.pointwise c.axis c.locate input = true)
+    (hinput : ∀ n, input n = true → (T.base t n).isSome = true) (base : Agrees (T.base t) env)
+    (rate : ∀ y, (c.locate y).isSome = true → c.rates env [c.axis] y = T.rates t [c.axis] y) :
+    u.eval env (c.rates env) (T.atoms t) = u.along T t := by
+  induction u with
+  | var n =>
+      obtain ⟨w, hw⟩ := Option.isSome_iff_exists.mp (hinput n h)
+      rw [Term.eval, Term.along, hw]
+      exact base n _ hw
+  | constant _ => rfl
+  | add a b ha hb =>
+      simp only [pointwise, Bool.and_eq_true] at h
+      simp only [Term.eval, Term.along, ha h.1, hb h.2]
+  | mul a b ha hb =>
+      simp only [pointwise, Bool.and_eq_true] at h
+      simp only [Term.eval, Term.along, ha h.1, hb h.2]
+  | neg a ha => simp only [Term.eval, Term.along, ha h]
+  | integral _ _ _ => rfl
+  | apply x body arg _ _ =>
+      cases hb : (Term.apply x body arg).beta with
+      | none => simp [pointwise, hb] at h
+      | some e =>
+        simp only [pointwise, hb, Option.map_some, Option.getD_some] at h
+        rw [← (Term.apply x body arg).beta_correct e hb env _ _, Term.beta_along _ e hb T t]
+        exact NamedExpr.eval_reads h hinput base
+  | derivative a op _ =>
+      by_cases hv : ∃ y, op = .var y
+      · obtain ⟨y, rfl⟩ := hv
+        simp only [pointwise, Bool.and_eq_true, beq_iff_eq] at h
+        obtain ⟨rfl, hy⟩ := h
+        simp only [Term.eval, Term.along, Term.chain]
+        exact rate y hy
+      · have hc : op.chain = none := by
+          cases op with
+          | var y => exact absurd ⟨y, rfl⟩ hv
+          | _ => simpa [pointwise] using h
+        simp only [Term.eval, hc, Trajectory.atoms]
+
+/-! ## Declared integral states below a size
+
+`Boundary.below n` keeps only the declared integral states of integrands with
+fewer than `n` nodes. Along a trajectory whose declarations below `n` hold, the
+atoms of at most `n` nodes read the rewrites (`Context.cancelsUpTo`), which is all
+that a declaration with an integrand of `n` nodes needs. -/
+
+/-- The boundary with the integral states of integrands with fewer than `n` nodes. -/
+def Boundary.below (bd : Boundary) (n : Nat) : Boundary :=
+  { bd with integral := fun X => if X.size < n then bd.integral X else none }
+
+/-- The context with only the integral states below `n`. -/
+def Context.below (c : Context) (n : Nat) : Context :=
+  { c with boundary := c.boundary.map (·.below n) }
+
+/-- Tameness reads only the axis, the located states and the inputs. -/
+theorem Term.tame_congr {c c' : Context} {bd bd' : Boundary} (ha : c.axis = c'.axis)
+    (hl : c.locate = c'.locate) (hi : bd.input = bd'.input) (t : Term) :
+    t.tame c bd = t.tame c' bd' := by
+  induction t with
+  | var _ | constant _ => simp [tame, Term.continuous_congr hi]
+  | add a b ha' hb' => simp [tame, ha', hb']
+  | neg a ha' => simp [tame, ha']
+  | mul a b ha' hb' => simp [tame, ha', hb', Term.continuous_congr hi]
+  | apply _ _ _ | integral _ _ _ => simp [tame, Term.continuous_congr hi]
+  | derivative a op _ =>
+      cases op <;> simp [tame, ha, hl, Term.continuous_congr hi]
+
+/-- On shapes of at most `n` nodes the restricted context rewrites as the full one. -/
+theorem Term.cancelAtom_below {c : Context} {n : Nat} {u : Term} (hu : u.size ≤ n) :
+    u.cancelAtom (c.below n) = u.cancelAtom c := by
+  have tame := fun (bd : Boundary) (X : Term) =>
+    Term.tame_congr (c := c.below n) (c' := c) (bd := bd.below n) (bd' := bd) rfl rfl rfl X
+  cases hb : c.boundary with
+  | none =>
+      have hb' : (c.below n).boundary = none := by simp [Context.below, hb]
+      unfold Term.cancelAtom
+      split <;> simp [hb, hb']
+  | some bd =>
+      have hb' : (c.below n).boundary = some (bd.below n) := by simp [Context.below, hb]
+      unfold Term.cancelAtom
+      split
+      · simp only [hb, hb', Option.bind_some, tame]; rfl
+      · simp only [hb, hb', Option.bind_some]; rfl
+      · simp only [hb, hb', Option.bind_some]; rfl
+      · rename_i b X _
+        simp only [size] at hu
+        simp only [hb, hb', Option.bind_some, Boundary.below, if_pos (show X.size < n by omega)]
+        rfl
+      · rfl
+
+/-- The restriction reads chains as the full context does. -/
+theorem Context.below_rates (c : Context) (n : Nat) {α : Type} (env : String → Option α) :
+    (c.below n).rates env = c.rates env := by
+  have lift : ∀ k x, (c.below n).lift k x = c.lift k x := by
+    intro k x
+    induction k with
+    | zero => rfl
+    | succ k ih => simp only [Context.lift, ih]; rfl
+  funext axes x
+  simp only [Context.rates, lift]
+  rfl
+
+/-- A trajectory regular for a context is regular for its restriction. -/
+theorem Trajectory.Regular.toBelow {T : Trajectory} {c : Context} {bd : Boundary} (n : Nat)
+    (reg : T.Regular c bd) : T.Regular (c.below n) bd :=
+  ⟨reg.axis, reg.input, reg.rate, reg.initial, reg.integral⟩
+
+/-- Along a trajectory regular for the integral states below `n`, the atoms of at
+most `n` nodes read the rewrites of the full context. -/
+theorem Context.cancelsUpTo {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
+    {env : String → Option ℝ} (n : Nat) (hb : c.boundary = some bd)
+    (reg : T.Regular c (bd.below n)) (hat : T.At c t env) :
+    c.CancelsUpTo n (T.atoms t) env := by
+  have hb' : (c.below n).boundary = some (bd.below n) := by simp [Context.below, hb]
+  have hat' : T.At (c.below n) t env :=
+    ⟨hat.mem, hat.base, fun y hy => by rw [c.below_rates]; exact hat.rate y hy⟩
+  have cancels := Context.cancels hb' (reg.toBelow n) hat'
+  intro u v hu h
+  rw [← Term.cancelAtom_below hu] at h
+  rw [cancels u v h, c.below_rates]
+
 #print axioms Term.along_integral
 #print axioms Term.along_derivative_integral
 #print axioms Term.along_integral_derivative
@@ -652,4 +901,9 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
 #print axioms primitiveFrom_iff
 #print axioms Term.continuous_congr
 #print axioms Term.continuous_agrees_at
+#print axioms Term.cancel_eval_upTo
+#print axioms Term.beta_along
+#print axioms Term.pointwise_agrees
+#print axioms Term.cancelAtom_below
+#print axioms Context.cancelsUpTo
 end Gimle.Asgard.Model
