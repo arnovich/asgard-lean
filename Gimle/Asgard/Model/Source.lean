@@ -13,10 +13,10 @@ thus lowered to a first-order system over explicitly declared states: the veloci
 `v` is an ordinary state with its own `StateBinding` and initial value, and
 nothing about it is inferred from names. A lower-order atom `D_t(x)` beside the
 chain is read as `v`; that reading needs the velocity equations, which the
-declarations themselves supply for the whole system (`SourceBody.velocitiesHold`). The lowered body then goes through the
-existing verified compiler unchanged. Inputs, parameters and observations are
-copied, and the `Evolution` (axis, start, states and initial values) is used as
-given.
+declarations themselves supply for the whole system (`SourceBody.velocitiesHold`).
+The lowered body then goes through the existing verified compiler unchanged.
+Inputs, parameters and observations are copied, and the `Evolution` (axis,
+start, states and initial values) is used as given.
 
 `SourceBody.Solves` is independent of lowering and of every circuit. There
 `D_t(x)` is the value of `x`'s declared derivative port, and that value is
@@ -635,6 +635,8 @@ def SourceBody.Declares (sb : SourceBody) (c : Context) : Prop :=
   ∀ x y, c.velocity x = some y →
     ∃ d ∈ sb.velocities, d.state = x ∧ d.velocity = y ∧ d.axis = c.axis
 
+/-- The context of an evolution reads only the body's declarations on its axis;
+`compileSourceContinuous` lowers with it. -/
 theorem SourceBody.declares_context (sb : SourceBody) (e : Evolution) :
     sb.Declares (sb.context e) := by
   intro x y h
@@ -644,12 +646,15 @@ theorem SourceBody.declares_context (sb : SourceBody) (e : Evolution) :
   simp only [Bool.and_eq_true, beq_iff_eq] at named
   exact ⟨d, List.mem_of_find?_eq_some hd, named.1, rfl, named.2⟩
 
+/-- The empty context reads no velocity; `compileSourcePolynomial` lowers with it. -/
 theorem SourceBody.declares_empty (sb : SourceBody) : sb.Declares Context.empty := by
   intro x y h
   simp [Context.empty] at h
 
 /-- The velocity equations of the source discharge the premise of
-`Term.readVelocities_eval`. -/
+`Term.readVelocities_eval`. This is `SourceBody.velocity_equation` for any
+context the body declares, taking only the velocity equations rather than all
+of `SourceBody.Equations`, so the lowered side can supply them too. -/
 theorem SourceBody.velocitiesHold {sb : SourceBody} {c : Context} (declares : sb.Declares c)
     {env : String → Option ℝ}
     (h : ∀ d ∈ sb.velocities, env d.equation.output.name ≠ none ∧
@@ -705,7 +710,9 @@ private def lowerDifferential (c : Context) (d : DifferentialEquation) :
         Term.readVelocities_eval c _ _ env hold, Term.collapse_eval, Term.collapse_eval]⟩
 
 /-- Lower a velocity declaration as the first-order equation it states, with no
-premise: its only atom defines its own port, so no velocity is read. -/
+premise. It is kept apart from `lowerDifferential` so that a declaration is
+never read through `Term.readVelocities`: its correspondence must hold in every
+environment, because it is what discharges that reading for the system. -/
 private def lowerVelocity (c : Context) (v : VelocityDeclaration) :
     Except Diagnostic {out : Assignment // out.output = v.output ∧ ∀ env, True →
       ((env v.equation.output.name ≠ none ∧ ∃ w, v.equation.lhs.eval env (c.rates env) = some w ∧

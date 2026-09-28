@@ -57,6 +57,7 @@ theorem rates_expressions : model.model.rates.expressions =
       (.mul (.constant 2) (.var 0))))] : Fin 2 → Expr 2) := by
   decide +kernel
 
+/-- Both initial values, read from the unchanged evolution. -/
 theorem initial_eq : model.model.initial = (![1, 0] : Point 2) := by
   change (fun i : Fin 2 => (model.model.initials i : ℝ)) = _
   have values : model.model.initials = ![1, 0] := by decide +kernel

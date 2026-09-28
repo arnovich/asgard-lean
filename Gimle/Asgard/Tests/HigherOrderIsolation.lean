@@ -134,6 +134,8 @@ example : solve context "da"
 example : solve context "dv" (term% diff(diff(f, t), t) + diff(f, t) * diff(f, t)) (term% 0) =
     some (.add (.constant 0) (.neg (.mul (.var "v") (.var "v")))) := by decide +kernel
 -- The atom of another state with a declared velocity is read the same way.
+-- Differs: Python (probed) accepts `diff(g,t) = diff(f,t)` by isolating `f`
+-- instead, and rejects `diff(g,t) + 3 * diff(f,t) = 0`.
 example : solve context "dg" (term% diff(g, t)) (term% diff(f, t)) = some (.var "v") := by
   decide +kernel
 
@@ -153,6 +155,28 @@ example : reject context "dv" (term% diff(diff(f, t), t) + diff(f, x)) (term% 0)
 example : reject context "dv" (term% diff(diff(f, t), t) + (λ z => diff(f, t))(0)) (term% 0) =
     some .unsupportedDerivative := by decide +kernel
 -- A lower-order atom that is only read is not the atom being isolated.
+-- A rejected form keeps its diagnostic when its only extra atoms have no
+-- declared velocity. Beside a read atom, the remaining form is diagnosed as it
+-- now reads, so these codes changed with task 032 (before: repeated, competing,
+-- repeated, repeated, repeated).
+example : reject context "dv" (term% diff(f, t) + diff(g, t)) (term% 0) =
+    some .missingDerivative := by decide +kernel
+example : reject context "dv" (term% diff(f, t)) (term% diff(g, t)) =
+    some .missingDerivative := by decide +kernel
+example : reject context "dv" (term% diff(f, t) * diff(diff(f, t), t)) (term% 0) =
+    some .nonlinearDerivative := by decide +kernel
+example : reject context "dv" (term% 2 * (diff(diff(f, t), t) + diff(f, t))) (term% 0) =
+    some .unsupportedDerivative := by decide +kernel
+example : reject context "dv" (term% 0 * diff(diff(f, t), t) + diff(f, t)) (term% 0) =
+    some .zeroScale := by decide +kernel
+-- Scale and linearity rules apply to the isolated atom only: a read atom is a
+-- polynomial term.
+example : solve context "dv" (term% diff(diff(f, t), t) + f * diff(f, t)) (term% 0) =
+    some (.add (.constant 0) (.neg (.mul (.var "f") (.var "v")))) := by decide +kernel
+-- Over the cycle `f' = v`, `v' = f` a third-order chain climbs back to `v`.
+example : solve ⟨"t", locate, fun s => if s = "f" then some "v" else if s = "v" then some "f"
+    else none⟩ "dg" (term% diff(g, t)) (term% diff(diff(diff(f, t), t), t)) =
+    some (.var "v") := by decide +kernel
 example : reject context "dv" (term% diff(f, t)) (term% g) = some .missingDerivative := by
   decide +kernel
 example : reject context "dv" (term% diff(diff(f, t), t)) (term% diff(g, t)) =
@@ -384,7 +408,8 @@ example : continuous { damped with
     some ⟨.higherOrderDerivative, "dv", "dv"⟩ := by decide +kernel
 -- In a first-order equation, the undeclared atom `D_t(f)` stays a second atom.
 example : continuous { damped with
-    differentials := differentials% { dv : diff(v, t) + c * diff(f, t) + k * f = 0; df : diff(f, t) = v; }
+    differentials := differentials% {
+      dv : diff(v, t) + c * diff(f, t) + k * f = 0; df : diff(f, t) = v; }
     velocities := [] } =
     some ⟨.repeatedDerivative, "dv", "dv"⟩ := by decide +kernel
 -- With the declaration, it is read as `v`, the same system as the chain form.
@@ -393,6 +418,17 @@ example : ((compileSourceContinuous { damped with
     bareEvolution).map (·.model.rates.expressions)).toOption =
     ((compileSourceContinuous damped bareEvolution).map (·.model.rates.expressions)).toOption := by
   decide +kernel
+-- An atom in an explicit assignment is never read.
+example : continuous { twoStates with
+    assignments := assignments% { dv := diff(h, t); } } threeEvolution =
+    some ⟨.unsupportedDerivative, "dv", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An atom of a non-state is never read, even under a (bad) velocity declaration:
+-- the differential itself is rejected, at its own site.
+example : continuous { bare with
+    differentials := differentials% { dv : diff(diff(f, t), t) + diff(g, t) = 0; }
+    velocities := velocities% { df : diff(f, t) = v; dg : diff(g, t) = v; } } =
+    some ⟨.unsupportedDerivative, "dv", "dv"⟩ := by decide +kernel
 -- A velocity declared on another axis licenses neither the chain nor the atom.
 example : continuous { damped with velocities := velocities% { df : diff(f, x) = v; } } =
     some ⟨.higherOrderDerivative, "dv", "dv"⟩ := by decide +kernel
