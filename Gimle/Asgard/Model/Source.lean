@@ -1,20 +1,29 @@
 import Gimle.Asgard.Model.Differential
 import Gimle.Asgard.Model.Continuous
 
-/-! Common source declarations with applied lambdas and implicit first-order
-differential equations.
+/-! Common source declarations with applied lambdas, implicit first-order
+differential equations and higher-order equations over declared velocities.
 
 A `SourceBody` is lowered to an ordinary `Body`: every explicit assignment is
 beta-normalized, and every differential equation is isolated into an assignment
-to its state's derivative port. The lowered body then goes through the existing
-verified compiler unchanged. Inputs, parameters and observations are copied,
-and the `Evolution` (axis, start, states and initial values) is used as given.
+to its state's derivative port. A velocity declaration `dx : D_t(x) = v` is
+itself such an equation, lowered to `dx := v`; it also licenses the chain
+`D_t(D_t(x))`, which isolation reads as `D_t(v)`. A higher-order equation is
+thus lowered to a first-order system over explicitly declared states: the velocity
+`v` is an ordinary state with its own `StateBinding` and initial value, and
+nothing about it is inferred from names. The lowered body then goes through the
+existing verified compiler unchanged. Inputs, parameters and observations are
+copied, and the `Evolution` (axis, start, states and initial values) is used as
+given.
 
 `SourceBody.Solves` is independent of lowering and of every circuit. There
 `D_t(x)` is the value of `x`'s declared derivative port, and that value is
 required to be the derivative of `x` on the forward domain
-(`Solves.derivative_denotes`). The main results are `Lowered.solves_iff` and
-the composed `SourceContinuousModel.solves_iff_realizes`. -/
+(`Solves.derivative_denotes`). A chain of `k + 1` derivatives denotes the
+`k + 1`-th derivative of `x` on the forward domain, and a declared velocity's
+initial value is the initial derivative (`Solves.chain_denotes`,
+`Solves.initial_iterated`). The main results are `Lowered.solves_iff` and the
+composed `SourceContinuousModel.solves_iff_realizes`. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -25,25 +34,47 @@ structure SourceAssignment where
   rhs : Term
   deriving Repr, DecidableEq
 
-/-- An implicit first-order equation `lhs = rhs` defining the derivative port
-`output`. A `StateBinding` names `output.id` as its state's derivative. -/
+/-- An implicit equation `lhs = rhs` with one derivative atom, or one chain over
+declared velocities, defining the derivative port `output` (of the top state,
+for a chain). A `StateBinding` names `output.id` as its state's derivative. -/
 structure DifferentialEquation where
   output : Port
   lhs : Term
   rhs : Term
   deriving Repr, DecidableEq
 
+/-- `output : D_axis(state) = velocity` declares the state named `velocity` as
+the first derivative of the state named `state`, whose derivative port is
+`output`. It is the only way to write a higher-order chain: `D_t(D_t(state))`
+then reads as `D_t(velocity)`. -/
+structure VelocityDeclaration where
+  output : Port
+  axis : String
+  state : String
+  velocity : String
+  deriving Repr, DecidableEq
+
+/-- A velocity declaration is the first-order equation it states. -/
+def VelocityDeclaration.equation (v : VelocityDeclaration) : DifferentialEquation :=
+  ⟨v.output, .derivative v.axis (.var v.state), .var v.velocity⟩
+
 structure SourceBody where
   inputs : List Port
   assignments : List SourceAssignment
   differentials : List DifferentialEquation := []
+  velocities : List VelocityDeclaration := []
   parameters : List RationalBinding := []
   observations : List Observation := []
   deriving Repr, DecidableEq
 
-/-- Assignment outputs, then differential outputs, in declaration order. -/
+/-- Differential equations, then the equations of the velocity declarations. -/
+def SourceBody.equations (sb : SourceBody) : List DifferentialEquation :=
+  sb.differentials ++ sb.velocities.map VelocityDeclaration.equation
+
+/-- Assignment outputs, then differential and velocity outputs, in declaration
+order. -/
 def SourceBody.outputs (sb : SourceBody) : List Port :=
-  sb.assignments.map (·.output) ++ sb.differentials.map (·.output)
+  sb.assignments.map (·.output) ++ sb.equations.map (·.output)
 
 /-- The body with the same interface and the given explicit assignments. -/
 def SourceBody.withAssignments (sb : SourceBody) (as : List Assignment) : Body where
@@ -55,13 +86,22 @@ def SourceBody.withAssignments (sb : SourceBody) (as : List Assignment) : Body w
 def SourceBody.portName (sb : SourceBody) (id : String) : Option String :=
   ((sb.inputs ++ sb.outputs).find? (·.id == id)).map Port.name
 
-/-- `x` names a state port; its derivative port is the one its binding names. -/
+/-- The coordinate of the first state port named `x`. -/
+def SourceBody.coordinate (sb : SourceBody) (e : Evolution) (x : String) :
+    Option (Fin e.states.length) :=
+  (sb.inputs.find? (fun p => p.name == x && p.role == .state)).bind (index e.stateIds ·.id)
+
+/-- `x` names a state port; its derivative port is the one its binding names,
+and its velocity the one its first velocity declaration on the evolution axis
+names. -/
 def SourceBody.context (sb : SourceBody) (e : Evolution) : Context where
   axis := e.axis.name
   locate state := do
     let p ← sb.inputs.find? (fun p => p.name == state && p.role == .state)
     let i ← index e.stateIds p.id
     sb.portName (e.derivativeIds i)
+  velocity state :=
+    (sb.velocities.find? (fun v => v.state == state && v.axis == e.axis.name)).map (·.velocity)
 
 /-! ## Source semantics -/
 
@@ -70,7 +110,7 @@ def SourceBody.Equations (sb : SourceBody) (c : Context) (env : String → Optio
     Prop :=
   (∀ a ∈ sb.assignments, env a.output.name ≠ none ∧
     a.rhs.eval env (c.rates env) = env a.output.name) ∧
-  (∀ d ∈ sb.differentials, env d.output.name ≠ none ∧
+  (∀ d ∈ sb.equations, env d.output.name ≠ none ∧
     ∃ v, d.lhs.eval env (c.rates env) = some v ∧ d.rhs.eval env (c.rates env) = some v)
 
 noncomputable def SourceBody.inputEnvironment {n : Nat} (sb : SourceBody)
@@ -106,10 +146,12 @@ theorem SourceBody.Solves.derivative_denotes {sb : SourceBody} {e : Evolution}
     {state : Dynamics.Signal e.states.length} {t : ℝ} {env : String → Option ℝ}
     (rates : ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
       HasDerivWithinAt (fun t => state t i) rate e.time.domain t)
-    (x : String) (r : ℝ) (h : (sb.context e).rates env e.axis.name x = some r) :
+    (x : String) (r : ℝ) (h : (sb.context e).rates env [e.axis.name] x = some r) :
     ∃ p i, sb.inputs.find? (fun p => p.name == x && p.role == .state) = some p ∧
       e.stateIds i = p.id ∧ HasDerivWithinAt (fun t => state t i) r e.time.domain t := by
-  simp only [Context.rates, context, if_true] at h
+  simp only [Context.rates, context, Context.lift, ne_eq, List.cons_ne_nil,
+    not_false_eq_true, List.all_cons, beq_self_eq_true, List.all_nil, Bool.and_self, and_self,
+    if_true, List.length_cons, List.length_nil, Nat.sub_self, Option.bind_some] at h
   cases hp : sb.inputs.find? (fun p => p.name == x && p.role == .state) with
   | none => simp [hp] at h
   | some p =>
@@ -134,19 +176,458 @@ theorem SourceBody.Solves.derivative_at {sb : SourceBody} {e : Evolution}
     {state : Dynamics.Signal e.states.length} (h : sb.Solves e state) {t : ℝ}
     (ht : t ∈ e.time.domain) :
     ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
-      ∀ x r, (sb.context e).rates env e.axis.name x = some r →
+      ∀ x r, (sb.context e).rates env [e.axis.name] x = some r →
         ∃ p i, sb.inputs.find? (fun p => p.name == x && p.role == .state) = some p ∧
           e.stateIds i = p.id ∧ HasDerivWithinAt (fun t => state t i) r e.time.domain t := by
   obtain ⟨env, source, rates⟩ := h.2 t ht
   exact ⟨env, source, fun x r hr => derivative_denotes rates x r hr⟩
 
+/-! ## Higher-order chains
+
+A chain is read through declared velocities (`Context.rates`). In a solution
+each velocity equation `D_t(x) = v` makes the coordinate of `v` the actual
+derivative of the coordinate of `x`, so a chain of `k + 1` derivatives of `x`
+denotes the derivative of the `k`-th iterated derivative of `x` on the forward
+domain, and the declared initial value of the state `k` velocities above `x`
+is the `k`-th derivative of `x` at the start. -/
+
+/-- Every declared velocity names an input port, the first of its name, and
+that port is a state. -/
+def SourceBody.VelocityStates (sb : SourceBody) : Prop :=
+  ∀ v ∈ sb.velocities, (sb.inputs.find? (·.name == v.velocity)).any (·.role == .state) = true
+
+instance : DecidablePred SourceBody.VelocityStates := fun sb =>
+  inferInstanceAs (Decidable (∀ v ∈ sb.velocities,
+    (sb.inputs.find? (·.name == v.velocity)).any (·.role == .state) = true))
+
+theorem SourceBody.context_locate (sb : SourceBody) (e : Evolution) (x : String) :
+    (sb.context e).locate x =
+      (sb.coordinate e x).bind (fun i => sb.portName (e.derivativeIds i)) := by
+  simp only [context, coordinate, Option.bind_eq_bind, Option.bind_assoc]
+
+private theorem find?_and {α : Type} {p q : α → Bool} {l : List α} {a : α}
+    (h : l.find? p = some a) (hq : q a = true) :
+    l.find? (fun x => p x && q x) = some a := by
+  induction l with
+  | nil => simp at h
+  | cons b l ih =>
+      by_cases hb : p b = true
+      · rw [List.find?_cons_of_pos hb] at h
+        cases h
+        exact List.find?_cons_of_pos (by simp [hb, hq])
+      · rw [List.find?_cons_of_neg hb] at h
+        rw [List.find?_cons_of_neg (by simp [hb])]
+        exact ih h
+
+private theorem role_beq {r q : PortRole} : (r == q) = true ↔ r = q := by
+  cases r <;> cases q <;> decide
+
+/-- The first velocity declaration of `x` is one of the declarations. -/
+private theorem velocity_declared {sb : SourceBody} {e : Evolution} {x y : String}
+    (h : (sb.context e).velocity x = some y) :
+    ∃ d ∈ sb.velocities, d.state = x ∧ d.velocity = y := by
+  simp only [SourceBody.context, Option.map_eq_some_iff] at h
+  obtain ⟨d, hd, rfl⟩ := h
+  have named := List.find?_some hd
+  simp only [Bool.and_eq_true, beq_iff_eq] at named
+  exact ⟨d, List.mem_of_find?_eq_some hd, named.1, rfl⟩
+
+/-- A velocity equation holds in every environment satisfying the source: the
+derivative port of `x` and the velocity carry the same value. -/
+theorem SourceBody.velocity_equation {sb : SourceBody} {e : Evolution}
+    {env : String → Option ℝ} (equations : sb.Equations (sb.context e) env) {x y : String}
+    (h : (sb.context e).velocity x = some y) :
+    ∃ w, ((sb.context e).locate x).bind env = some w ∧ env y = some w := by
+  obtain ⟨d, hd, rfl, rfl⟩ := velocity_declared h
+  have mem : d.equation ∈ sb.equations :=
+    List.mem_append_right _ (List.mem_map_of_mem hd)
+  obtain ⟨_, w, hl, hr⟩ := equations.2 _ mem
+  refine ⟨w, ?_, hr⟩
+  simp only [VelocityDeclaration.equation, Term.eval, Term.chain, Context.rates] at hl
+  split_ifs at hl
+  · simpa [Context.lift] using hl
+
+/-- A declared velocity reads its own state coordinate. -/
+theorem SourceBody.velocity_value {sb : SourceBody} {e : Evolution} {x0 : Point e.states.length}
+    {env : String → Option ℝ} (states : sb.VelocityStates)
+    (agrees : Agrees (sb.inputEnvironment e.stateIds x0) env) {x y : String}
+    (h : (sb.context e).velocity x = some y) {j : Fin e.states.length}
+    (hj : sb.coordinate e y = some j) : env y = some (x0 j) := by
+  obtain ⟨d, hd, -, rfl⟩ := velocity_declared h
+  have hs := states d hd
+  cases hp : sb.inputs.find? (·.name == d.velocity) with
+  | none => simp [hp] at hs
+  | some p =>
+    have role : p.role = .state := role_beq.mp (by simpa [hp] using hs)
+    have named := find?_and (q := fun p => p.role == .state) hp (role_beq.mpr role)
+    have index_eq : index e.stateIds p.id = some j := by
+      simpa [coordinate, named] using hj
+    apply agrees
+    have notParameter : (p.role == .parameter) = false := by rw [role]; decide
+    simp [SourceBody.inputEnvironment, SourceBody.withAssignments, Body.inputEnvironment,
+      hp, Body.inputValue, notParameter, index_eq]
+
+private theorem lift_succ {c : Context} :
+    ∀ (k : Nat) (x y : String), c.lift (k + 1) x = some y → ∃ z, c.velocity x = some z
+  | 0, x, y, h => ⟨y, by simpa [Context.lift] using h⟩
+  | k + 1, x, y, h => by
+      simp only [Context.lift] at h
+      cases hk : c.lift k x with
+      | none => simp [hk] at h
+      | some w =>
+        cases hw : c.velocity w with
+        | none => simp [hk, hw] at h
+        | some u =>
+          exact lift_succ k x u (by simp [Context.lift, hk, hw])
+
+private theorem start_mem (e : Evolution) : e.time.start ∈ e.time.domain :=
+  Set.self_mem_Ici
+
+/-- A located derivative port has a coordinate. -/
+private theorem coordinate_of_locate {sb : SourceBody} {e : Evolution} {x port : String}
+    (h : (sb.context e).locate x = some port) :
+    ∃ j, sb.coordinate e x = some j ∧ sb.portName (e.derivativeIds j) = some port := by
+  rw [SourceBody.context_locate] at h
+  cases hx : sb.coordinate e x with
+  | none => simp [hx] at h
+  | some j => exact ⟨j, rfl, by simpa [hx] using h⟩
+
+/-- In a solution, climbing `k` declared velocities from `x` reaches the `k`-th
+derivative of `x` on the whole forward domain. -/
+theorem SourceBody.Solves.lift_eqOn {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
+    (states : sb.VelocityStates) (k : Nat) {x y : String} {i j : Fin e.states.length}
+    (hy : (sb.context e).lift k x = some y) (hi : sb.coordinate e x = some i)
+    (hj : sb.coordinate e y = some j) :
+    Set.EqOn (iteratedDerivWithin k (fun s => state s i) e.time.domain)
+      (fun s => state s j) e.time.domain := by
+  induction k generalizing y j with
+  | zero =>
+      simp only [Context.lift, Option.some.injEq] at hy
+      subst hy
+      rw [hi, Option.some.injEq] at hj
+      subst hj
+      simp only [iteratedDerivWithin_zero]
+      exact Set.eqOn_refl _ _
+  | succ k ih =>
+      simp only [Context.lift] at hy
+      cases hz : (sb.context e).lift k x with
+      | none => simp [hz] at hy
+      | some z =>
+        rw [hz, Option.bind_some] at hy
+        obtain ⟨env0, source0, -⟩ := h.2 _ (start_mem e)
+        obtain ⟨w0, hl0, -⟩ := SourceBody.velocity_equation source0.2 hy
+        cases hloc : (sb.context e).locate z with
+        | none => simp [hloc] at hl0
+        | some port =>
+          obtain ⟨jz, hjz, hport⟩ := coordinate_of_locate hloc
+          have eq := ih hz hjz
+          intro s hs
+          rw [iteratedDerivWithin_succ, derivWithin_congr eq (eq hs)]
+          obtain ⟨env, source, rates⟩ := h.2 s hs
+          obtain ⟨rate, hv, hd⟩ := rates jz
+          obtain ⟨w, hl, hw⟩ := SourceBody.velocity_equation source.2 hy
+          have hvel := SourceBody.velocity_value states source.1 hy hj
+          rw [SourceBody.value_eq, hport, Option.bind_some] at hv
+          rw [hloc, Option.bind_some, hv, Option.some.injEq] at hl
+          rw [hvel, Option.some.injEq] at hw
+          rw [hd.derivWithin (uniqueDiffOn_Ici _ s hs), hl]
+          exact hw.symm
+
+/-- The declared initial value of the state `k` velocities above `x` is the
+`k`-th derivative of `x` at the start. -/
+theorem SourceBody.Solves.initial_iterated {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
+    (states : sb.VelocityStates) (k : Nat) {x y : String} {i j : Fin e.states.length}
+    (hy : (sb.context e).lift k x = some y) (hi : sb.coordinate e x = some i)
+    (hj : sb.coordinate e y = some j) :
+    (e.initialValue e.states[j].initialId).map (fun q : ℚ => (q : ℝ)) =
+      some (iteratedDerivWithin k (fun s => state s i) e.time.domain e.time.start) := by
+  rw [h.1 j, h.lift_eqOn states k hy hi hj (start_mem e)]
+
+/-- In a solution, a chain of `n` derivatives of `x` denotes the derivative of
+the `n - 1`-th iterated derivative of `x`, within the forward domain, for every
+environment witnessing the source equations at `t`. -/
+theorem SourceBody.Solves.chain_denotes {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
+    (states : sb.VelocityStates) {t : ℝ} (ht : t ∈ e.time.domain) {env : String → Option ℝ}
+    (source : sb.Source (sb.context e) e.stateIds (state t) env)
+    (rates : ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
+      HasDerivWithinAt (fun t => state t i) rate e.time.domain t)
+    (axes : List String) (x : String) (r : ℝ)
+    (hr : (sb.context e).rates env axes x = some r) :
+    ∃ i, sb.coordinate e x = some i ∧
+      HasDerivWithinAt (iteratedDerivWithin (axes.length - 1) (fun s => state s i)
+        e.time.domain) r e.time.domain t := by
+  simp only [Context.rates] at hr
+  split_ifs at hr
+  cases hy : (sb.context e).lift (axes.length - 1) x with
+  | none => simp [hy] at hr
+  | some y =>
+    cases hloc : (sb.context e).locate y with
+    | none => simp [hy, hloc] at hr
+    | some port =>
+      simp only [hy, hloc, Option.bind_some] at hr
+      obtain ⟨j, hj, hport⟩ := coordinate_of_locate hloc
+      have hi : ∃ i, sb.coordinate e x = some i := by
+        cases hk : axes.length - 1 with
+        | zero =>
+            rw [hk] at hy
+            simp only [Context.lift, Option.some.injEq] at hy
+            exact ⟨j, hy ▸ hj⟩
+        | succ k =>
+            rw [hk] at hy
+            obtain ⟨z, hz⟩ := lift_succ k x y hy
+            obtain ⟨w, hl, -⟩ := SourceBody.velocity_equation source.2 hz
+            cases hx : (sb.context e).locate x with
+            | none => simp [hx] at hl
+            | some px =>
+              obtain ⟨i, hi, -⟩ := coordinate_of_locate hx
+              exact ⟨i, hi⟩
+      obtain ⟨i, hi⟩ := hi
+      refine ⟨i, hi, ?_⟩
+      obtain ⟨rate, hv, hd⟩ := rates j
+      rw [SourceBody.value_eq, hport, Option.bind_some, hr, Option.some.injEq] at hv
+      subst hv
+      exact hd.congr_of_mem (fun s hs => h.lift_eqOn states _ hy hi hj hs) ht
+
+/-- The same fact stated from a solution, as `Solves.derivative_at` is. -/
+theorem SourceBody.Solves.chain_at {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
+    (states : sb.VelocityStates) {t : ℝ} (ht : t ∈ e.time.domain) :
+    ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+      ∀ axes x r, (sb.context e).rates env axes x = some r →
+        ∃ i, sb.coordinate e x = some i ∧
+          HasDerivWithinAt (iteratedDerivWithin (axes.length - 1) (fun s => state s i)
+            e.time.domain) r e.time.domain t := by
+  obtain ⟨env, source, rates⟩ := h.2 t ht
+  exact ⟨env, source, fun axes x r hr => h.chain_denotes states ht source rates axes x r hr⟩
+
+/-! ## The classical reading
+
+`SourceBody.Solves` reads an atom through derivative ports and pins each port
+to the actual derivative. `SolvesClassical` reads every chain of `k` evolution
+derivatives of `x` directly as `iteratedDerivWithin k x` on the forward domain,
+with no velocity value in between; the declared velocities only decide which
+chains are in the fragment, exactly as in `Context.rates`. The two relations
+coincide (`Solves_iff_classical`). -/
+
+/-- The source equations under an arbitrary reading of derivative chains. -/
+def SourceBody.EquationsUnder (sb : SourceBody) (rates : List String → String → Option ℝ)
+    (env : String → Option ℝ) : Prop :=
+  (∀ a ∈ sb.assignments, env a.output.name ≠ none ∧
+    a.rhs.eval env rates = env a.output.name) ∧
+  (∀ d ∈ sb.equations, env d.output.name ≠ none ∧
+    ∃ v, d.lhs.eval env rates = some v ∧ d.rhs.eval env rates = some v)
+
+theorem SourceBody.equations_eq (sb : SourceBody) (c : Context) (env : String → Option ℝ) :
+    sb.Equations c env = sb.EquationsUnder (c.rates env) env := rfl
+
+/-- A chain of `k` evolution derivatives of `x`, admitted by the same declared
+velocities as `Context.rates`, read as the `k`-th derivative of `x` at `t`. -/
+noncomputable def SourceBody.classicalRates (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) (t : ℝ) : List String → String → Option ℝ :=
+  fun axes x => if axes ≠ [] ∧ axes.all (· == (sb.context e).axis) then
+    (((sb.context e).lift (axes.length - 1) x).bind (sb.context e).locate).bind fun _ =>
+      (sb.coordinate e x).map fun i =>
+        iteratedDerivWithin axes.length (fun s => state s i) e.time.domain t
+  else none
+
+/-- At `t`, `env` extends the inputs and every derivative port carries the
+actual derivative of its differentiable state. -/
+def SourceBody.PortsAt (sb : SourceBody) (e : Evolution) (state : Dynamics.Signal e.states.length)
+    (t : ℝ) (env : String → Option ℝ) : Prop :=
+  Agrees (sb.inputEnvironment e.stateIds (state t)) env ∧
+    ∀ i, DifferentiableWithinAt ℝ (fun s => state s i) e.time.domain t ∧
+      sb.value env (e.derivativeIds i) = some (derivWithin (fun s => state s i) e.time.domain t)
+
+/-- The original equations with every chain read as an actual iterated
+derivative, the initial conditions, and actual derivatives in the ports. -/
+def SourceBody.SolvesClassical (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) : Prop :=
+  (∀ i, (e.initialValue e.states[i].initialId).map (fun q : ℚ => (q : ℝ)) =
+    some (state e.time.start i)) ∧
+  ∀ t ∈ e.time.domain, ∃ env, sb.PortsAt e state t env ∧
+    sb.EquationsUnder (sb.classicalRates e state t) env
+
+/-- The velocity equations under a reading. -/
+private def velocityEquations (sb : SourceBody) (rates : List String → String → Option ℝ)
+    (env : String → Option ℝ) : Prop :=
+  ∀ d ∈ sb.velocities, ∃ w, rates [d.axis] d.state = some w ∧ env d.velocity = some w
+
+private theorem velocityEquations_of {sb : SourceBody} {rates : List String → String → Option ℝ}
+    {env : String → Option ℝ} (h : sb.EquationsUnder rates env) : velocityEquations sb rates env := by
+  intro d hd
+  obtain ⟨_, w, hl, hr⟩ := h.2 _ (List.mem_append_right _ (List.mem_map_of_mem hd))
+  exact ⟨w, by simpa [VelocityDeclaration.equation, Term.eval, Term.chain] using hl, hr⟩
+
+/-- On first-order atoms the two readings agree wherever the ports are actual. -/
+private theorem rates_single {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} {t : ℝ} {env : String → Option ℝ}
+    (ports : sb.PortsAt e state t env) (a z : String) :
+    (sb.context e).rates env [a] z = sb.classicalRates e state t [a] z := by
+  simp only [Context.rates, SourceBody.classicalRates]
+  split_ifs with hc
+  · simp only [List.length_singleton, Nat.sub_self, Context.lift, Option.bind_some]
+    cases hl : (sb.context e).locate z with
+    | none => simp
+    | some port =>
+      obtain ⟨j, hj, hport⟩ := coordinate_of_locate hl
+      have hv := (ports.2 j).2
+      rw [SourceBody.value_eq, hport, Option.bind_some] at hv
+      simp [hv, hj, iteratedDerivWithin_one]
+  · rfl
+
+/-- At `s`, each declared velocity is the actual derivative of its state. -/
+private def velocityHolds (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) (s : ℝ) : Prop :=
+  ∀ z y, (sb.context e).velocity z = some y → ∃ jz, sb.coordinate e z = some jz ∧
+    ∀ jy, sb.coordinate e y = some jy →
+      state s jy = derivWithin (fun s => state s jz) e.time.domain s
+
+private theorem velocityHolds_of {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} {s : ℝ} {env : String → Option ℝ}
+    (states : sb.VelocityStates) (ports : sb.PortsAt e state s env)
+    (h : velocityEquations sb ((sb.context e).rates env) env) : velocityHolds sb e state s := by
+  intro z y hzy
+  obtain ⟨d, hd, rfl, rfl⟩ := velocity_declared hzy
+  obtain ⟨w, hl, hw⟩ := h d hd
+  simp only [Context.rates] at hl
+  split_ifs at hl
+  simp only [List.length_singleton, Nat.sub_self, Context.lift, Option.bind_some] at hl
+  cases hloc : (sb.context e).locate d.state with
+  | none => simp [hloc] at hl
+  | some port =>
+    obtain ⟨jz, hjz, hport⟩ := coordinate_of_locate hloc
+    refine ⟨jz, hjz, fun jy hjy => ?_⟩
+    have hvel := SourceBody.velocity_value states ports.1 hzy hjy
+    have hv := (ports.2 jz).2
+    rw [SourceBody.value_eq, hport, Option.bind_some] at hv
+    rw [hloc, Option.bind_some, hv, Option.some.injEq] at hl
+    rw [hvel, Option.some.injEq] at hw
+    rw [hw, hl]
+
+private theorem eqOn_of_holds {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length}
+    (holds : ∀ s ∈ e.time.domain, velocityHolds sb e state s) (k : Nat) {x y : String}
+    {i j : Fin e.states.length} (hy : (sb.context e).lift k x = some y)
+    (hi : sb.coordinate e x = some i) (hj : sb.coordinate e y = some j) :
+    Set.EqOn (iteratedDerivWithin k (fun s => state s i) e.time.domain)
+      (fun s => state s j) e.time.domain := by
+  induction k generalizing y j with
+  | zero =>
+      simp only [Context.lift, Option.some.injEq] at hy
+      subst hy
+      rw [hi, Option.some.injEq] at hj
+      subst hj
+      simp only [iteratedDerivWithin_zero]
+      exact Set.eqOn_refl _ _
+  | succ k ih =>
+      simp only [Context.lift] at hy
+      cases hz : (sb.context e).lift k x with
+      | none => simp [hz] at hy
+      | some z =>
+        rw [hz, Option.bind_some] at hy
+        obtain ⟨jz, hjz, -⟩ := holds _ (start_mem e) z y hy
+        have eq := ih hz hjz
+        intro s hs
+        obtain ⟨jz', hjz', hval⟩ := holds s hs z y hy
+        rw [hjz, Option.some.injEq] at hjz'
+        subst hjz'
+        rw [iteratedDerivWithin_succ, derivWithin_congr eq (eq hs)]
+        exact (hval j hj).symm
+
+/-- Where each velocity is the actual derivative at every time, the port
+reading and the classical reading of every chain coincide at `t`. -/
+private theorem rates_eq_classical {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length}
+    (holds : ∀ s ∈ e.time.domain, velocityHolds sb e state s) {t : ℝ} (ht : t ∈ e.time.domain)
+    {env : String → Option ℝ} (ports : sb.PortsAt e state t env) :
+    (sb.context e).rates env = sb.classicalRates e state t := by
+  funext axes x
+  simp only [Context.rates, SourceBody.classicalRates]
+  split_ifs with hc
+  · cases hy : (sb.context e).lift (axes.length - 1) x with
+    | none => simp
+    | some y =>
+      cases hloc : (sb.context e).locate y with
+      | none => simp [hloc]
+      | some port =>
+        simp only [hloc, Option.bind_some]
+        obtain ⟨j, hj, hport⟩ := coordinate_of_locate hloc
+        have hv := (ports.2 j).2
+        rw [SourceBody.value_eq, hport, Option.bind_some] at hv
+        have hi : ∃ i, sb.coordinate e x = some i := by
+          cases hk : axes.length - 1 with
+          | zero =>
+              rw [hk] at hy
+              simp only [Context.lift, Option.some.injEq] at hy
+              exact ⟨j, hy ▸ hj⟩
+          | succ k =>
+              rw [hk] at hy
+              obtain ⟨z, hz⟩ := lift_succ k x y hy
+              obtain ⟨i, hi, -⟩ := holds t ht x z hz
+              exact ⟨i, hi⟩
+        obtain ⟨i, hi⟩ := hi
+        have eq := eqOn_of_holds holds _ hy hi hj
+        have hlen : axes.length = axes.length - 1 + 1 := by
+          have : axes.length ≠ 0 := by simpa using hc.1
+          omega
+        rw [hv, hi, Option.map_some, hlen, iteratedDerivWithin_succ,
+          derivWithin_congr eq (eq ht)]
+  · rfl
+
+/-- The port reading of `Solves` and the classical reading of every chain as
+an iterated derivative have the same solutions, with the same initial data. -/
+theorem SourceBody.solves_iff_classical {sb : SourceBody} {e : Evolution}
+    (states : sb.VelocityStates) (state : Dynamics.Signal e.states.length) :
+    sb.Solves e state ↔ sb.SolvesClassical e state := by
+  have portsOf : ∀ t ∈ e.time.domain, ∀ env,
+      Agrees (sb.inputEnvironment e.stateIds (state t)) env →
+      (∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
+        HasDerivWithinAt (fun t => state t i) rate e.time.domain t) →
+      sb.PortsAt e state t env := by
+    intro t ht env agrees rates
+    refine ⟨agrees, fun i => ?_⟩
+    obtain ⟨rate, hv, hd⟩ := rates i
+    exact ⟨hd.differentiableWithinAt, by rw [hv, hd.derivWithin (uniqueDiffOn_Ici _ t ht)]⟩
+  constructor
+  · intro h
+    have holds : ∀ s ∈ e.time.domain, velocityHolds sb e state s := by
+      intro s hs
+      obtain ⟨env, source, rates⟩ := h.2 s hs
+      exact velocityHolds_of states (portsOf s hs env source.1 rates)
+        (velocityEquations_of source.2)
+    refine ⟨h.1, fun t ht => ?_⟩
+    obtain ⟨env, source, rates⟩ := h.2 t ht
+    have ports := portsOf t ht env source.1 rates
+    refine ⟨env, ports, ?_⟩
+    rw [← rates_eq_classical holds ht ports]
+    exact source.2
+  · intro h
+    have holds : ∀ s ∈ e.time.domain, velocityHolds sb e state s := by
+      intro s hs
+      obtain ⟨env, ports, equations⟩ := h.2 s hs
+      refine velocityHolds_of states ports (fun d hd => ?_)
+      obtain ⟨w, hl, hw⟩ := velocityEquations_of equations d hd
+      exact ⟨w, by rw [rates_single ports]; exact hl, hw⟩
+    refine ⟨h.1, fun t ht => ?_⟩
+    obtain ⟨env, ports, equations⟩ := h.2 t ht
+    refine ⟨env, ⟨ports.1, ?_⟩, fun i => ?_⟩
+    · rw [SourceBody.equations_eq, rates_eq_classical holds ht ports]
+      exact equations
+    · obtain ⟨hdiff, hv⟩ := ports.2 i
+      exact ⟨_, hv, hdiff.hasDerivWithinAt⟩
+
 /-! ## Lowering -/
 
-/-- A lowered body, with the source/target correspondence of its equations. -/
+/-- A lowered body, with the source/target correspondence of its equations and
+the checked velocity states. -/
 structure Lowered (sb : SourceBody) (c : Context) where
   assignments : List Assignment
   outputs : assignments.map (·.output) = sb.outputs
   equations : ∀ env, sb.Equations c env ↔ Equations assignments env
+  velocityStates : sb.VelocityStates
 
 def Lowered.body {sb : SourceBody} {c : Context} (l : Lowered sb c) : Body :=
   sb.withAssignments l.assignments
@@ -184,24 +665,32 @@ private def lowerList {α : Type} (P : α → (String → Option ℝ) → Prop) 
         simp only [List.forall_mem_cons, Equations] at *
         rw [px env, pxs env]⟩
 
-/-- Check scopes, beta-normalize explicit assignments and isolate differentials. -/
+/-- Check scopes and velocity states, beta-normalize explicit assignments and
+isolate differentials, velocity declarations included. -/
 def SourceBody.lower (sb : SourceBody) (c : Context) : Except Diagnostic (Lowered sb c) := do
   let names := (sb.inputs ++ sb.outputs).map Port.name
   for a in sb.assignments do
     match a.rhs.checkScope names with
     | .error name => throw ⟨.unknownReference, a.output.id, name⟩
     | .ok () => pure ()
-  for d in sb.differentials do
+  for d in sb.equations do
     match d.lhs.checkScope names, d.rhs.checkScope names with
     | .error name, _ | _, .error name => throw ⟨.unknownReference, d.output.id, name⟩
     | .ok (), .ok () => pure ()
-  let ⟨as, has, pas⟩ ← lowerList _ (·.output) (lowerAssignment c) sb.assignments
-  let ⟨ds, hds, pds⟩ ← lowerList _ (·.output) (lowerDifferential c) sb.differentials
-  return ⟨as ++ ds, by simp [SourceBody.outputs, has, hds], fun env => by
-    rw [SourceBody.Equations, pas env, pds env]
-    exact ⟨fun ⟨h1, h2⟩ a ha => (List.mem_append.mp ha).elim (h1 a) (h2 a),
-      fun h => ⟨fun a ha => h a (List.mem_append_left _ ha),
-        fun a ha => h a (List.mem_append_right _ ha)⟩⟩⟩
+  if states : sb.VelocityStates then
+    let ⟨as, has, pas⟩ ← lowerList _ (·.output) (lowerAssignment c) sb.assignments
+    let ⟨ds, hds, pds⟩ ← lowerList _ (·.output) (lowerDifferential c) sb.equations
+    return ⟨as ++ ds, by simp [SourceBody.outputs, has, hds], fun env => by
+      rw [SourceBody.Equations, pas env, pds env]
+      exact ⟨fun ⟨h1, h2⟩ a ha => (List.mem_append.mp ha).elim (h1 a) (h2 a),
+        fun h => ⟨fun a ha => h a (List.mem_append_left _ ha),
+          fun a ha => h a (List.mem_append_right _ ha)⟩⟩, states⟩
+  else
+    match sb.velocities.find? (fun v =>
+        !(sb.inputs.find? (·.name == v.velocity)).any (·.role == .state)) with
+    | some v => throw ⟨.unsupportedRole, v.output.id, v.velocity⟩
+    -- Unreachable: `VelocityStates` fails only through a declaration `find?` returns.
+    | none => throw ⟨.unsupportedRole, "velocities", "declared velocity state"⟩
 
 /-! ## Correspondence with the lowered body -/
 
@@ -252,11 +741,11 @@ structure SourcePolynomialModel (sb : SourceBody) where
   lowered : Lowered sb Context.empty
   model : PolynomialModel lowered.body
 
-/-- A polynomial declaration has no evolution axis, so every derivative atom and
-every differential equation is rejected. -/
+/-- A polynomial declaration has no evolution axis, so every derivative atom,
+differential equation and velocity declaration is rejected. -/
 def compileSourcePolynomial (sb : SourceBody) :
     Except Diagnostic (SourcePolynomialModel sb) := do
-  if let some d := sb.differentials.head? then
+  if let some d := sb.equations.head? then
     throw ⟨.unsupportedDerivative, d.output.id, "differential equation without an evolution axis"⟩
   (Declaration.polynomial sb.interface).validate
   let lowered ← sb.lower Context.empty
@@ -308,7 +797,45 @@ theorem SourceContinuousModel.observations_correct {sb : SourceBody} {e : Evolut
     p.lowered.observes]
   rfl
 
+/-- Every realization of a compiled model is a solution in which each chain of
+derivatives denotes the iterated derivative on the forward domain, each state
+reached through declared velocities is that iterated derivative, and its
+declared initial value is the iterated derivative at the start.
+`classical_iff_realizes` states the equations themselves under that reading. -/
+theorem SourceContinuousModel.realizes_iterated {sb : SourceBody} {e : Evolution}
+    (p : SourceContinuousModel sb e) {state : Dynamics.Signal e.states.length}
+    (h : p.model.Realizes state) :
+    (∀ t ∈ e.time.domain, ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+      ∀ axes x r, (sb.context e).rates env axes x = some r →
+        ∃ i, sb.coordinate e x = some i ∧
+          HasDerivWithinAt (iteratedDerivWithin (axes.length - 1) (fun s => state s i)
+            e.time.domain) r e.time.domain t) ∧
+    ∀ k x y i j, (sb.context e).lift k x = some y → sb.coordinate e x = some i →
+      sb.coordinate e y = some j →
+        Set.EqOn (iteratedDerivWithin k (fun s => state s i) e.time.domain)
+          (fun s => state s j) e.time.domain ∧
+        (e.initialValue e.states[j].initialId).map (fun q : ℚ => (q : ℝ)) =
+          some (iteratedDerivWithin k (fun s => state s i) e.time.domain e.time.start) := by
+  have hs := (p.solves_iff_realizes state).mpr h
+  have states := p.lowered.velocityStates
+  exact ⟨fun t ht => hs.chain_at states ht, fun k _ _ _ _ hy hi hj =>
+    ⟨hs.lift_eqOn states k hy hi hj, hs.initial_iterated states k hy hi hj⟩⟩
+
+/-- The original higher-order source, read with actual iterated derivatives,
+has exactly the realizations of the compiled first-order system as solutions:
+same states, start, forward domain and initial data. -/
+theorem SourceContinuousModel.classical_iff_realizes {sb : SourceBody} {e : Evolution}
+    (p : SourceContinuousModel sb e) (state : Dynamics.Signal e.states.length) :
+    sb.SolvesClassical e state ↔ p.model.Realizes state := by
+  rw [← sb.solves_iff_classical p.lowered.velocityStates, p.solves_iff_realizes]
+
+#print axioms SourceBody.solves_iff_classical
+#print axioms SourceContinuousModel.classical_iff_realizes
 #print axioms SourceBody.Solves.derivative_denotes
+#print axioms SourceBody.Solves.lift_eqOn
+#print axioms SourceBody.Solves.initial_iterated
+#print axioms SourceBody.Solves.chain_denotes
+#print axioms SourceContinuousModel.realizes_iterated
 #print axioms Lowered.solves_iff
 #print axioms SourcePolynomialModel.correct
 #print axioms SourceContinuousModel.solves_iff_realizes

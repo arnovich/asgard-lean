@@ -10,12 +10,14 @@ every other name from the enclosing scope. The argument is passed by name
 (`rebind`), so beta reduction preserves meaning exactly, including an unused
 argument that mentions an undefined name.
 
-A derivative atom `D_axis(state)` has no value of its own: the caller supplies
-`rates`, and `Model.Differential` fixes it to the declared derivative of the
-state. A lambda binder shadows a state of the same name for derivatives too, so
-`(λ x => D_t(x))(y)` has no value. Every derivative form other than a free
-state variable evaluates to `none` here; it is outside the fragment, and the
-isolation pass rejects it with a diagnostic rather than giving it a meaning. -/
+A derivative atom has no value of its own. A chain `D_a(D_b(… D_c(state)))`
+is read as a whole: the caller supplies `rates`, which receives the axes from
+the outermost inwards and the state name, and `Model.Differential` fixes it to
+the declared derivative ports. A lambda binder shadows a state of the same name
+for derivatives too, so `(λ x => D_t(x))(y)` has no value. A derivative of
+anything other than a chain ending in a free name evaluates to `none` here; it
+is outside the fragment, and the isolation pass rejects it with a diagnostic
+rather than giving it a meaning. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -34,9 +36,17 @@ def rebind {α : Type} (env : String → Option α) (name : String) (value : Opt
     String → Option α :=
   fun key => if key = name then value else env key
 
-/-- Independent source semantics. `rates axis state` interprets `D_axis(state)`. -/
+/-- A derivative chain `D_a(D_b(… state))` as its axes, outermost first, and
+the differentiated name; a bare name is the empty chain. -/
+def Term.chain : Term → Option (List String × String)
+  | .var name => some ([], name)
+  | .derivative axis operand => operand.chain.map fun (axes, name) => (axis :: axes, name)
+  | _ => none
+
+/-- Independent source semantics. `rates axes state` interprets the chain
+`D_axes(state)`, axes outermost first; `rates [a] x` is `D_a(x)`. -/
 noncomputable def Term.eval (env : String → Option ℝ)
-    (rates : String → String → Option ℝ) : Term → Option ℝ
+    (rates : List String → String → Option ℝ) : Term → Option ℝ
   | .var name => env name
   | .constant q => some q
   | .add a b => do return (← a.eval env rates) + (← b.eval env rates)
@@ -45,9 +55,9 @@ noncomputable def Term.eval (env : String → Option ℝ)
   | .apply x body arg =>
       body.eval (rebind env x (arg.eval env rates)) (fun a s => if s = x then none else rates a s)
   | .derivative axis operand =>
-      match operand with
-      | .var state => rates axis state
-      | _ => none
+      match operand.chain with
+      | some (axes, state) => rates (axis :: axes) state
+      | none => none
 
 /-- Number of derivative nodes, counting nested ones separately. -/
 def Term.derivatives : Term → Nat
@@ -92,7 +102,7 @@ def Term.beta : Term → Option NamedExpr
 /-- Beta normalization preserves meaning exactly, for every environment:
 defined and undefined values alike, and whatever derivative interpretation. -/
 theorem Term.beta_correct (t : Term) (e : NamedExpr) (h : t.beta = some e)
-    (env : String → Option ℝ) (rates : String → String → Option ℝ) :
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ) :
     e.eval env = t.eval env rates := by
   induction t generalizing e env rates with
   | var name => cases h; rfl
@@ -124,7 +134,7 @@ def Term.literal : Term → Option ℚ
   | _ => none
 
 theorem Term.literal_correct (t : Term) (q : ℚ) (h : t.literal = some q)
-    (env : String → Option ℝ) (rates : String → String → Option ℝ) :
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ) :
     t.eval env rates = some (q : ℝ) := by
   induction t generalizing q with
   | constant c => cases h; rfl

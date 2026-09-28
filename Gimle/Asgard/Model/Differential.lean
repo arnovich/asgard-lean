@@ -1,6 +1,7 @@
 import Gimle.Asgard.Model.Term
 
-/-! Bounded first-order differential isolation.
+/-! Bounded affine differential isolation, with declared velocity states for
+higher-order chains.
 
 One source equation `lhs = rhs` in which exactly one side contains exactly one
 derivative atom, of the form `q*D_t(x) + r = rhs`. The scale `q` is an exact
@@ -16,28 +17,97 @@ initialized feedback of `Model.Continuous` closes the result. There is no
 integral in this fragment, so no inverse rewrite exists that could erase a
 boundary term.
 
+A higher-order chain `D_t(D_t(x))` is first collapsed to `D_t(v)`, where `v` is
+the state declared as the velocity of `x` (`Context.velocity`); longer chains
+climb one declared velocity per level. The collapse is exact by the chain
+reading of `Context.rates` (`Term.collapse_eval`), and nothing is inferred from
+names: a chain with an undeclared level is not collapsed and is rejected.
+
 Rejected, each with its own diagnostic, never as a claim of unsatisfiability:
 zero scale, competing atoms on both sides, repeated atoms on one side,
-non-literal or nonlinear factors, a scale around a sum, higher-order, mixed-axis
-and non-state derivatives, derivatives inside lambda applications, and
-derivatives outside differential equations. -/
+non-literal or nonlinear factors, a scale around a sum, higher-order chains
+without declared velocities, mixed-axis and non-state derivatives, derivatives
+inside lambda applications, and derivatives outside differential equations. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
 /-- `axis` is the evolution axis display name; `locate` maps a state display
-name to the display name of its declared derivative port. -/
+name to the display name of its declared derivative port, and `velocity` maps
+a state display name to the name declared as its first derivative (checked to
+be a state by `SourceBody.VelocityStates`). -/
 structure Context where
   axis : String
   locate : String → Option String
+  velocity : String → Option String
 
-/-- `D_axis(x)` denotes the value of `x`'s derivative port, and nothing on
-another axis. `SourceBody.Solves` ties that port to the actual derivative. -/
+/-- The state reached from `x` through `k` declared velocities. -/
+def Context.lift (c : Context) : Nat → String → Option String
+  | 0, x => some x
+  | k + 1, x => (c.lift k x).bind c.velocity
+
+/-- `D_t(x)` denotes the value of `x`'s derivative port, and nothing on
+another axis. A chain of `k + 1` evolution derivatives of `x` denotes the
+derivative port of the state `k` declared velocities above `x`: `D_t(D_t(x))`
+is `D_t(v)` when `v` is declared as the velocity of `x`. `SourceBody.Solves`
+ties each port to the actual derivative and each velocity to its state's
+derivative, so the chain denotes the iterated derivative
+(`SourceBody.Solves.chain_denotes`). -/
 def Context.rates {α : Type} (c : Context) (env : String → Option α) :
-    String → String → Option α :=
-  fun axis state => if axis = c.axis then (c.locate state).bind env else none
+    List String → String → Option α :=
+  fun axes state => if axes ≠ [] ∧ axes.all (· == c.axis) then
+    ((c.lift (axes.length - 1) state).bind c.locate).bind env else none
 
 /-- A context with no derivatives: every atom is rejected by isolation. -/
-def Context.empty : Context := ⟨"", fun _ => none⟩
+def Context.empty : Context := ⟨"", fun _ => none, fun _ => none⟩
+
+/-- Collapse every evolution-axis chain whose levels all have declared
+velocities to one atom `D_t(top)`. Lambda applications are left untouched: a
+derivative inside one is rejected later. That is also why `collapse_eval` holds:
+a binder masks only a chain's base name in `Term.eval`, not the velocities it
+climbs, so under a binder named like a velocity the collapsed atom would read
+differently. -/
+def Term.collapse (c : Context) : Term → Term
+  | .add a b => .add (a.collapse c) (b.collapse c)
+  | .mul a b => .mul (a.collapse c) (b.collapse c)
+  | .neg a => .neg (a.collapse c)
+  | .derivative axis operand =>
+      match operand.chain with
+      | some (axes, state) =>
+          if axes ≠ [] ∧ (axis :: axes).all (· == c.axis) then
+            match c.lift axes.length state with
+            | some top => .derivative axis (.var top)
+            | none => .derivative axis operand
+          else .derivative axis operand
+      | none => .derivative axis operand
+  | t => t
+
+/-- Collapsing preserves meaning exactly in every environment, under the
+chain reading of the same context. -/
+theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ) :
+    (t.collapse c).eval env (c.rates env) = t.eval env (c.rates env) := by
+  induction t with
+  | var _ | constant _ | apply _ _ _ => rfl
+  | add a b ha hb => simp only [collapse, Term.eval, ha, hb]
+  | mul a b ha hb => simp only [collapse, Term.eval, ha, hb]
+  | neg a ha => simp only [collapse, Term.eval, ha]
+  | derivative axis operand _ =>
+      cases hc : operand.chain with
+      | none => simp [collapse, hc]
+      | some p =>
+        obtain ⟨axes, state⟩ := p
+        by_cases h : axes ≠ [] ∧ (axis :: axes).all (· == c.axis) = true
+        · cases hl : c.lift axes.length state with
+          | none => simp only [collapse, hc, if_pos h, hl]
+          | some top =>
+            simp only [collapse, hc, if_pos h, hl]
+            obtain ⟨hne, hall⟩ := h
+            have hall' := hall
+            simp only [List.all_cons, Bool.and_eq_true, beq_iff_eq] at hall'
+            simp only [Term.eval, Term.chain, Context.rates, hc]
+            rw [if_pos ⟨List.cons_ne_nil _ _, by simp [hall'.1]⟩,
+              if_pos ⟨List.cons_ne_nil _ _, hall⟩]
+            simp [Context.lift, hl]
+        · simp only [collapse, hc, if_neg h]
 
 /-- Classify every derivative node, before counting. -/
 def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
@@ -52,9 +122,15 @@ def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
           if axis ≠ c.axis then .error .mixedDerivative
           else if (c.locate state).isNone then .error .unsupportedDerivative
           else .ok ()
-      | .derivative inner _ =>
-          if axis ≠ inner ∨ axis ≠ c.axis then .error .mixedDerivative
-          else .error .higherOrderDerivative
+      | .derivative inner inside =>
+          match inside.chain with
+          | some (axes, base) =>
+              if !(axis :: inner :: axes).all (· == c.axis) then .error .mixedDerivative
+              else if (c.locate base).isNone then .error .unsupportedDerivative
+              else .error .higherOrderDerivative
+          | none =>
+              if axis ≠ inner ∨ axis ≠ c.axis then .error .mixedDerivative
+              else .error .unsupportedDerivative
       | _ => .error .unsupportedDerivative
 
 /-- One side, read as `scale * D_axis(state) + remainder`; `none` means no
@@ -120,15 +196,15 @@ def Term.affine : Term → Except ErrorCode Affine
   | .var _ | .constant _ => .error .missingDerivative
 
 theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
-    (env : String → Option ℝ) (rates : String → String → Option ℝ) (rate : ℝ)
-    (hrate : rates p.axis p.state = some rate) : t.eval env rates = p.value env rate := by
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ) (rate : ℝ)
+    (hrate : rates [p.axis] p.state = some rate) : t.eval env rates = p.value env rate := by
   induction t generalizing p with
   | var _ | constant _ => simp [affine] at h
   | apply => simp [affine] at h
   | derivative axis operand _ =>
       cases operand <;> simp [affine] at h
       subst h
-      simp [Term.eval, Affine.value, hrate]
+      simpa [Term.eval, Term.chain, Affine.value] using hrate
   | neg a ha =>
       cases hA : a.affine with
       | error e => simp [affine, hA] at h
@@ -218,11 +294,13 @@ def isolatedRhs (scale : ℚ) (opposite : NamedExpr) (remainder : Option NamedEx
     | some r => .add opposite (.neg r)
   if scale = 1 then difference else .mul (.constant scale⁻¹) difference
 
-/-- A successful isolation keeps the sides it read and the facts it checked. -/
+/-- A successful isolation keeps the collapsed sides it read and the facts it
+checked. -/
 structure Isolated (c : Context) (output : String) (lhs rhs : Term) where
   side : Term
   opposite : Term
-  sides : (side = lhs ∧ opposite = rhs) ∨ (side = rhs ∧ opposite = lhs)
+  sides : (side = lhs.collapse c ∧ opposite = rhs.collapse c) ∨
+    (side = rhs.collapse c ∧ opposite = lhs.collapse c)
   affine : Affine
   recognized : side.affine = .ok affine
   axis : affine.axis = c.axis
@@ -245,12 +323,13 @@ private def orient (lhs rhs : Term) :
   | 0, _ | _, 0 => .error .repeatedDerivative
   | _, _ => .error .competingDerivative
 
-/-- Isolate the derivative of the state whose derivative port is `output`. -/
+/-- Isolate the derivative of the state whose derivative port is `output`,
+after collapsing declared higher-order chains. -/
 def isolate (c : Context) (output : String) (lhs rhs : Term) :
     Except ErrorCode (Isolated c output lhs rhs) := do
-  lhs.checkDerivatives c
-  rhs.checkDerivatives c
-  let ⟨(side, opposite), sides⟩ ← orient lhs rhs
+  (lhs.collapse c).checkDerivatives c
+  (rhs.collapse c).checkDerivatives c
+  let ⟨(side, opposite), sides⟩ ← orient (lhs.collapse c) (rhs.collapse c)
   match hp : side.affine with
   | .error e => .error e
   | .ok p =>
@@ -296,8 +375,8 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
   | none => simp
   | some w =>
     simp only [ne_eq, reduceCtorEq, not_false_eq_true, true_and]
-    have hrate : c.rates env i.affine.axis i.affine.state = some w := by
-      simp [Context.rates, i.axis, i.located, hw]
+    have hrate : c.rates env [i.affine.axis] i.affine.state = some w := by
+      simp [Context.rates, Context.lift, i.axis, i.located, hw]
     have hside := i.side.affine_correct i.affine i.recognized env (c.rates env) w hrate
     have hopp := i.opposite.beta_correct i.other i.normalized env (c.rates env)
     have hq : (i.affine.scale : ℝ) ≠ 0 := by exact_mod_cast i.nonzero
@@ -320,11 +399,12 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
             | none => simp [Affine.value, hr, hv]
             | some y => simp [Affine.value, hr, hv, solve_scaled _ w y z hq]
     rcases i.sides with ⟨hs, ho⟩ | ⟨hs, ho⟩
-    · rw [hs, ho] at key; exact key
-    · rw [hs, ho] at key
+    · rw [hs, ho, lhs.collapse_eval, rhs.collapse_eval] at key; exact key
+    · rw [hs, ho, lhs.collapse_eval, rhs.collapse_eval] at key
       rw [← key]
       constructor <;> rintro ⟨v, h1, h2⟩ <;> exact ⟨v, h2, h1⟩
 
+#print axioms Term.collapse_eval
 #print axioms Term.affine_correct
 #print axioms Isolated.correct
 end Gimle.Asgard.Model
