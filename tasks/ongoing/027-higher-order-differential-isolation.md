@@ -1,9 +1,12 @@
 ---
 title: Isolate higher-order ODEs by explicit state augmentation
-state: open
+state: ongoing
 priority: medium
 labels: [compiler, isolation, migration]
 related: ["028", "029"]
+claimed_by: claude-027
+claimed_at: 2026-09-28T07:32:11Z
+branch: feat/higher_order_isolation
 ---
 
 ## Context
