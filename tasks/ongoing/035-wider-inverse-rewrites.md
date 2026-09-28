@@ -1,6 +1,9 @@
 ---
 title: Widen the inverse rewrites to declared chains and richer integrands
-state: open
+state: ongoing
+claimed_by: claude-a035
+claimed_at: 2026-09-28T15:05:10Z
+branch: feat/wider_inverse_rewrites
 priority: low
 labels: [compiler, isolation]
 related: ["028", "034"]
