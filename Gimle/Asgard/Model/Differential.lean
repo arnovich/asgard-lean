@@ -51,11 +51,13 @@ first input named `x` is a state: its value at the declared start.
 `integral X` is the state declared as the integral of `X` over the evolution
 axis from the start, which the rewrites read in place of `I_t(X)`; a trajectory
 must make it the antiderivative of `X` vanishing at the start
-(`Trajectory.Regular.integral`). -/
+(`Trajectory.Regular.integral`). `parameter` holds for a name read from a bound
+parameter, whose value a trajectory keeps constant (`Trajectory.Regular.parameter`). -/
 structure Boundary where
   input : String → Bool
   initial : String → Option ℚ
   integral : Term → Option String := fun _ => none
+  parameter : String → Bool := fun _ => false
 
 /-- `axis` is the evolution axis display name; `locate` maps a state display
 name to the display name of its declared derivative port, and `velocity` maps

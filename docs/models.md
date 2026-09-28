@@ -115,37 +115,47 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 | `dx` named inside its own equation | `repeatedDerivative` |
 | No atom, or the atom of a state whose derivative port is not `dx` | `missingDerivative` |
 | A name outside its binder's scope, even in an unused argument | `unknownReference` |
-| An integral no inverse rewrite removes and no declaration reads: `int(f,t)` undeclared, `int(int(diff(f,t),t),t)`, another axis | `unsupportedIntegral` |
+| An integral no inverse rewrite removes and no declaration reads: `int(f,t)` undeclared, `int(int(diff(f,t),t),t)`, a chain with an undeclared level such as `int(diff(diff(g,t),t),t)`, `int(diff(p,t),t)` of a non-state, an integral under a lambda, a pair under a further derivative such as `diff(diff(int(int(f,t),t),t),t)` | `unsupportedIntegral`, `no inverse rewrite` |
+| An integral, or an inverse pair, on another axis | `unsupportedIntegral`, `axis` |
 | An integral declaration with a declared initial value other than `0` | `nonzeroInitial` |
 | An integral declaration on another axis, or whose integrand is not pointwise (an auxiliary, a higher-order chain, a chain over a non-state such as `int(diff(p,t),t)`, a lambda holding an atom) or keeps an integral no declaration reads | `unsupportedIntegral` |
 | An integral declaration whose integrand keeps a derivative of a non-chain, such as `int(diff(f + g,t),t)` | `unsupportedDerivative` |
 | An integral state that is a parameter or an auxiliary, or not a source name | `unsupportedRole`, `unknownReference` |
 | An integral state with no `StateBinding` or no initial value | `missingBinding` |
 | A second declaration of the same integral | `duplicateId` |
-| `diff(int(X,t),t)` with `X` not tame: `diff(f,t) * f`, an auxiliary, a lambda | `unsupportedIntegral` |
-| `int(diff(p,t),t)` of a non-state, or `int(diff(diff(f,t),t),t)` | `unsupportedIntegral` |
-| An integral under a lambda, or nested pairs such as `diff(int(diff(int(f,t),t),t),t)` | `unsupportedIntegral` |
+| `diff(int(X,t),t)` with `X` not tame, once rewritten: `f * diff(f,t)`, an auxiliary, a lambda holding an atom | `unsupportedIntegral`, `integrand` |
 | Any integral or integral declaration in a polynomial declaration (`integral without an evolution axis`) | `unsupportedIntegral` |
 
-A rejection names unsupported structure, not an unsatisfiable model.
+A rejection names unsupported structure, not an unsatisfiable model. An
+`unsupportedIntegral` diagnostic names its reason as its reference: `axis`,
+`integrand` or `no inverse rewrite` (`Term.integralReason`) for an equation or explicit
+assignment, and `axis` or `integrand` for an integral declaration.
 
 ### Integrals
 
-`int(X, t)` is the integral over the evolution axis from the declared start. Three
-inverse rewrites remove integrals before collapse and isolation, at the atom
-positions of sums, products and negations, in differential equations and explicit
-assignments alike; any integral that remains is rejected unless a declared integral
-state reads it (below).
+`int(X, t)` is the integral over the evolution axis from the declared start. Inverse
+rewrites remove integrals before collapse and isolation, at the atom positions of sums,
+products and negations, in differential equations and explicit assignments alike, and
+inside the integrand of an inverse pair `diff(int(X,t),t)` before the pair itself; any
+integral that remains is rejected unless a declared integral state reads it (below).
 
 | Written | Rewritten to | Condition |
 | --- | --- | --- |
-| `diff(int(X, t), t)` | `X` | `X` tame: a polynomial in states and bound parameters, plus sums, negations and literal multiples of first-order `diff(x, t)` of states |
-| `diff(diff(int(x, t), t), t)` | `diff(x, t)` | `x` a state with a declared initial value, which the proof uses for the continuity of `x` |
-| `int(diff(x, t), t)` | `x - x0` | `x` a state with the declared initial value `x0`; any other operand is rejected |
+| `diff(int(X, t), t)` | `X'`, the integrand after rewriting | `X'` tame: a polynomial in states and bound parameters, first-order `diff(x, t)` of states, their sums and negations, multiples by a polynomial in literals and bound parameters, and applied lambdas that beta-normalize to a polynomial in states and bound parameters |
+| `diff(…diff(int(x, t), t)…, t)`, `m ≥ 2` derivatives | the chain of `m - 1` derivatives of `x` | `x` and its declared velocities up to the level `m - 2` are states with declared initial values |
+| `int(diff(x, t), t)` | `x - x0` | `x` a state with the declared initial value `x0` |
+| `int(diff(…diff(x, t)…, t), t)`, `k + 1` derivatives | `y - y0` | `y` the state `k` declared velocities above `x`, with the declared initial value `y0`; every level between has one too |
 
 The boundary term is never dropped: `int(diff(x,t),t)` is `x - x(start)`, and
 `x(start)` is the declared initial value, which `Solves` pins. With `x0 = 2`,
-`2 * diff(f,t) = int(diff(f,t),t)` lowers to `df := rat(1,2) * (f - 2)`.
+`2 * diff(f,t) = int(diff(f,t),t)` lowers to `df := rat(1,2) * (f - 2)`. Through a chain
+it is the velocity's: with `v` declared as the velocity of `f` and `v(0) = 5`,
+`int(diff(diff(f,t),t),t)` lowers to `v - 5` (`Solves.integral_chain`). A chain written
+as `diff(diff(diff(int(f,t),t),t),t)` becomes `diff(diff(f,t),t)`, which isolation then
+reads through the declared velocities. A bound parameter factor is tame because it is
+constant along the trajectory; a state factor is not, since `f * diff(g,t)` need not
+have an antiderivative. An integrand naming an auxiliary has no trajectory reading
+(below), so it stays rejected.
 
 **Declared integral states.** An integral no inverse rewrite removes is kept only
 through an explicit declaration, never a hidden state:
@@ -184,6 +194,7 @@ name of `g`'s derivative port (`Term.readPorts`, exact in every environment):
 | `dF : F = int(diff(g,t) + f, t)` | `dF := dg + f` |
 | `dF : F = int((λ w => w * w)(f), t)` | `dF := f * f` |
 | `dF : F = int(diff(int(f,t),t) + p, t)` | `dF := f + p` |
+| `df : diff(f,t) = diff(int(int(f,t),t),t)` beside `dF : F = int(f,t)` | `df := F`: the pair's integrand is read as `F` first |
 
 So `diff(f,t) = int(int(f,t),t)`, with both integrals declared, lowers to `df := G`,
 `dG := F`, `dF := f`. Pointwise is necessary, not sufficient: after lowering, an
@@ -199,9 +210,6 @@ been rewritten away. Still rejected, each for a stated reason:
 - a lambda holding an atom, or a nested integral that no declaration reads;
 - a derivative of a non-chain that no rewrite removes, such as `int(diff(f + g,t),t)`
   (`unsupportedDerivative`);
-- an inverse pair around a declared integral, such as `diff(f,t) = diff(int(int(f,t),t),t)`
-  with `F` declared: the pair's integrand `int(f,t)` is not tame, and an inverse pair's
-  integrand is not rewritten (035);
 - an integrand whose ports name the declaration's own port, such as
   `int(diff(F,t) + f, t)` for `F` (`repeatedDerivative`).
 
@@ -230,14 +238,22 @@ may name a port, `dF := dg + f`, but only where the source wrote `diff(g,t)`.)
 `Lowered.equations`, `Lowered.source` and `Lowered.observes` hold wherever the atoms
 read each rewritten shape as its rewrite does (`Context.Cancels`). `SourceBody.cancels_at`
 discharges that at every time of a signal with differentiable states, its declared
-initial values, its integral declarations at every time (`SourceBody.IntegralsAlong`) and
-ports carrying the actual derivatives; every solution of the source or of the lowered
-body is one. A declared integral needs the whole signal, not one time. A declaration's
-own correspondence (`Lowered.integrals`) therefore needs only the rewrites of shapes no
-larger than its integrand (`Context.CancelsUpTo`), and those need only the declarations
-of smaller integrands along the signal (`SourceBody.regular_below`,
-`Context.cancelsUpTo`). So the declarations are discharged from a lowered solution by
-induction on the size of the integrand, and both sides of `Lowered.solves_iff` supply
+initial values, its integral and velocity declarations at every time
+(`SourceBody.IntegralsAlong`, `SourceBody.VelocitiesAlong`) and ports carrying the actual
+derivatives; every solution of the source or of the lowered body is one. Each rewrite
+preserves the trajectory reading at every time (`Term.cancelAtom_along`), so rewriting
+inside an integrand does too (`Term.cancel_along`), and the rewritten term reads the
+same at one time as along the trajectory (`Term.cancelAtom_agrees`). The velocity
+declarations make each state climbed through a chain the iterated derivative of its
+base (`Trajectory.Regular.iterated`), which is what the chain rewrites need; they are
+lowered with no premise, so both sides supply them (`Solves.velocitiesAlong`,
+`Lowered.velocitiesAlong`). A declared integral needs the whole signal, not one time.
+A declaration's own correspondence (`Lowered.integrals`) therefore needs only the
+rewrites of shapes no larger than its integrand (`Context.CancelsUpTo`), and those
+need only the declarations of smaller integrands along the signal
+(`SourceBody.regular_below`, `Context.cancelsUpTo`). So the declarations are
+discharged from a lowered solution by induction on the size of the integrand, and
+both sides of `Lowered.solves_iff` supply
 them (`Solves.integralsAlong`, `Lowered.integralsAlong`).
 `SourceBody.ObservedSolution` reads the atoms along the signal, with ports carrying the
 actual derivatives, as `Solves` does. `SourceBody.Observes`
@@ -283,6 +299,9 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `Term.along_integral_derivative` | `int(diff(x,t),t)` reads as `x(t) - x(start)` |
 | `integral_derivative_ne` | Dropping the boundary term is wrong: `int(diff(x,t),t) ≠ x` on `x = 1` |
 | `Term.cancel_eval` | The inverse rewrites preserve meaning wherever the atoms read them (`Context.Cancels`) |
+| `Term.cancelAtom_along`, `Term.cancel_along` | Each rewrite, and rewriting inside an integrand, preserves the trajectory reading at every time |
+| `Term.cancelAtom_agrees` | A rewritten term reads the same at one time as along the trajectory |
+| `Solves.integral_chain` | In a solution, `int(diff(…diff(x,t)…,t),t)` reads `y - y0` through the declared velocities |
 | `Context.cancels`, `SourceBody.cancels_at` | That premise holds along every regular signal, so in every solution |
 | `Solves.integral_derivative`, `Solves.derivative_integral` | The two rewrites, stated from a solution |
 | `Term.pointwise_agrees` | A pointwise integrand reads the same at one time as along the trajectory |
@@ -297,8 +316,10 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `SourceContinuousModel.observations_correct` | Observed source solutions are observed realizations |
 | `SourcePolynomialModel.correct` | Lambda-bearing polynomial sources against compiled outputs |
 
-The `Solves.*` chain theorems and `solves_iff_classical` assume `SourceBody.VelocityStates` (each declared velocity is
-a state port), which lowering checks; `realizes_iterated` takes it from the compiled model.
+`Solves.lift_eqOn`, `Solves.initial_iterated`, `Solves.chain_denotes`, `Solves.chain_at`
+and `solves_iff_classical` assume `SourceBody.VelocityStates` (each declared velocity is
+a state port), which lowering checks; `Solves.integral_chain` needs no such premise, and
+`realizes_iterated` takes it from the compiled model.
 
 The pinned Python compiler turns `3 * diff(x,t) + x = y` into
 `diff(x,t) = (0.3333333333333333 * (y - x))`; Lean yields `rat(1,3) * (y - x)`.
@@ -354,11 +375,17 @@ For integrals ([SourceIntegrals.lean](../Gimle/Asgard/Tests/SourceIntegrals.lean
   `diff(f,t) = int(diff(diff(g,t),t),t)`, and rejects them only when the derivative is of
   the isolated state (competing derivatives); Lean rejects both shapes as declared
   integrands. Both reject a lambda holding a derivative.
-- Python cancels inverse pairs on any axis and inside integrands, so it accepts
-  `diff(f,t) = diff(int(f,x),x)` and `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`;
-  Lean gives integrals off the evolution axis no value and rewrites only at atom
-  positions, so it rejects both. It also rejects a parameter factor on a derivative in
-  an integrand, `diff(int(p * diff(g,t),t),t)`, which Python accepts.
+- Python cancels inverse pairs on any axis, so it accepts `diff(f,t) = diff(int(f,x),x)`;
+  Lean gives integrals off the evolution axis no value and rejects it (`axis`). Both
+  rewrite inside an inverse pair's integrand, so `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`
+  is `f' = f` in both, and both accept `diff(f,t) = diff(int(apply(λw.w*w, f),t),t)`.
+- Python accepts `diff(f,t) = diff(int(p * diff(g,t),t),t)` with `diff(g,t)` a forcing
+  input. Lean rewrites the pair to `p * diff(g,t)`, a bound parameter factor being tame,
+  and then needs `g`'s atom read through a declared velocity.
+- Python accepts `diff(diff(diff(int(f,t),t),t),t) = f` and the fourth-order form with
+  hidden zero-start velocities; Lean lowers them once the velocities are declared. Python
+  rejects `diff(g,t) = int(diff(diff(f,t),t),t)`; Lean reads it as `g' = v - v(0)` over the
+  declared velocity `v` of `f`.
 - The listed D-of-I fixtures, such as `2 * diff(diff(int(f,t),t),t) = f` and
   `diff(int(2 * diff(f,t) + f,t),t) = 0`, lower to the same rates in both.
 
@@ -378,9 +405,10 @@ declared: `f = (eᵗ + 2e^(-t/2) cos(√3t/2))/3`, and in every solution `int(f,
 
 Not yet in the source grammar (open tasks):
 
-- inverse rewrites over declared chains, such as `int(diff(diff(f,t),t),t)`, inside an
-  inverse pair's integrand, such as `diff(int(int(f,t),t),t)` with `F` declared, and
-  `diff(int(X,t),t)` with lambdas or auxiliaries in `X` (035);
+- integrands naming auxiliaries, in inverse pairs and declared integral states alike:
+  the trajectory reading of `Solves` names only states and bound parameters (039);
+- rewriting inside a pair under further derivatives or inside a chain's integral, such
+  as Python's `diff(f,t) = diff(diff(int(int(f,t),t),t),t)` (040);
 - a declared integral matched up to the meaning of its integrand, such as `int(1 * f, t)`
   against a declared `int(f, t)` (038);
 - multi-axis equations such as heat (029);
@@ -397,7 +425,7 @@ Not yet in the source grammar (open tasks):
 | Linear analysis | Existence and uniqueness on `t ≥ start` | Accepted autonomous homogeneous rational linear systems; no stability claim |
 | [Normalization / isolation](../Gimle/Asgard/Examples/VariableIsolation.lean) | Scoped substitution and conditional equation isolation preserve values/constraints | Isolation needs affine recognition and a proved polynomial inverse witness; no general equation solver |
 | [Differential isolation](../Gimle/Asgard/Examples/DifferentialIsolation.lean) | Original implicit first-order ODE ↔ compiled feedback, same initial data | One atom `q*D_t(x)`, exact nonzero literal `q`, derivative-free residuals once other atoms are read through declared velocities; see [Source equations](#source-equations-lambdas-and-differential-isolation) |
-| [Source integrals](../Gimle/Asgard/Examples/SourceIntegrals.lean) | Original source with integrals ↔ compiled feedback, same initial data; integrals denote antiderivatives from the start | Only the inverse rewrites `D(I(X)) = X` (tame `X`), `D(D(I(x))) = D(x)` and `I(D(x)) = x - x0` for states, and [declared integral states](../Gimle/Asgard/Examples/IntegralStates.lean) for pointwise `X`, [nested](../Gimle/Asgard/Examples/NestedIntegralStates.lean) through the declarations of their inner integrals, with initial value `0`; every other integral is rejected |
+| [Source integrals](../Gimle/Asgard/Examples/SourceIntegrals.lean) | Original source with integrals ↔ compiled feedback, same initial data; integrals denote antiderivatives from the start | Only the inverse rewrites `D(I(X)) = X` (tame `X`, rewritten inside first), `D^m(I(x)) = D^(m-1)(x)` and `I(D^(k+1)(x)) = y - y0` through declared velocities, and [declared integral states](../Gimle/Asgard/Examples/IntegralStates.lean) for pointwise `X`, [nested](../Gimle/Asgard/Examples/NestedIntegralStates.lean) through the declarations of their inner integrals, with initial value `0`; every other integral is rejected |
 | [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation, lower-order atoms only through declared velocities |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
