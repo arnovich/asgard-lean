@@ -1,12 +1,9 @@
 ---
 title: Accept lower-order derivative atoms beside a declared chain
-state: ongoing
+state: closed
 priority: low
 labels: [compiler, isolation, migration]
 related: ["027"]
-claimed_by: claude-032
-claimed_at: 2026-09-28T12:00:00Z
-branch: feat/lower_order_atoms
 ---
 
 ## Context
@@ -27,7 +24,7 @@ the whole system.
 
 ## Outcome
 
-- `dv : D_t(D_t(x)) + c*D_t(x) + k*x = 0`, with `dx : D_t(x) = v` declared,
+- [x] `dv : D_t(D_t(x)) + c*D_t(x) + k*x = 0`, with `dx : D_t(x) = v` declared,
   lowers to `dv := -(c*v + k*x)` (exact, with the residual kept in source
   order). `SourceContinuousModel.solves_iff_realizes` and
   `classical_iff_realizes` still hold unchanged.
