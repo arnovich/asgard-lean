@@ -1,9 +1,12 @@
 ---
 title: Declare integral states for integrals no inverse rewrite removes
-state: open
+state: ongoing
 priority: medium
 labels: [compiler, isolation, migration]
 related: ["028"]
+claimed_by: claude-a034
+claimed_at: 2026-09-28T10:40:12Z
+branch: feat/declared_integral_states
 ---
 
 ## Context
