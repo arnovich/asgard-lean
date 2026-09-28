@@ -100,7 +100,8 @@ theorem source_unique (state : Dynamics.Signal 2) (h : body.Solves (evolution 1 
 
 /-- Read with actual derivatives: in every solution the derivative of `x`'s
 own derivative is `-x/4` on `t ≥ 0`, and `x'(0) = 0`, the declared initial
-value of the velocity. Nothing here refers to the lowered system. -/
+value of the velocity. The statement mentions only `body.Solves` and
+`derivWithin`, not the lowered system or its field. -/
 theorem classical (state : Dynamics.Signal 2) (h : body.Solves (evolution 1 0) state) :
     (∀ t ∈ Set.Ici (0 : ℝ), HasDerivWithinAt
       (derivWithin (fun s => state s 0) (Set.Ici 0)) (-(state t 0) / 4) (Set.Ici 0) t) ∧

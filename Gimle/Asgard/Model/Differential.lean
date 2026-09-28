@@ -33,8 +33,8 @@ open Polynomial
 
 /-- `axis` is the evolution axis display name; `locate` maps a state display
 name to the display name of its declared derivative port, and `velocity` maps
-a state display name to the display name of the state declared as its first
-derivative. -/
+a state display name to the name declared as its first derivative (checked to
+be a state by `SourceBody.VelocityStates`). -/
 structure Context where
   axis : String
   locate : String → Option String
@@ -62,7 +62,10 @@ def Context.empty : Context := ⟨"", fun _ => none, fun _ => none⟩
 
 /-- Collapse every evolution-axis chain whose levels all have declared
 velocities to one atom `D_t(top)`. Lambda applications are left untouched: a
-derivative inside one is rejected later. -/
+derivative inside one is rejected later. That is also why `collapse_eval` holds:
+a binder masks only a chain's base name in `Term.eval`, not the velocities it
+climbs, so under a binder named like a velocity the collapsed atom would read
+differently. -/
 def Term.collapse (c : Context) : Term → Term
   | .add a b => .add (a.collapse c) (b.collapse c)
   | .mul a b => .mul (a.collapse c) (b.collapse c)
@@ -121,12 +124,13 @@ def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
           else .ok ()
       | .derivative inner inside =>
           match inside.chain with
-          | some (axes, _) =>
-              if (axis :: inner :: axes).all (· == c.axis) then .error .higherOrderDerivative
-              else .error .mixedDerivative
+          | some (axes, base) =>
+              if !(axis :: inner :: axes).all (· == c.axis) then .error .mixedDerivative
+              else if (c.locate base).isNone then .error .unsupportedDerivative
+              else .error .higherOrderDerivative
           | none =>
               if axis ≠ inner ∨ axis ≠ c.axis then .error .mixedDerivative
-              else .error .higherOrderDerivative
+              else .error .unsupportedDerivative
       | _ => .error .unsupportedDerivative
 
 /-- One side, read as `scale * D_axis(state) + remainder`; `none` means no

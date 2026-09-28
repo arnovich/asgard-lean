@@ -41,7 +41,7 @@ compiler above then handles unchanged.
 ```text
 side := A | side + r | r + side | side - r | r - side | -side
 A    := D | lit * A | A * lit | A / n | -A
-D    := diff(x, t) | diff(D', t)      where D' is a chain of the same shape
+D    := diff(x, t) | diff(D, t)
 lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 ```
 
@@ -53,7 +53,7 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
   name, and `dx` the derivative port its `StateBinding` names; `dx` may not be
   referenced in its own equation.
 - A chain of `k + 1` derivatives of `x`, all on `t`, needs declared velocities
-  `x = x0, x1, ..., xk`, each `x(m+1)` declared as the velocity of `xm`. It is read as
+  `x = x0, x1, ..., xk`: `x1` declared as the velocity of `x0`, `x2` of `x1`, and so on. It is read as
   `diff(xk, t)`, so the equation defines `xk`'s derivative port. A second-order
   `dv : q * diff(diff(x,t),t) + r = rhs` with `dx : diff(x,t) = v` lowers to the
   first-order system `dx := v`, `dv := (rhs - r) / q`.
@@ -62,6 +62,10 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
   state; it has its own `StateBinding`, derivative port and initial value, all declared
   explicitly. Nothing is inferred from names or from the shape of other equations: the
   same equation written in `differentials%` declares no velocity.
+- Each velocity declaration is its own source equation, so sharing one velocity between
+  states, cycles such as `f' = v, v' = f`, and `f' = f` mean exactly what they state.
+- Checks run in order: interface, scopes, velocity roles, then explicit assignments and
+  equations in declaration order (differentials before velocity declarations).
 - The interface (ports, bindings, axis) is validated before any term is read.
 - Axis, start and initial values stay in the unchanged `Evolution`. There is no integral,
   so no inverse rewrite can drop a boundary term.
@@ -72,11 +76,15 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 | Atoms on both sides | `competingDerivative` |
 | Two atoms on one side, including `diff(x,t) - diff(x,t)` | `repeatedDerivative` |
 | Non-literal factor: `x * diff(x,t)`, `a * diff(x,t)`, `(2 + 3) * diff(x,t)` | `nonlinearDerivative` |
-| `diff(diff(x,t),t)` with no declared velocity of `x`, or a longer chain missing one | `higherOrderDerivative` |
+| `diff(diff(x,t),t)` of a state with no declared velocity, or a longer chain missing one | `higherOrderDerivative` |
+| A chain over a non-state, such as `diff(diff(p,t),t)` or `diff(diff(x + y,t),t)` | `unsupportedDerivative` |
 | Another axis, or a mixed chain, declared velocities or not | `mixedDerivative` |
 | A lower-order atom beside the top one, `diff(diff(x,t),t) + diff(x,t)` (write `v`) | `repeatedDerivative` |
-| A velocity that is not a state port | `unsupportedRole` |
+| A velocity that is a declared non-state port (parameter or output) | `unsupportedRole` |
+| A velocity that is not a source name, such as an initial port | `unknownReference` |
 | Missing velocity initial value or `StateBinding` | `missingBinding` |
+| A velocity declared twice for one state | `duplicateId` |
+| A declared velocity whose own derivative port no equation defines | `unknownReference` |
 | `diff(x + y, t)`, a non-state, `2 * (diff(x,t) + x)`, a derivative in a lambda or an explicit assignment | `unsupportedDerivative` |
 | Any differential equation or velocity in a polynomial declaration | `unsupportedDerivative` |
 | `dx` named inside its own equation | `repeatedDerivative` |
@@ -94,6 +102,14 @@ on `t ≥ start`, the chain denotes the `k + 1`-th derivative there, and the dec
 initial value of `xm` is the `m`-th derivative at `start`. `Solves` never evaluates a
 lowered term or a circuit.
 
+`SourceBody.SolvesClassical` drops the port reading: every chain of `k` derivatives of
+`x` is `iteratedDerivWithin k x` on `t ≥ start`, and every derivative port carries the
+actual derivative. The declared velocities only decide which chains are admitted. Both
+relations have the same solutions (`solves_iff_classical`), so a higher-order source
+read with actual derivatives has exactly the realizations of the lowered first-order
+system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, so at
+`start` they are right derivatives.
+
 | Theorem | Statement |
 | --- | --- |
 | `Term.beta_correct` | Beta normalization preserves meaning in every environment |
@@ -102,7 +118,13 @@ lowered term or a circuit.
 | `Solves.lift_eqOn` | In a solution, the coordinate of `xm` equals `iteratedDerivWithin m x` on `t ≥ start` |
 | `Solves.chain_denotes` | In a solution, a chain of `k + 1` derivatives denotes the derivative of `iteratedDerivWithin k x` |
 | `Solves.initial_iterated` | The declared initial value of `xm` is the `m`-th derivative of `x` at `start` |
-| `SourceContinuousModel.realizes_iterated` | The same three facts for every realization of the compiled model |
+| `Solves.chain_at` | The chain reading at each time, stated from a solution as `derivative_at` is |
+| `SourceBody.solves_iff_classical` | The port reading and the iterated-derivative reading have the same solutions |
+| `SourceContinuousModel.classical_iff_realizes` | Iterated-derivative source solutions are exactly the compiled realizations, same initial data |
+| `SourceContinuousModel.realizes_iterated` | The same facts for every realization of the compiled model |
+
+The `Solves.*` chain theorems and `solves_iff_classical` assume `SourceBody.VelocityStates` (each declared velocity is
+a state port), which lowering checks; `realizes_iterated` takes it from the compiled model.
 | `Lowered.solves_iff` | Source solutions are the lowered body's solutions, with the same `Evolution` |
 | `SourceContinuousModel.solves_iff_realizes` | Source solutions are the compiled initialized feedback's realizations |
 | `SourceContinuousModel.constrained_iff` | Corollary: any further predicate on the trajectory is preserved |
@@ -127,8 +149,8 @@ For higher-order chains
 - Python turns `diff(diff(f,t),t) = g` into Form-A `f = int(int(g,t),t) + f0`, with one
   initial wire; the velocity's initial value is silently zero. Lean requires the
   velocity declared, with its own initial value.
-- Python rejects scaled or residual chains such as `2 * diff(diff(f,t),t) = f`; Lean
-  accepts them over a declared velocity.
+- Python rejects the scaled chain `2 * diff(diff(f,t),t) = f`; Lean accepts it, and
+  residual forms, over a declared velocity.
 
 [HigherOrderIsolation.lean](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) proves
 the unique solution `x = cos(t/2)` of `4 * diff(diff(x,t),t) + x = 0`, `x(0) = 1`,

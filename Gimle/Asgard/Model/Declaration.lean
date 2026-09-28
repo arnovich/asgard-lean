@@ -63,7 +63,7 @@ inductive ErrorCode where
   | unknownReference | duplicateBinding | missingBinding | wrongAxis
   | cyclicDependency | incompleteResolution
   -- Differential isolation (`Model.Differential`); each names a form outside
-  -- the accepted first-order fragment, never an unsatisfiable model.
+  -- the accepted differential fragment, never an unsatisfiable model.
   | missingDerivative | competingDerivative | repeatedDerivative
   | nonlinearDerivative | higherOrderDerivative | mixedDerivative
   | unsupportedDerivative | zeroScale
