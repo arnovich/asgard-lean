@@ -1,9 +1,6 @@
 ---
 title: Add source integrals with explicit boundary terms
-state: ongoing
-claimed_by: claude-028
-claimed_at: 2026-09-28T09:38:43Z
-branch: feat/source_integrals
+state: closed
 priority: medium
 labels: [compiler, isolation, migration]
 related: ["027", "029"]
