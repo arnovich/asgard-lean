@@ -16,7 +16,8 @@ then an ordinary assignment to that port. The axis, start and initial values
 are not touched by this pass. They stay in the unchanged `Evolution`, and the
 initialized feedback of `Model.Continuous` closes the result. Integrals are
 removed before this pass by the inverse rewrites of `Model.Integral`, each of
-which keeps its boundary term; an integral that reaches isolation is rejected.
+which keeps its boundary term, or read as declared integral states; an integral
+that reaches isolation is rejected.
 
 A higher-order chain `D_t(D_t(x))` is first collapsed to `D_t(v)`, where `v` is
 the state declared as the velocity of `x` (`Context.velocity`); longer chains
@@ -37,17 +38,23 @@ not read as declared velocities),
 non-literal or nonlinear factors, a scale around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
 inside lambda applications, derivatives outside differential equations, and
-integrals that no inverse rewrite removed (`unsupportedIntegral`). -/
+integrals that no inverse rewrite removed and no declared integral state reads
+(`unsupportedIntegral`). -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
 /-- What an evolution declaration tells the integral rewrites of
 `Model.Integral`: `input` holds for a name read from a state coordinate or a
 bound parameter, and `initial x` is the declared initial value of `x` when the
-first input named `x` is a state: its value at the declared start. -/
+first input named `x` is a state: its value at the declared start.
+`integral X` is the state declared as the integral of `X` over the evolution
+axis from the start, which the rewrites read in place of `I_t(X)`; a trajectory
+must make it the antiderivative of `X` vanishing at the start
+(`Trajectory.Regular.integral`). -/
 structure Boundary where
   input : String → Bool
   initial : String → Option ℚ
+  integral : Term → Option String := fun _ => none
 
 /-- `axis` is the evolution axis display name; `locate` maps a state display
 name to the display name of its declared derivative port, and `velocity` maps

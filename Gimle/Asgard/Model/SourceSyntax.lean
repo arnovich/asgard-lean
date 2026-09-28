@@ -2,8 +2,8 @@ import Gimle.Asgard.Model.Source
 import Lean
 
 /-! Source notation for `Model.Term`, shaped like the Python source grammar, and
-for the explicit assignments, differential equations and velocity declarations
-of a `SourceBody`.
+for the explicit assignments, differential equations, velocity declarations and
+integral declarations of a `SourceBody`.
 
 `diff(x, t)` is a derivative atom, `int(x, t)` the integral over `t` from the
 declared start, `(λ w => body)(arg)` an applied lambda,
@@ -92,6 +92,21 @@ macro_rules
           `(VelocityDeclaration.mk (Polynomial.Port.mk $label $label .output)
             $(Lean.quote axis.getId.toString) $(Lean.quote state.getId.toString)
             $(Lean.quote velocity.getId.toString))
+      `([$terms,*])
+
+/-- Integral declarations `port : state = int(integrand, axis)`, where `state` is
+a declared state whose derivative port is `port` and whose declared initial value
+is `0`. -/
+syntax "integrals%" "{" (ident " : " ident " = " "int(" asgardTerm "," ident ")" ";")* "}" : term
+macro_rules
+  | `(integrals% {
+      $[$names:ident : $states:ident = int($integrands:asgardTerm, $axes:ident);]* }) => do
+      let terms ← (names.zip (states.zip (integrands.zip axes))).mapM
+        fun (name, state, integrand, axis) => do
+          let label := Lean.quote name.getId.toString
+          `(IntegralDeclaration.mk (Polynomial.Port.mk $label $label .output)
+            $(Lean.quote axis.getId.toString) $(Lean.quote state.getId.toString)
+            (term% $integrand))
       `([$terms,*])
 
 end Gimle.Asgard.Model
