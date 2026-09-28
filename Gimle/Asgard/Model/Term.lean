@@ -1,7 +1,7 @@
 import Gimle.Asgard.Model.Declaration
 
 /-! Source terms of common declarations: named polynomial expressions, applied
-scalar lambdas and derivative atoms.
+scalar lambdas, derivative atoms and integrals from the declared start.
 
 A lambda occurs only at its application site, `(λ x => body)(argument)`, as in
 `Normalization.Source`; first-class and higher-order functions are outside the
@@ -15,9 +15,12 @@ is read as a whole: the caller supplies `rates`, which receives the axes from
 the outermost inwards and the state name, and `Model.Differential` fixes it to
 the declared derivative ports. A lambda binder shadows a state of the same name
 for derivatives too, so `(λ x => D_t(x))(y)` has no value. A derivative of
-anything other than a chain ending in a free name evaluates to `none` here; it
-is outside the fragment, and the isolation pass rejects it with a diagnostic
-rather than giving it a meaning. -/
+anything other than a chain ending in a free name, and every integral, is a
+non-local atom: its value at one time depends on the whole trajectory, so the
+caller supplies it through `atoms`. `Model.Integral` gives the trajectory
+reading (`Term.along`), where an integral is the antiderivative from the
+declared start and a derivative of a non-chain is the actual derivative; under a
+lambda binder, an atom mentioning the binder has no value. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -29,6 +32,7 @@ inductive Term where
   | neg (argument : Term)
   | apply (binder : String) (body argument : Term)
   | derivative (axis : String) (operand : Term)
+  | integral (axis : String) (operand : Term)
   deriving Repr, DecidableEq
 
 /-- Lexical rebinding of one name to a possibly undefined value. -/
@@ -43,21 +47,36 @@ def Term.chain : Term → Option (List String × String)
   | .derivative axis operand => operand.chain.map fun (axes, name) => (axis :: axes, name)
   | _ => none
 
+/-- Whether `name` occurs free, outside any binder of the same name. -/
+def Term.mentions (name : String) : Term → Bool
+  | .var n => n == name
+  | .constant _ => false
+  | .add a b | .mul a b => a.mentions name || b.mentions name
+  | .neg a => a.mentions name
+  | .apply x body arg => arg.mentions name || (x != name && body.mentions name)
+  | .derivative _ operand | .integral _ operand => operand.mentions name
+
 /-- Independent source semantics. `rates axes state` interprets the chain
-`D_axes(state)`, axes outermost first; `rates [a] x` is `D_a(x)`. -/
+`D_axes(state)`, axes outermost first; `rates [a] x` is `D_a(x)`. `atoms`
+interprets the non-local atoms: every integral, and every derivative whose
+operand is not a chain. Under a binder `x`, an atom that mentions `x` has no
+value, as a chain based on `x` has none. -/
 noncomputable def Term.eval (env : String → Option ℝ)
-    (rates : List String → String → Option ℝ) : Term → Option ℝ
+    (rates : List String → String → Option ℝ) (atoms : Term → Option ℝ) : Term → Option ℝ
   | .var name => env name
   | .constant q => some q
-  | .add a b => do return (← a.eval env rates) + (← b.eval env rates)
-  | .mul a b => do return (← a.eval env rates) * (← b.eval env rates)
-  | .neg a => do return -(← a.eval env rates)
+  | .add a b => do return (← a.eval env rates atoms) + (← b.eval env rates atoms)
+  | .mul a b => do return (← a.eval env rates atoms) * (← b.eval env rates atoms)
+  | .neg a => do return -(← a.eval env rates atoms)
   | .apply x body arg =>
-      body.eval (rebind env x (arg.eval env rates)) (fun a s => if s = x then none else rates a s)
+      body.eval (rebind env x (arg.eval env rates atoms))
+        (fun a s => if s = x then none else rates a s)
+        (fun u => if u.mentions x then none else atoms u)
   | .derivative axis operand =>
       match operand.chain with
       | some (axes, state) => rates (axis :: axes) state
-      | none => none
+      | none => atoms (.derivative axis operand)
+  | .integral axis operand => atoms (.integral axis operand)
 
 /-- Number of derivative nodes, counting nested ones separately. -/
 def Term.derivatives : Term → Nat
@@ -66,6 +85,16 @@ def Term.derivatives : Term → Nat
   | .neg a => a.derivatives
   | .apply _ body arg => body.derivatives + arg.derivatives
   | .derivative _ operand => operand.derivatives + 1
+  | .integral _ operand => operand.derivatives
+
+/-- Number of integral nodes, counting nested ones separately. -/
+def Term.integrals : Term → Nat
+  | .var _ | .constant _ => 0
+  | .add a b | .mul a b => a.integrals + b.integrals
+  | .neg a => a.integrals
+  | .apply _ body arg => body.integrals + arg.integrals
+  | .derivative _ operand => operand.integrals
+  | .integral _ operand => operand.integrals + 1
 
 /-- Capture-free substitution: a `NamedExpr` has no binders. -/
 def _root_.Gimle.Asgard.Polynomial.NamedExpr.subst (e : NamedExpr) (name : String)
@@ -89,7 +118,7 @@ theorem _root_.Gimle.Asgard.Polynomial.NamedExpr.subst_eval (e : NamedExpr) (nam
 
 /-- Scoped beta normalization of a derivative-free term. Inner binders are
 normalized first, so substitution only ever acts on binder-free expressions and
-no free name can be captured. A derivative anywhere returns `none`. -/
+no free name can be captured. A derivative or an integral anywhere returns `none`. -/
 def Term.beta : Term → Option NamedExpr
   | .var name => some (.var name)
   | .constant q => some (.constant q)
@@ -97,33 +126,36 @@ def Term.beta : Term → Option NamedExpr
   | .mul a b => do return .mul (← a.beta) (← b.beta)
   | .neg a => do return .neg (← a.beta)
   | .apply x body arg => do return (← body.beta).subst x (← arg.beta)
-  | .derivative _ _ => none
+  | .derivative _ _ | .integral _ _ => none
 
 /-- Beta normalization preserves meaning exactly, for every environment:
-defined and undefined values alike, and whatever derivative interpretation. -/
+defined and undefined values alike, and whatever derivative or atom
+interpretation. -/
 theorem Term.beta_correct (t : Term) (e : NamedExpr) (h : t.beta = some e)
-    (env : String → Option ℝ) (rates : List String → String → Option ℝ) :
-    e.eval env = t.eval env rates := by
-  induction t generalizing e env rates with
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ)
+    (atoms : Term → Option ℝ) :
+    e.eval env = t.eval env rates atoms := by
+  induction t generalizing e env rates atoms with
   | var name => cases h; rfl
   | constant q => cases h; rfl
   | add a b ha hb =>
       cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA env rates, hb _ hB env rates]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates atoms, hb _ hB env rates atoms]
   | mul a b ha hb =>
       cases hA : a.beta <;> cases hB : b.beta <;> simp [beta, hA, hB] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA env rates, hb _ hB env rates]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates atoms, hb _ hB env rates atoms]
   | neg a ha =>
       cases hA : a.beta <;> simp [beta, hA] at h
       subst h
-      simp [NamedExpr.eval, Term.eval, ha _ hA env rates]
+      simp [NamedExpr.eval, Term.eval, ha _ hA env rates atoms]
   | apply x body arg hbody harg =>
       cases hB : body.beta <;> cases hA : arg.beta <;> simp [beta, hB, hA] at h
       subst h
-      rw [NamedExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA env rates]
+      rw [NamedExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA env rates atoms]
   | derivative axis operand _ => simp [beta] at h
+  | integral axis operand _ => simp [beta] at h
 
 /-- An exact signed literal product, such as `-2 * rat(1,4)`. Sums of literals
 are deliberately not scales, matching the pinned Python fragment. -/
@@ -134,8 +166,9 @@ def Term.literal : Term → Option ℚ
   | _ => none
 
 theorem Term.literal_correct (t : Term) (q : ℚ) (h : t.literal = some q)
-    (env : String → Option ℝ) (rates : List String → String → Option ℝ) :
-    t.eval env rates = some (q : ℝ) := by
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ)
+    (atoms : Term → Option ℝ) :
+    t.eval env rates atoms = some (q : ℝ) := by
   induction t generalizing q with
   | constant c => cases h; rfl
   | neg a ha =>
@@ -148,24 +181,16 @@ theorem Term.literal_correct (t : Term) (q : ℚ) (h : t.literal = some q)
       simp [Term.eval, ha _ hA, hb _ hB]
   | _ => simp [literal] at h
 
-/-- Whether `name` occurs free, outside any binder of the same name. -/
-def Term.mentions (name : String) : Term → Bool
-  | .var n => n == name
-  | .constant _ => false
-  | .add a b | .mul a b => a.mentions name || b.mentions name
-  | .neg a => a.mentions name
-  | .apply x body arg => arg.mentions name || (x != name && body.mentions name)
-  | .derivative _ operand => operand.mentions name
-
 /-- Every free name must be declared. Binders extend the scope of their body
-only, never of their argument. A derivative's operand is checked the same way. -/
+only, never of their argument. The operand of a derivative or an integral is
+checked the same way. -/
 def Term.checkScope (names : List String) : Term → Except String Unit
   | .var name => if names.contains name then .ok () else .error name
   | .constant _ => .ok ()
   | .add a b | .mul a b => do a.checkScope names; b.checkScope names
   | .neg a => a.checkScope names
   | .apply x body arg => do arg.checkScope names; body.checkScope (x :: names)
-  | .derivative _ operand => operand.checkScope names
+  | .derivative _ operand | .integral _ operand => operand.checkScope names
 
 #print axioms NamedExpr.subst_eval
 #print axioms Term.beta_correct

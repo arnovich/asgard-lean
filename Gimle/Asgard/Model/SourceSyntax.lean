@@ -5,7 +5,8 @@ import Lean
 for the explicit assignments, differential equations and velocity declarations
 of a `SourceBody`.
 
-`diff(x, t)` is a derivative atom, `(λ w => body)(arg)` an applied lambda,
+`diff(x, t)` is a derivative atom, `int(x, t)` the integral over `t` from the
+declared start, `(λ w => body)(arg)` an applied lambda,
 `e / n` division by a positive numeral and `e ^ n` a positive numeral power,
 expanded to repeated multiplication. `^ 0` is refused so that no written term,
 derivative or reference, can disappear before it is checked. Unary `+` is the
@@ -23,6 +24,7 @@ syntax num : asgardTerm
 syntax "(" asgardTerm ")" : asgardTerm
 syntax "rat(" num "," num ")" : asgardTerm
 syntax "diff(" asgardTerm "," ident ")" : asgardTerm
+syntax "int(" asgardTerm "," ident ")" : asgardTerm
 syntax "(" "λ " ident " => " asgardTerm ")" "(" asgardTerm ")" : asgardTerm
 syntax:65 asgardTerm:65 " + " asgardTerm:66 : asgardTerm
 syntax:65 asgardTerm:65 " - " asgardTerm:66 : asgardTerm
@@ -42,6 +44,8 @@ macro_rules
       `(Term.constant (($a : ℚ) / $b))
   | `(term% diff($e:asgardTerm, $axis:ident)) =>
       `(Term.derivative $(Lean.quote axis.getId.toString) (term% $e))
+  | `(term% int($e:asgardTerm, $axis:ident)) =>
+      `(Term.integral $(Lean.quote axis.getId.toString) (term% $e))
   | `(term% (λ $x:ident => $body:asgardTerm)($arg:asgardTerm)) =>
       `(Term.apply $(Lean.quote x.getId.toString) (term% $body) (term% $arg))
   | `(term% $a:asgardTerm + $b:asgardTerm) => `(Term.add (term% $a) (term% $b))

@@ -67,6 +67,9 @@ inductive ErrorCode where
   | missingDerivative | competingDerivative | repeatedDerivative
   | nonlinearDerivative | higherOrderDerivative | mixedDerivative
   | unsupportedDerivative | zeroScale
+  -- Source integrals (`Model.Integral`): an integral that no inverse rewrite
+  -- removes, or one outside an evolution declaration.
+  | unsupportedIntegral
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
