@@ -1,7 +1,9 @@
 import Gimle.Asgard.Model.Source
 import Lean
 
-/-! Source notation for `Model.Term`, shaped like the Python source grammar.
+/-! Source notation for `Model.Term`, shaped like the Python source grammar, and
+for the explicit assignments, differential equations and velocity declarations
+of a `SourceBody`.
 
 `diff(x, t)` is a derivative atom, `(λ w => body)(arg)` an applied lambda,
 `e / n` division by a positive numeral and `e ^ n` a positive numeral power,
@@ -73,6 +75,19 @@ macro_rules
         let label := Lean.quote name.getId.toString
         `(DifferentialEquation.mk (Polynomial.Port.mk $label $label .output)
           (term% $lhs) (term% $rhs))
+      `([$terms,*])
+
+/-- Velocity declarations `port : diff(state, axis) = velocity`, where `port` is
+the derivative port of `state` and `velocity` a declared state. -/
+syntax "velocities%" "{" (ident " : " "diff(" ident "," ident ")" " = " ident ";")* "}" : term
+macro_rules
+  | `(velocities% { $[$names:ident : diff($states:ident, $axes:ident) = $velocities:ident;]* }) => do
+      let terms ← (names.zip (states.zip (axes.zip velocities))).mapM
+        fun (name, state, axis, velocity) => do
+          let label := Lean.quote name.getId.toString
+          `(VelocityDeclaration.mk (Polynomial.Port.mk $label $label .output)
+            $(Lean.quote axis.getId.toString) $(Lean.quote state.getId.toString)
+            $(Lean.quote velocity.getId.toString))
       `([$terms,*])
 
 end Gimle.Asgard.Model

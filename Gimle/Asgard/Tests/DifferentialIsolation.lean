@@ -20,7 +20,8 @@ open Polynomial Model
 state. Equations are solved for `df`. -/
 
 def context : Context :=
-  ⟨"t", fun s => if s = "f" then some "df" else if s = "g" then some "dg" else none⟩
+  ⟨"t", fun s => if s = "f" then some "df" else if s = "g" then some "dg" else none,
+    fun _ => none⟩
 
 def solve (lhs rhs : Term) : Option NamedExpr :=
   ((isolate context "df" lhs rhs).map Isolated.expr).toOption
@@ -123,8 +124,9 @@ example : reject (term% (λ z => diff(z, t))(f)) (term% f) = some .unsupportedDe
 example : reject (term% (λ z => z)(diff(f, t))) (term% f) = some .unsupportedDerivative := by decide +kernel
 -- An evolution derivative on another axis ("no derivative over that dimension").
 example : reject (term% diff(f, y)) (term% f) = some .mixedDerivative := by decide +kernel
--- Python accepts a bare higher-order chain and a heat equation; outside this
--- first-order ODE fragment (asgard-lean tasks 027 and 029).
+-- Python accepts a bare higher-order chain and a heat equation. This context
+-- declares no velocity, so the chain is rejected (declared velocities are
+-- tested in `HigherOrderIsolation.lean`); heat is multi-axis (task 029).
 example : reject (term% diff(diff(f, t), t)) (term% g) = some .higherOrderDerivative := by decide +kernel
 example : reject (term% 2 * diff(f, t)) (term% diff(diff(f, x), x)) =
     some .mixedDerivative := by decide +kernel
@@ -170,7 +172,7 @@ example : reject (term% diff(f, t) ^ 2) (term% f) = some .repeatedDerivative := 
 -- A derivative under a binder of the same name is not the outer state's rate.
 example : (term% (λ f => diff(f, t))(g)).eval (fun _ => none)
     (fun _ s => if s = "f" then some 7 else none) = none := by
-  simp [Term.eval]
+  simp [Term.eval, Term.chain]
 
 /-! ## Scoped beta normalization -/
 
