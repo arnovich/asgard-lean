@@ -4,9 +4,10 @@ import Gimle.Asgard.Model.Term
 higher-order chains.
 
 One source equation `lhs = rhs` in which exactly one side contains exactly one
-derivative atom, of the form `q*D_t(x) + r = rhs`. The scale `q` is an exact
-nonzero signed literal product and `r` and `rhs` are derivative-free
-polynomial terms, with applied lambdas allowed. It is isolated to
+derivative atom, of the form `q*D_t(x) + r = rhs`, once every other atom whose
+state has a declared velocity is read as that velocity (below). The scale `q` is
+an exact nonzero signed literal product and `r` and `rhs` are then
+derivative-free polynomial terms, with applied lambdas allowed. It is isolated to
 `D_t(x) = (rhs - r)/q` with every residual term retained: nothing is
 cancelled, integrated or dropped.
 
@@ -23,8 +24,16 @@ climb one declared velocity per level. The collapse is exact by the chain
 reading of `Context.rates` (`Term.collapse_eval`), and nothing is inferred from
 names: a chain with an undeclared level is not collapsed and is rejected.
 
+Every other evolution-axis atom, such as the lower-order `D_t(x)` in
+`D_t(D_t(x)) + c*D_t(x) + k*x = 0`, is read as the declared velocity of its state
+when it has one (`Term.readVelocities`). Unlike the collapse, that reading is exact only where
+the velocity equations hold (`Term.readVelocities_eval`); `SourceBody.lower`
+discharges them for the whole system. An atom whose state has no declared
+velocity stays a second atom and is rejected.
+
 Rejected, each with its own diagnostic, never as a claim of unsatisfiability:
-zero scale, competing atoms on both sides, repeated atoms on one side,
+zero scale, competing atoms on both sides and repeated atoms on one side (those
+not read as declared velocities),
 non-literal or nonlinear factors, a scale around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
 inside lambda applications, and derivatives outside differential equations. -/
@@ -108,6 +117,59 @@ theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ
               if_pos ⟨List.cons_ne_nil _ _, hall⟩]
             simp [Context.lift, hl]
         · simp only [collapse, hc, if_neg h]
+
+/-- The velocity equations of a context, read through derivative ports: in
+`env`, each declared velocity `y` of a state `x` carries the value of `x`'s
+derivative port. `Term.readVelocities` is exact only where this holds;
+`SourceBody.lower` discharges it for the whole system, because every velocity
+declaration is itself one of the source equations. -/
+def Context.VelocitiesHold (c : Context) (env : String → Option ℝ) : Prop :=
+  ∀ x y, c.velocity x = some y → (c.locate x).bind env = env y
+
+/-- Read every lower-order atom as the velocity declared for it. After
+`collapse`, each declared chain is one atom `D_t(y)`; an evolution-axis atom
+`D_t(y)` of a state `y` whose derivative port is not `output`, and which has a
+declared velocity `z`, becomes `z`. The atom defining `output` is kept, as is
+every other atom, so an undeclared one is rejected by isolation exactly as
+before. Lambda applications are left untouched, as in `collapse`. -/
+def Term.readVelocities (c : Context) (output : String) : Term → Term
+  | .add a b => .add (a.readVelocities c output) (b.readVelocities c output)
+  | .mul a b => .mul (a.readVelocities c output) (b.readVelocities c output)
+  | .neg a => .neg (a.readVelocities c output)
+  | .derivative axis operand =>
+      match operand with
+      | .var y =>
+          if axis = c.axis ∧ (c.locate y).isSome ∧ c.locate y ≠ some output then
+            match c.velocity y with
+            | some z => .var z
+            | none => .derivative axis operand
+          else .derivative axis operand
+      | _ => .derivative axis operand
+  | t => t
+
+/-- Reading lower-order atoms as velocities preserves meaning wherever the
+velocity equations hold. Unlike `collapse_eval`, this needs the premise: in an
+arbitrary environment the derivative port of `y` and its velocity are unrelated. -/
+theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
+    (env : String → Option ℝ) (h : c.VelocitiesHold env) :
+    (t.readVelocities c output).eval env (c.rates env) = t.eval env (c.rates env) := by
+  induction t with
+  | var _ | constant _ | apply _ _ _ => rfl
+  | add a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
+  | mul a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
+  | neg a ha => simp only [readVelocities, Term.eval, ha]
+  | derivative axis operand _ =>
+      cases operand with
+      | var y =>
+          by_cases hc : axis = c.axis ∧ (c.locate y).isSome ∧ c.locate y ≠ some output
+          · cases hv : c.velocity y with
+            | none => simp only [readVelocities, if_pos hc, hv]
+            | some z =>
+                simp only [readVelocities, if_pos hc, hv, Term.eval, Term.chain]
+                rw [← h y z hv]
+                simp [Context.rates, Context.lift, hc.1]
+          · simp only [readVelocities, if_neg hc]
+      | _ => rfl
 
 /-- Classify every derivative node, before counting. -/
 def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
@@ -405,6 +467,7 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
       constructor <;> rintro ⟨v, h1, h2⟩ <;> exact ⟨v, h2, h1⟩
 
 #print axioms Term.collapse_eval
+#print axioms Term.readVelocities_eval
 #print axioms Term.affine_correct
 #print axioms Isolated.correct
 end Gimle.Asgard.Model

@@ -37,6 +37,8 @@ compiler above then handles unchanged.
 | `z := (λ w => body)(arg)` in any derivative-free term | Beta-normalized `NamedExpr`; inner binders first, no capture |
 | `dx : side = rhs` or `dx : rhs = side`, one side holding the only atom | `dx := (rhs - r) / q`, every residual term kept in source order |
 | `velocities% { dx : diff(x, t) = v; }` | `dx := v`; declares the state `v` as the velocity of `x` |
+| `dv : diff(diff(x,t),t) + c * diff(x,t) + k * x = rhs`, with `v` declared as above | `dv := rhs - (c*v + k*x)`: the lower-order atom is read as `v` |
+| `dy : diff(y,t) + c * diff(x,t) = rhs`, with `v` declared as above | `dy := rhs - c*v`: another state's atom is read the same way |
 
 ```text
 side := A | side + r | r + side | side - r | r - side | -side
@@ -47,8 +49,8 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 
 - `q` is the product of the literals and signs around the atom, and must be nonzero.
   A literal factor wraps only a residual-free `A`; a negation may wrap a whole side.
-- `r` and `rhs` are derivative-free terms, lambdas allowed. A lambda that reduces to a
-  literal is not a scale.
+- `r` and `rhs` are derivative-free terms, lambdas allowed, once lower-order atoms are
+  read as velocities (below). A lambda that reduces to a literal is not a scale.
 - A first-order atom is `diff(x, t)`: `x` is a declared state, `t` the evolution axis
   name, and `dx` the derivative port its `StateBinding` names; `dx` may not be
   referenced in its own equation.
@@ -57,6 +59,14 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
   `diff(xk, t)`, so the equation defines `xk`'s derivative port. A second-order
   `dv : q * diff(diff(x,t),t) + r = rhs` with `dx : diff(x,t) = v` lowers to the
   first-order system `dx := v`, `dv := (rhs - r) / q`.
+- Every other atom, meaning any evolution-axis atom except the one being isolated
+  (lower-order atoms of the same state included), is read as the declared velocity of
+  its state: `diff(x, t)` as `v` when `v` is declared as the
+  velocity of `x`, and a lower chain as the velocity one level above its collapsed state.
+  Either side may hold it, under any factor, so `c * diff(x,t)` with a parameter `c` is
+  the polynomial term `c * v`; scale, linearity and zero-scale rules apply only to the
+  isolated atom. An atom inside a lambda or an explicit assignment is never read. The atom of a state with no declared velocity on `t`
+  stays a second atom. Velocity declarations themselves are never read this way.
 - A velocity declaration `dx : diff(x, t) = v` names the state `x` whose derivative port
   is `dx`, the evolution axis, and a velocity `v`. The first input named `v` must be a
   state; it has its own `StateBinding`, derivative port and initial value, all declared
@@ -72,14 +82,14 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 
 | Rejected form | Diagnostic |
 | --- | --- |
-| `0 * diff(x,t)` | `zeroScale` |
-| Atoms on both sides | `competingDerivative` |
-| Two atoms on one side, including `diff(x,t) - diff(x,t)` | `repeatedDerivative` |
-| Non-literal factor: `x * diff(x,t)`, `a * diff(x,t)`, `(2 + 3) * diff(x,t)` | `nonlinearDerivative` |
+| `0 * diff(x,t)` on the isolated atom | `zeroScale` |
+| Atoms on both sides, neither read as a declared velocity | `competingDerivative` |
+| Two atoms on one side, not read as declared velocities, including `diff(x,t) - diff(x,t)` | `repeatedDerivative` |
+| Non-literal factor on the isolated atom: `x * diff(x,t)`, `a * diff(x,t)`, `(2 + 3) * diff(x,t)` | `nonlinearDerivative` |
 | `diff(diff(x,t),t)` of a state with no declared velocity, or a longer chain missing one | `higherOrderDerivative` |
 | A chain over a non-state, such as `diff(diff(p,t),t)` or `diff(diff(x + y,t),t)` | `unsupportedDerivative` |
 | Another axis, or a mixed chain, declared velocities or not | `mixedDerivative` |
-| A lower-order atom beside the top one, `diff(diff(x,t),t) + diff(x,t)` (write `v`) | `repeatedDerivative` |
+| A lower-order atom whose state has no declared velocity, `diff(diff(x,t),t) + diff(y,t)` | `repeatedDerivative` |
 | A velocity that is a declared non-state port (parameter or output) | `unsupportedRole` |
 | A velocity that is not a source name, such as an initial port | `unknownReference` |
 | Missing velocity initial value or `StateBinding` | `missingBinding` |
@@ -115,6 +125,8 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `Term.beta_correct` | Beta normalization preserves meaning in every environment |
 | `Isolated.correct` | The isolated assignment holds exactly when the source equation does |
 | `Term.collapse_eval` | Reading a declared chain as `diff(xk, t)` preserves meaning in every environment |
+| `Term.readVelocities_eval` | Reading other atoms as declared velocities preserves meaning wherever the velocity equations hold (`Context.VelocitiesHold`) |
+| `SourceBody.velocitiesHold` | The source's velocity declarations discharge that premise, so `Lowered.equations` holds in every environment |
 | `Solves.lift_eqOn` | In a solution, the coordinate of `xm` equals `iteratedDerivWithin m x` on `t ≥ start` |
 | `Solves.chain_denotes` | In a solution, a chain of `k + 1` derivatives denotes the derivative of `iteratedDerivWithin k x` |
 | `Solves.initial_iterated` | The declared initial value of `xm` is the `m`-th derivative of `x` at `start` |
@@ -151,15 +163,20 @@ For higher-order chains
   velocity declared, with its own initial value.
 - Python rejects the scaled chain `2 * diff(diff(f,t),t) = f`; Lean accepts it, and
   residual forms, over a declared velocity.
+- Python rejects a lower-order atom beside the chain, such as the damped oscillator
+  `diff(diff(f,t),t) + c * diff(f,t) + k * f = 0` (probed at `fba931e`); Lean reads it
+  as the declared velocity.
 
 [HigherOrderIsolation.lean](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) proves
 the unique solution `x = cos(t/2)` of `4 * diff(diff(x,t),t) + x = 0`, `x(0) = 1`,
 `x'(0) = 0`, and reads its second derivative back as `derivWithin` of `derivWithin`.
+[DampedOscillator.lean](../Gimle/Asgard/Examples/DampedOscillator.lean) lowers
+`diff(diff(x,t),t) + c * diff(x,t) + k * x = 0` to `dv := 0 - (c*v + k*x)` and, for
+`c = 3`, `k = 2`, `x(0) = 1`, `x'(0) = 0`, proves the unique solution
+`x = 2e^(-t) - e^(-2t)` and `x'' = -(3x' + 2x)` with actual derivatives.
 
 Not yet in the source grammar (open tasks):
 
-- lower-order atoms beside the top one, such as `diff(diff(f,t),t) + diff(f,t) = g`
-  (032);
 - integrals and `diff(int(X,t),t)` (028);
 - multi-axis equations such as heat (029);
 - real atomics, division by expressions, literal products or negative numerals, and
@@ -174,8 +191,8 @@ Not yet in the source grammar (open tasks):
 | Continuous feedback | Original initialized ODE ↔ compiled solution relation | Autonomous polynomial models on `t ≥ start`; compilation alone gives no existence, uniqueness, or stability |
 | Linear analysis | Existence and uniqueness on `t ≥ start` | Accepted autonomous homogeneous rational linear systems; no stability claim |
 | [Normalization / isolation](../Gimle/Asgard/Examples/VariableIsolation.lean) | Scoped substitution and conditional equation isolation preserve values/constraints | Isolation needs affine recognition and a proved polynomial inverse witness; no general equation solver |
-| [Differential isolation](../Gimle/Asgard/Examples/DifferentialIsolation.lean) | Original implicit first-order ODE ↔ compiled feedback, same initial data | One atom `q*D_t(x)`, exact nonzero literal `q`, derivative-free residuals; see [Source equations](#source-equations-lambdas-and-differential-isolation) |
-| [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation |
+| [Differential isolation](../Gimle/Asgard/Examples/DifferentialIsolation.lean) | Original implicit first-order ODE ↔ compiled feedback, same initial data | One atom `q*D_t(x)`, exact nonzero literal `q`, derivative-free residuals once other atoms are read through declared velocities; see [Source equations](#source-equations-lambdas-and-differential-isolation) |
+| [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation, lower-order atoms only through declared velocities |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
 | [Stochastic translation](../Gimle/Asgard/Examples/StochasticJump.lean) | Source/process-circuit correspondence | Same supplied integral interpretation; no general SDE existence, Itô formula, or probability bounds |

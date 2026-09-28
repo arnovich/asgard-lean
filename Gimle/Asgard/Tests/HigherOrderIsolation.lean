@@ -1,5 +1,6 @@
 import Gimle.Asgard.Model.Linear
 import Gimle.Asgard.Model.SourceSyntax
+import Gimle.Asgard.Examples.DampedOscillator
 import Gimle.Asgard.Examples.HigherOrderIsolation
 
 /-! Acceptance fixtures for higher-order chains over declared velocity states.
@@ -31,11 +32,16 @@ def secondOnly : Context := ⟨"t", locate, fun s => if s = "f" then some "v" el
 /-- No velocity is declared. -/
 def firstOnly : Context := ⟨"t", locate, fun _ => none⟩
 
+/-- The side isolation reads, as `SourceBody.lower` prepares it: declared
+chains collapsed, and lower-order atoms read as their declared velocities. -/
+def read (c : Context) (output : String) (t : Term) : Term :=
+  (t.collapse c).readVelocities c output
+
 def solve (c : Context) (output : String) (lhs rhs : Term) : Option NamedExpr :=
-  ((isolate c output lhs rhs).map Isolated.expr).toOption
+  ((isolate c output (read c output lhs) (read c output rhs)).map Isolated.expr).toOption
 
 def reject (c : Context) (output : String) (lhs rhs : Term) : Option ErrorCode :=
-  match isolate c output lhs rhs with
+  match isolate c output (read c output lhs) (read c output rhs) with
   | .error code => some code
   | .ok _ => none
 
@@ -89,10 +95,90 @@ example : reject context "dv" (term% 2 * diff(diff(f, t), t)) (term% diff(diff(f
 -- The chain defines the velocity's port, not the state's.
 example : reject context "df" (term% diff(diff(f, t), t)) (term% g) =
     some .missingDerivative := by decide +kernel
--- A lower-order atom beside the top one is a second atom (task 032); Python
--- rejects it too (probed).
-example : reject context "dv" (term% diff(diff(f, t), t) + diff(f, t)) (term% g) =
+
+/-! ### Lower-order atoms beside a chain (task 032)
+
+A lower-order atom whose state has a declared velocity is read as that velocity:
+`D_t(f)` as `v`, and `D_t(D_t(f))`, collapsed to `D_t(v)`, as `a` when it is not
+the atom being isolated. This is exact only where the velocity equations hold;
+`SourceBody.lower` discharges them for the whole system. -/
+
+-- Differs: Python rejects the lower-order atom beside the chain (probed at
+-- `fba931e`: "cannot isolate 'f': unsupported differential-..."). Lean reads it
+-- as the declared velocity and keeps the residual.
+example : read context "dv" (term% diff(diff(f, t), t) + diff(f, t)) =
+    term% diff(v, t) + v := by decide +kernel
+example : solve context "dv" (term% diff(diff(f, t), t) + diff(f, t)) (term% g) =
+    some (.add (.var "g") (.neg (.var "v"))) := by decide +kernel
+-- The damped oscillator; Python rejects it with literal and with symbolic `c`
+-- and `k` (probed). `c` multiplies the velocity, not a derivative, so it is
+-- not a scale.
+example : solve context "dv" (term% diff(diff(f, t), t) + c * diff(f, t) + k * f) (term% 0) =
+    some (.add (.constant 0)
+      (.neg (.add (.mul (.var "c") (.var "v")) (.mul (.var "k") (.var "f"))))) := by
+  decide +kernel
+-- The lower-order atom on the other side; Python reports a competing
+-- derivative (probed).
+example : solve context "dv" (term% diff(diff(f, t), t)) (term% -(3 * diff(f, t)) - 2 * f) =
+    some (.add (.neg (.mul (.constant 3) (.var "v"))) (.neg (.mul (.constant 2) (.var "f")))) := by
+  decide +kernel
+-- The scale belongs to the top atom only.
+example : solve context "dv" (term% 2 * diff(diff(f, t), t) + 3 * diff(f, t)) (term% f) =
+    some (.mul (.constant (1 / 2)) (.add (.var "f") (.neg (.mul (.constant 3) (.var "v"))))) := by
+  decide +kernel
+-- Every lower order of a third-order chain, each read through its velocity.
+example : solve context "da"
+    (term% diff(diff(diff(f, t), t), t) + diff(diff(f, t), t) + diff(f, t)) (term% g) =
+    some (.add (.var "g") (.neg (.add (.var "a") (.var "v")))) := by decide +kernel
+-- A lower-order atom is a polynomial term like any state, so products are kept.
+example : solve context "dv" (term% diff(diff(f, t), t) + diff(f, t) * diff(f, t)) (term% 0) =
+    some (.add (.constant 0) (.neg (.mul (.var "v") (.var "v")))) := by decide +kernel
+-- The atom of another state with a declared velocity is read the same way.
+-- Differs: Python (probed) accepts `diff(g,t) = diff(f,t)` by isolating `f`
+-- instead, and rejects `diff(g,t) + 3 * diff(f,t) = 0`.
+example : solve context "dg" (term% diff(g, t)) (term% diff(f, t)) = some (.var "v") := by
+  decide +kernel
+
+-- Still rejected, with the diagnostic they had before task 032.
+-- A lower-order atom whose state has no declared velocity is a second atom.
+example : reject context "dv" (term% diff(diff(f, t), t) + diff(g, t)) (term% 0) =
     some .repeatedDerivative := by decide +kernel
+example : reject secondOnly "dv" (term% diff(diff(f, t), t) + diff(v, t)) (term% 0) =
+    some .repeatedDerivative := by decide +kernel
+-- Two atoms that both define the output are not lower-order.
+example : reject context "dv" (term% diff(diff(f, t), t) + diff(v, t)) (term% 0) =
+    some .repeatedDerivative := by decide +kernel
+-- A lower-order atom on another axis.
+example : reject context "dv" (term% diff(diff(f, t), t) + diff(f, x)) (term% 0) =
+    some .mixedDerivative := by decide +kernel
+-- A lower-order atom inside a lambda.
+example : reject context "dv" (term% diff(diff(f, t), t) + (λ z => diff(f, t))(0)) (term% 0) =
+    some .unsupportedDerivative := by decide +kernel
+-- A lower-order atom that is only read is not the atom being isolated.
+-- A rejected form keeps its diagnostic when its only extra atoms have no
+-- declared velocity. Beside a read atom, the remaining form is diagnosed as it
+-- now reads, so these codes changed with task 032 (before: repeated, competing,
+-- repeated, repeated, repeated).
+example : reject context "dv" (term% diff(f, t) + diff(g, t)) (term% 0) =
+    some .missingDerivative := by decide +kernel
+example : reject context "dv" (term% diff(f, t)) (term% diff(g, t)) =
+    some .missingDerivative := by decide +kernel
+example : reject context "dv" (term% diff(f, t) * diff(diff(f, t), t)) (term% 0) =
+    some .nonlinearDerivative := by decide +kernel
+example : reject context "dv" (term% 2 * (diff(diff(f, t), t) + diff(f, t))) (term% 0) =
+    some .unsupportedDerivative := by decide +kernel
+example : reject context "dv" (term% 0 * diff(diff(f, t), t) + diff(f, t)) (term% 0) =
+    some .zeroScale := by decide +kernel
+-- Scale and linearity rules apply to the isolated atom only: a read atom is a
+-- polynomial term.
+example : solve context "dv" (term% diff(diff(f, t), t) + f * diff(f, t)) (term% 0) =
+    some (.add (.constant 0) (.neg (.mul (.var "f") (.var "v")))) := by decide +kernel
+-- Over the cycle `f' = v`, `v' = f` a third-order chain climbs back to `v`.
+example : solve ⟨"t", locate, fun s => if s = "f" then some "v" else if s = "v" then some "f"
+    else none⟩ "dg" (term% diff(g, t)) (term% diff(diff(diff(f, t), t), t)) =
+    some (.var "v") := by decide +kernel
+example : reject context "dv" (term% diff(f, t)) (term% g) = some .missingDerivative := by
+  decide +kernel
 example : reject context "dv" (term% diff(diff(f, t), t)) (term% diff(g, t)) =
     some .competingDerivative := by decide +kernel
 example : reject context "dv" (term% (λ z => diff(diff(z, t), t))(f)) (term% g) =
@@ -232,6 +318,22 @@ example : ((compileSourceContinuous twoStates threeEvolution).map
     some [⟨⟨"dv", "dv", .output⟩, .constant 1⟩, ⟨⟨"df", "df", .output⟩, .var "v"⟩,
       ⟨⟨"dh", "dh", .output⟩, .var "v"⟩] := by decide +kernel
 
+-- Two states sharing one velocity: `D_t(h)` beside `D_t(D_t(f))` is read as
+-- `v`, which `h' = v` makes exact.
+example : ((compileSourceContinuous { twoStates with
+    assignments := []
+    differentials := differentials% { dv : diff(diff(f, t), t) + diff(h, t) = 0; } }
+    threeEvolution).map (·.lowered.assignments)).toOption =
+    some [⟨⟨"dv", "dv", .output⟩, .add (.constant 0) (.neg (.var "v"))⟩,
+      ⟨⟨"df", "df", .output⟩, .var "v"⟩, ⟨⟨"dh", "dh", .output⟩, .var "v"⟩] := by decide +kernel
+-- Without `h`'s declaration, its atom is a second atom, as before task 032.
+example : continuous { twoStates with
+    assignments := []
+    differentials := differentials% {
+      dv : diff(diff(f, t), t) + diff(h, t) = 0; dh : diff(h, t) = v; }
+    velocities := velocities% { df : diff(f, t) = v; } } threeEvolution =
+    some ⟨.repeatedDerivative, "dv", "dv"⟩ := by decide +kernel
+
 -- A velocity cycle `f' = v`, `v' = f` is the first-order system it states.
 example : ((compileSourceContinuous { bare with
     differentials := [], velocities := velocities% { df : diff(f, t) = v; dv : diff(v, t) = f; } }
@@ -282,6 +384,55 @@ example : continuous { third with
     velocities := velocities% { df : diff(f, t) = v; } }
     thirdEvolution = some ⟨.higherOrderDerivative, "da", "da"⟩ := by decide +kernel
 
+/-! The damped oscillator `D_t(D_t(f)) + c*D_t(f) + k*f = 0` over the declared
+velocity `v`; `Examples.DampedOscillator` solves it for `c = 3`, `k = 2`. -/
+
+def damped : SourceBody := { bare with
+  inputs := [⟨"state-f", "f", .state⟩, ⟨"state-v", "v", .state⟩,
+    ⟨"param-c", "c", .parameter⟩, ⟨"param-k", "k", .parameter⟩]
+  differentials := differentials% { dv : diff(diff(f, t), t) + c * diff(f, t) + k * f = 0; }
+  parameters := [⟨"param-c", 3⟩, ⟨"param-k", 2⟩] }
+
+-- Differs: Python rejects this equation (probed at `fba931e`).
+example : ((compileSourceContinuous damped bareEvolution).map
+    (·.lowered.assignments)).toOption =
+    some [⟨⟨"dv", "dv", .output⟩, .add (.constant 0)
+      (.neg (.add (.mul (.var "c") (.var "v")) (.mul (.var "k") (.var "f"))))⟩,
+      ⟨⟨"df", "df", .output⟩, .var "v"⟩] := by decide +kernel
+-- The same equation with `f' = v` written as an ordinary differential declares
+-- no velocity: the chain is rejected first, as before task 032.
+example : continuous { damped with
+    differentials := differentials% {
+      dv : diff(diff(f, t), t) + c * diff(f, t) + k * f = 0; df : diff(f, t) = v; }
+    velocities := [] } =
+    some ⟨.higherOrderDerivative, "dv", "dv"⟩ := by decide +kernel
+-- In a first-order equation, the undeclared atom `D_t(f)` stays a second atom.
+example : continuous { damped with
+    differentials := differentials% {
+      dv : diff(v, t) + c * diff(f, t) + k * f = 0; df : diff(f, t) = v; }
+    velocities := [] } =
+    some ⟨.repeatedDerivative, "dv", "dv"⟩ := by decide +kernel
+-- With the declaration, it is read as `v`, the same system as the chain form.
+example : ((compileSourceContinuous { damped with
+    differentials := differentials% { dv : diff(v, t) + c * diff(f, t) + k * f = 0; } }
+    bareEvolution).map (·.model.rates.expressions)).toOption =
+    ((compileSourceContinuous damped bareEvolution).map (·.model.rates.expressions)).toOption := by
+  decide +kernel
+-- An atom in an explicit assignment is never read.
+example : continuous { twoStates with
+    assignments := assignments% { dv := diff(h, t); } } threeEvolution =
+    some ⟨.unsupportedDerivative, "dv", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An atom of a non-state is never read, even under a (bad) velocity declaration:
+-- the differential itself is rejected, at its own site.
+example : continuous { bare with
+    differentials := differentials% { dv : diff(diff(f, t), t) + diff(g, t) = 0; }
+    velocities := velocities% { df : diff(f, t) = v; dg : diff(g, t) = v; } } =
+    some ⟨.unsupportedDerivative, "dv", "dv"⟩ := by decide +kernel
+-- A velocity declared on another axis licenses neither the chain nor the atom.
+example : continuous { damped with velocities := velocities% { df : diff(f, x) = v; } } =
+    some ⟨.higherOrderDerivative, "dv", "dv"⟩ := by decide +kernel
+
 -- A polynomial declaration has no evolution axis.
 example : code (compileSourcePolynomial { bare with differentials := [] }) =
     some ⟨.unsupportedDerivative, "df", "differential equation without an evolution axis"⟩ := by
@@ -321,6 +472,33 @@ info: 'Gimle.Asgard.Model.SourceBody.solves_iff_classical' depends on axioms: [p
 info: 'Gimle.Asgard.Model.SourceContinuousModel.classical_iff_realizes' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms SourceContinuousModel.classical_iff_realizes
+/--
+info: 'Gimle.Asgard.Model.Term.readVelocities_eval' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.readVelocities_eval
+/--
+info: 'Gimle.Asgard.Model.SourceBody.velocitiesHold' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceBody.velocitiesHold
+/--
+info: 'Gimle.Asgard.Model.SourceContinuousModel.solves_iff_realizes' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceContinuousModel.solves_iff_realizes
+/--
+info: 'Gimle.Asgard.Examples.DampedOscillator.solution_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Examples.DampedOscillator.solution_solves
+/--
+info: 'Gimle.Asgard.Examples.DampedOscillator.source_unique' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Examples.DampedOscillator.source_unique
+/--
+info: 'Gimle.Asgard.Examples.DampedOscillator.classical' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Examples.DampedOscillator.classical
 /--
 info: 'Gimle.Asgard.Examples.HigherOrderIsolation.solution_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
