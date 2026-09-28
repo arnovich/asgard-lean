@@ -1,9 +1,6 @@
 ---
 title: Read declared-velocity atoms in explicit assignments
-state: ongoing
-claimed_by: claude-a033
-claimed_at: 2026-09-28T14:33:02Z
-branch: feat/velocity_atoms_in_assignments
+state: closed
 priority: low
 labels: [compiler, isolation]
 related: ["032"]
