@@ -4,7 +4,7 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-! Source integrals over the evolution axis, from the declared start, and the
-two inverse rewrites between integrals and derivatives.
+three inverse rewrites between integrals and derivatives.
 
 ## Semantics
 
@@ -18,14 +18,16 @@ from the inputs at `s`, derivative chains through a supplied chain reading, and
 - `D_t(Y)` of an operand `Y` that is not a chain is the derivative within the
   half-line of the reading of `Y` (`derivFrom`).
 
-Neither is totalized. If the reading of `X` is undefined somewhere on the
+Neither is totalized. Both depend on the reading over the whole half-line,
+after `t` as well. If the reading of `X` is undefined somewhere on the
 half-line, or is not a derivative there, `I_t(X)` has no value; it is never a
 Lebesgue or Riemann integral that silently returns `0` for a non-integrable
 integrand. The antiderivative is unique (`primitiveFrom_eq`), and for a
 continuous integrand it is the interval integral (`primitiveFrom_eq_integral`).
 An integrand without an antiderivative has no integral here even when it is
-Lebesgue-integrable; every integrand the rewrites below accept is continuous or
-a sum of such terms and first-order state derivatives, where the two agree.
+Lebesgue-integrable. Every integrand the rewrites below accept has an
+antiderivative along a regular trajectory (`Term.tame_primitive`); for a
+continuous one it is the interval integral.
 
 ## Inverse rewrites
 
@@ -34,7 +36,8 @@ a sum of such terms and first-order state derivatives, where the two agree.
 - `D_t(I_t(X))` becomes `X`, when `X` is `Term.tame`: a polynomial in inputs
   plus literal multiples of first-order state derivatives. The derivative of the
   integral is the integrand (`Term.along_derivative_integral`).
-- `D_t(D_t(I_t(x)))` becomes `D_t(x)`, for a state `x`.
+- `D_t(D_t(I_t(x)))` becomes `D_t(x)`, for a state `x` with a declared initial
+  value; the proof reads the continuity of `x` from that declaration.
 - `I_t(D_t(x))` becomes `x - x0`, for a state `x` whose declared initial value is
   `x0`. The boundary term is kept: `I_t(D_t(x))` is `x - x(start)`
   (`Term.along_integral_derivative`), and `x` alone is wrong whenever
@@ -128,7 +131,8 @@ theorem exists_primitive_of_continuousOn {start : ℝ} {g : ℝ → ℝ}
     ∃ F : ℝ → ℝ, F start = 0 ∧ (∀ s ∈ Ici start, HasDerivWithinAt F (g s) (Ici start) s) ∧
       ∀ t ∈ Ici start, F t = ∫ s in start..t, g s := by
   have hext : Continuous (fun s => g (max start s)) :=
-    hg.comp_continuous (continuous_const.max continuous_id) (fun s => show start ≤ max start s from le_max_left _ _)
+    hg.comp_continuous (continuous_const.max continuous_id)
+      (fun s => show start ≤ max start s from le_max_left _ _)
   refine ⟨fun u => ∫ s in start..u, g (max start s), by simp, fun s hs => ?_, fun t ht => ?_⟩
   · have := (hext.integral_hasStrictDerivAt start s).hasDerivAt.hasDerivWithinAt (s := Ici start)
     rwa [max_eq_right hs] at this
@@ -219,7 +223,8 @@ theorem Term.along_integral_derivative {T : Trajectory} {x : String} {g : ℝ �
 /-- Dropping the boundary term is wrong: on the constant trajectory `x = 1`,
 `I_t(D_t(x))` is `0` while `x` is `1`. -/
 theorem integral_derivative_ne : ∃ (T : Trajectory) (t : ℝ),
-    (Term.integral T.axis (.derivative T.axis (.var "x"))).along T t ≠ (Term.var "x").along T t := by
+    (Term.integral T.axis (.derivative T.axis (.var "x"))).along T t ≠
+      (Term.var "x").along T t := by
   refine ⟨⟨"t", 0, fun _ _ => some 1, fun _ _ _ => some 0⟩, 0, ?_⟩
   have := Term.along_integral_derivative (T := ⟨"t", 0, fun _ _ => some 1, fun _ _ _ => some 0⟩)
     (x := "x") (g := fun _ => 1) (fun s _ => ⟨differentiableWithinAt_const _, by simp⟩)
@@ -336,7 +341,8 @@ structure Trajectory.At (T : Trajectory) (c : Context) (t : ℝ) (env : String �
   base : Agrees (T.base t) env
   rate : ∀ y, (c.locate y).isSome = true → c.rates env [c.axis] y = T.rates t [c.axis] y
 
-theorem Term.along_literal {t : Term} {q : ℚ} (h : t.literal = some q) (T : Trajectory)
+/-- A literal reads its value at every time. -/
+private theorem Term.along_literal {t : Term} {q : ℚ} (h : t.literal = some q) (T : Trajectory)
     (s : ℝ) : t.along T s = some (q : ℝ) := by
   induction t generalizing q with
   | constant c => cases h; rfl
@@ -350,7 +356,8 @@ theorem Term.along_literal {t : Term} {q : ℚ} (h : t.literal = some q) (T : Tr
       simp [Term.along, ha hA, hb hB]
   | _ => simp [literal] at h
 
-theorem Term.continuous_along {bd : Boundary} {c : Context} {T : Trajectory} {t : Term}
+/-- A continuous term reads a continuous function on the half-line. -/
+private theorem Term.continuous_along {bd : Boundary} {c : Context} {T : Trajectory} {t : Term}
     (h : t.continuous bd = true) (reg : T.Regular c bd) :
     ∃ g : ℝ → ℝ, ContinuousOn g (Ici T.start) ∧ ∀ s ∈ Ici T.start, t.along T s = some (g s) := by
   induction t with
@@ -372,7 +379,7 @@ theorem Term.continuous_along {bd : Boundary} {c : Context} {T : Trajectory} {t 
   | _ => simp [continuous] at h
 
 /-- A continuous term reads the same at `t` through `env` as along the trajectory. -/
-theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
+private theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
     {env : String → Option ℝ} {u : Term} (h : u.continuous bd = true) (reg : T.Regular c bd)
     (hat : T.At c t env) (rates : List String → String → Option ℝ) (atoms : Term → Option ℝ) :
     u.eval env rates atoms = u.along T t := by
@@ -391,7 +398,8 @@ theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t
   | neg a ha => simp only [Term.eval, Term.along, ha h]
   | _ => simp [continuous] at h
 
-theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
+/-- A tame term reads the same at `t` through `env` as along the trajectory. -/
+private theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
     {env : String → Option ℝ} {u : Term} (h : u.tame c bd = true) (reg : T.Regular c bd)
     (hat : T.At c t env) (atoms : Term → Option ℝ) :
     u.eval env (c.rates env) atoms = u.along T t := by
@@ -406,7 +414,8 @@ theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ
       rcases h with (⟨⟨q, hq⟩, hb'⟩ | ⟨⟨q, hq⟩, ha'⟩) | ⟨ca, cb⟩
       · simp only [Term.eval, Term.along, hb hb', a.literal_correct q hq, a.along_literal hq]
       · simp only [Term.eval, Term.along, ha ha', b.literal_correct q hq, b.along_literal hq]
-      · simp only [Term.eval, Term.along, continuous_agrees ca reg hat, continuous_agrees cb reg hat]
+      · simp only [Term.eval, Term.along, continuous_agrees ca reg hat,
+          continuous_agrees cb reg hat]
   | apply _ _ _ | integral _ _ => simp [tame, continuous] at h
   | derivative a op _ =>
       cases op with
@@ -418,7 +427,7 @@ theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ
       | _ => simp [tame, continuous] at h
 
 /-- A continuous integrand has an antiderivative from the start. -/
-theorem Term.continuous_primitive {bd : Boundary} {c : Context} {T : Trajectory} {u : Term}
+private theorem Term.continuous_primitive {bd : Boundary} {c : Context} {T : Trajectory} {u : Term}
     (h : u.continuous bd = true) (reg : T.Regular c bd) :
     ∃ F g : ℝ → ℝ, F T.start = 0 ∧ ∀ s ∈ Ici T.start, u.along T s = some (g s) ∧
       HasDerivWithinAt F (g s) (Ici T.start) s := by
@@ -506,7 +515,8 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
       rw [← reg.axis]
       rw [Term.along_derivative_integral (X := .var x) h0 (fun s hs => (hg s hs).2.1) hF hs]
       exact (hg s hs).2.1
-    have houter : (Term.derivative c.axis (.derivative c.axis (.integral c.axis (.var x)))).along T t =
+    have houter :
+        (Term.derivative c.axis (.derivative c.axis (.integral c.axis (.var x)))).along T t =
         derivFrom T.start ((Term.derivative c.axis (.integral c.axis (.var x))).along T) t := by
       rw [Term.along]
       simp only [Term.chain, Option.map_none, reg.axis, if_true]
@@ -539,6 +549,8 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
 #print axioms integral_derivative_ne
 #print axioms Term.cancel_eval
 #print axioms Context.cancels
+#print axioms Context.cancels_none
+#print axioms Term.tame_primitive
 #print axioms eqOn_of_hasDerivWithinAt
 #print axioms primitiveFrom_eq
 #print axioms derivFrom_eq

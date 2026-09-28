@@ -1,4 +1,4 @@
-import Gimle.Asgard.Model.SourceSyntax
+import Gimle.Asgard.Examples.SourceIntegrals
 
 /-! Regression tests for source integrals and their inverse rewrites (task 028).
 
@@ -82,16 +82,20 @@ example : rejected (body (differentials% { df : diff(f, t) = diff(f, t) + int(f,
 example : lowered (body (differentials% { df : diff(f, t) = int(diff(f, t), t); })) =
     some (.add (.var "f") (.neg (.constant 2))) := by decide +kernel
 
-/-! ## Dropping the boundary term is rejected
+/-! ## The boundary term is kept
 
-`I_t(D_t(f))` lowers to `f - 2`, not `f`; the two sources have different
-solutions (`Examples.SourceIntegrals.boundary_dropped`), and on any trajectory
-with `x(start) ≠ 0` the readings differ (`integral_derivative_ne`). -/
+`I_t(D_t(f))` lowers to `f - 2`, not `f`. With the boundary term dropped, the
+source would have other solutions (`Examples.SourceIntegrals.boundary_dropped`),
+and `integral_derivative_ne` gives a trajectory on which `I_t(D_t(x))` and `x`
+differ. -/
 
 example : lowered (body (differentials% { df : diff(f, t) = int(diff(f, t), t); })) ≠
     lowered (body (differentials% { df : diff(f, t) = f; })) := by decide +kernel
 example : lowered (body (differentials% { df : diff(f, t) = int(diff(f, t), t); })) ≠
     lowered (body (differentials% { df : diff(f, t) = f - 0; })) := by decide +kernel
+-- The semantic evidence: the boundary-dropped solution does not solve the source.
+example : ¬ Examples.SourceIntegrals.boundary.Solves (Examples.SourceIntegrals.evolution "x" 2)
+    Examples.SourceIntegrals.droppedSolution := Examples.SourceIntegrals.boundary_dropped
 
 /-! ## Other Python integral cases -/
 
@@ -125,16 +129,35 @@ example : lowered (body (differentials% { df : diff(f, t) = diff(int(f * f, t), 
 -- with a derivative is not a tame integrand.
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(diff(f, t) * f, t), t); })) =
     some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
--- `g = int(diff(f,t),t)`. Python: `f - f(0)`. Same, as an explicit assignment.
+-- Python's `g = int(diff(f,t),t)`, here the assignment `h`. Python: `f - f(0)`. Same.
 example : assigned (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := int(diff(f, t), t); })) =
     some (.add (.var "f") (.neg (.constant 2))) := by decide +kernel
--- `g = diff(int(f,t),t)`. Python: `f`. Same.
+-- Python's `g = diff(int(f,t),t)`, here the assignment `h`. Python: `f`. Same.
 example : assigned (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := diff(int(f, t), t); })) = some (.var "f") := by decide +kernel
--- `diff(int(f,x),y) = g`: an integral on another axis. Python: rejected. Same.
+-- `diff(int(f,x),y) = g`. Python: rejected. Same.
+example : rejected (body (differentials% { df : diff(int(f, x), y) = g; })) =
+    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+-- `diff(f,t) = diff(int(f,x),x)`. Python: accepted, `f' = f`, cancelling the pair on
+-- `x`. DIFFERS: only evolution-axis integrals have a value, so Lean rejects it.
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(f, x), x); })) =
     some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+-- `int(diff(diff(f,t),t),t) = g`. Python: rejected. Same.
+example : rejected (body (differentials% { df : int(diff(diff(f, t), t), t) = g; })) =
+    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+-- `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`. Python: accepted, `f' = f`.
+-- DIFFERS: rewrites apply once at atom positions, never inside an integrand (task 035).
+example : rejected (body (differentials% {
+    df : diff(f, t) = diff(int(diff(int(f, t), t), t), t); })) =
+    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+-- `diff(f,t) = diff(int(p * diff(g,t),t),t)`. Python: accepted. DIFFERS: a
+-- parameter factor on a derivative is not tame (task 035).
+example : rejected (body (differentials% { df : diff(f, t) = diff(int(p * diff(g, t), t), t); })) =
+    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+-- A tame integrand may hold another state's derivative; it then competes.
+example : rejected (body (differentials% { df : diff(f, t) = diff(int(diff(g, t), t), t); })) =
+    some ⟨.competingDerivative, "df", "df"⟩ := by decide +kernel
 
 /-! ## Lean rejections -/
 
@@ -148,13 +171,14 @@ example : rejected (body (differentials% { df : diff(f, t) = diff(int(z, t), t);
 -- A parameter has no declared initial value and no derivative port.
 example : rejected (body (differentials% { df : diff(f, t) = int(diff(p, t), t); })) =
     some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
--- A higher-order chain under an integral is not rewritten (a follow-up task).
+-- A higher-order chain under an integral is not rewritten (task 035).
 example : rejected (body (differentials% { df : diff(f, t) = int(diff(diff(f, t), t), t); })) =
     some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
 -- An integral left in an explicit assignment.
 example : rejected (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := int(f, t); })) =
     some ⟨.unsupportedIntegral, "h", "integral in an explicit assignment"⟩ := by decide +kernel
+
 /-- A polynomial declaration has no start to integrate from. -/
 def polynomial : SourceBody where
   inputs := [⟨"input-x", "x", .input⟩]
@@ -162,7 +186,7 @@ def polynomial : SourceBody where
 
 example : (match compileSourcePolynomial polynomial with
     | .error d => some d | .ok _ => none) =
-    some ⟨.unsupportedIntegral, "h", "integral in an explicit assignment"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "h", "integral without an evolution axis"⟩ := by decide +kernel
 
 /-! ## The reading of integrals -/
 
@@ -247,4 +271,24 @@ info: 'Gimle.Asgard.Model.SourceBody.Solves.integral_derivative' depends on axio
 info: 'Gimle.Asgard.Model.SourceBody.Solves.derivative_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.derivative_integral
+/--
+info: 'Gimle.Asgard.Examples.SourceIntegrals.decay_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.SourceIntegrals.decay_solves
+/--
+info: 'Gimle.Asgard.Examples.SourceIntegrals.decay_unique' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.SourceIntegrals.decay_unique
+/--
+info: 'Gimle.Asgard.Examples.SourceIntegrals.boundary_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.SourceIntegrals.boundary_solves
+/--
+info: 'Gimle.Asgard.Examples.SourceIntegrals.boundary_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.SourceIntegrals.boundary_integral
+/--
+info: 'Gimle.Asgard.Examples.SourceIntegrals.boundary_dropped' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Examples.SourceIntegrals.boundary_dropped
 end Gimle.Asgard.Tests.SourceIntegrals

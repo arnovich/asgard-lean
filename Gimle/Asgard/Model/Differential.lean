@@ -36,14 +36,15 @@ zero scale, competing atoms on both sides and repeated atoms on one side (those
 not read as declared velocities),
 non-literal or nonlinear factors, a scale around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
-inside lambda applications, and derivatives outside differential equations. -/
+inside lambda applications, derivatives outside differential equations, and
+integrals that no inverse rewrite removed (`unsupportedIntegral`). -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
 /-- What an evolution declaration tells the integral rewrites of
 `Model.Integral`: `input` holds for a name read from a state coordinate or a
-bound parameter, and `initial` gives the declared initial value of the state
-that is the first source name `x`, which is its value at the declared start. -/
+bound parameter, and `initial x` is the declared initial value of `x` when the
+first input named `x` is a state: its value at the declared start. -/
 structure Boundary where
   input : String → Bool
   initial : String → Option ℚ

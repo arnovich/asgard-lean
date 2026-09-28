@@ -14,9 +14,10 @@ thus lowered to a first-order system over explicitly declared states: the veloci
 nothing about it is inferred from names. A lower-order atom `D_t(x)` beside the
 chain is read as `v`; that reading needs the velocity equations, which the
 declarations themselves supply for the whole system (`SourceBody.velocitiesHold`).
-Before isolation, the inverse rewrites of `Model.Integral` remove integrals:
-`D_t(I_t(X))` becomes `X` and `I_t(D_t(x))` becomes `x - x0`, with the declared
-initial value `x0` of `x`; any other integral is rejected.
+Before isolation, the three inverse rewrites of `Model.Integral` remove
+integrals: `D_t(I_t(X))` becomes `X`, `D_t(D_t(I_t(x)))` becomes `D_t(x)`, and
+`I_t(D_t(x))` becomes `x - x0`, with the declared initial value `x0` of `x`; any
+other integral is rejected.
 The lowered body then goes through the existing verified compiler unchanged.
 Inputs, parameters and observations are copied, and the `Evolution` (axis,
 start, states and initial values) is used as given.
@@ -162,7 +163,9 @@ noncomputable def SourceBody.classicalRates (sb : SourceBody) (e : Evolution)
   else none
 
 /-- The signal as the source reads it along the forward domain: inputs by name,
-and chains as actual iterated derivatives. -/
+and chains as actual iterated derivatives. Only states and bound parameters are
+read, so an integrand naming an auxiliary or a derivative port has no value here;
+lowering rejects such integrands. -/
 noncomputable def SourceBody.trajectory (sb : SourceBody) (e : Evolution)
     (state : Dynamics.Signal e.states.length) : Trajectory where
   axis := e.axis.name
@@ -469,7 +472,8 @@ def SourceBody.EquationsUnder (sb : SourceBody) (rates : List String → String 
     ∃ v, d.lhs.eval env rates atoms = some v ∧ d.rhs.eval env rates atoms = some v)
 
 theorem SourceBody.equations_eq (sb : SourceBody) (c : Context) (atoms : Term → Option ℝ)
-    (env : String → Option ℝ) : sb.Equations c atoms env = sb.EquationsUnder (c.rates env) atoms env :=
+    (env : String → Option ℝ) :
+    sb.Equations c atoms env = sb.EquationsUnder (c.rates env) atoms env :=
   rfl
 
 /-- At `t`, `env` extends the inputs and every derivative port carries the
@@ -1028,12 +1032,15 @@ def SourceBody.Observes {n m : Nat} (sb : SourceBody) (c : Context) (ids : Fin n
     (refs : Fin m → String) (x : Point n) (y : Point m) : Prop :=
   ∃ env, sb.Source c (fun _ => none) ids x env ∧ ∀ i, sb.value env (refs i) = some (y i)
 
+/-- Without a trajectory, only a context that rewrites no integral, such as the
+polynomial one, relates the observations. -/
 theorem Lowered.observes {sb : SourceBody} {c : Context} (l : Lowered sb c) {n m : Nat}
     (ids : Fin n → String) (refs : Fin m → String) (x : Point n) (y : Point m)
-    (h : ∀ env, c.Cancels (fun _ => none) env) :
+    (h : c.boundary = none) :
     sb.Observes c ids refs x y ↔ l.body.Observes ids refs x y := by
   simp only [SourceBody.Observes, Body.Observes, l.value]
-  exact exists_congr fun env => and_congr_left fun _ => l.source ids x env (h env)
+  exact exists_congr fun env => and_congr_left fun _ =>
+    l.source ids x env (Context.cancels_none h _ env)
 
 def SourceBody.observationIds (sb : SourceBody) (i : Fin sb.observations.length) : String :=
   sb.observations[i].sourceId
@@ -1058,11 +1065,13 @@ structure SourcePolynomialModel (sb : SourceBody) where
   model : PolynomialModel lowered.body
 
 /-- A polynomial declaration has no evolution axis, so every derivative atom,
-differential equation and velocity declaration is rejected. -/
+integral, differential equation and velocity declaration is rejected. -/
 def compileSourcePolynomial (sb : SourceBody) :
     Except Diagnostic (SourcePolynomialModel sb) := do
   if let some d := sb.equations.head? then
     throw ⟨.unsupportedDerivative, d.output.id, "differential equation without an evolution axis"⟩
+  if let some a := sb.assignments.find? (·.rhs.integrals ≠ 0) then
+    throw ⟨.unsupportedIntegral, a.output.id, "integral without an evolution axis"⟩
   (Declaration.polynomial sb.interface).validate
   let lowered ← sb.lower Context.empty sb.declares_empty
   let model ← compilePolynomial lowered.body
@@ -1073,7 +1082,7 @@ theorem SourcePolynomialModel.correct {sb : SourceBody} (p : SourcePolynomialMod
     (x : Point p.lowered.body.runtimePorts.length) (y : Point sb.observations.length) :
     sb.Observes Context.empty p.lowered.body.runtimeIds sb.observationIds x y ↔
       p.model.outputs.circuit.run x = y := by
-  rw [p.lowered.observes _ _ _ _ (Context.cancels_none rfl _)]
+  rw [p.lowered.observes _ _ _ _ rfl]
   exact p.model.outputs.correct x y
 
 structure SourceContinuousModel (sb : SourceBody) (e : Evolution) where
@@ -1175,6 +1184,8 @@ theorem SourceContinuousModel.classical_iff_realizes {sb : SourceBody} {e : Evol
 #print axioms SourceContinuousModel.realizes_iterated
 #print axioms Lowered.solves_iff
 #print axioms SourceBody.Solves.integral_derivative
+#print axioms SourceBody.regular
+#print axioms SourceBody.cancels_at
 #print axioms SourceBody.Solves.derivative_integral
 #print axioms SourcePolynomialModel.correct
 #print axioms SourceContinuousModel.solves_iff_realizes

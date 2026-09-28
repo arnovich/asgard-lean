@@ -1,7 +1,7 @@
 import Gimle.Asgard.Model.Linear
 import Gimle.Asgard.Model.SourceSyntax
 
-/-! Source integrals from the declared start, removed by the two inverse
+/-! Source integrals from the declared start, removed by two of the inverse
 rewrites, and solved.
 
 `decay` is `D_t(I_t(2*D_t(f) + f)) = 0` with `f(0) = 2`. The derivative of the

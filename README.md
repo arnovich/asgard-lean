@@ -30,7 +30,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Differential isolation](Gimle/Asgard/Examples/DifferentialIsolation.lean) | `3*D_t(x) + x = y` isolated with its residual and initial data, and solved |
 | [Higher-order isolation](Gimle/Asgard/Examples/HigherOrderIsolation.lean) | `4*D_t(D_t(x)) + x = 0` lowered through a declared velocity state and its initial value, and solved |
 | [Damped oscillator](Gimle/Asgard/Examples/DampedOscillator.lean) | `D_t(D_t(x)) + c*D_t(x) + k*x = 0` with the lower-order atom read as the declared velocity, and solved |
-| [Source integrals](Gimle/Asgard/Examples/SourceIntegrals.lean) | `D_t(I_t(X)) = X` and `I_t(D_t(x)) = x - x(0)`, the boundary term kept, with solved examples |
+| [Source integrals](Gimle/Asgard/Examples/SourceIntegrals.lean) | `D_t(I_t(2*D_t(f) + f)) = 0` and `D_t(x) + I_t(D_t(x)) = 1` lowered with the boundary term `x(0)` kept, and solved |
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |

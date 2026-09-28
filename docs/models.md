@@ -104,7 +104,8 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 | An integral no inverse rewrite removes: `int(f,t)`, `int(int(diff(f,t),t),t)`, another axis | `unsupportedIntegral` |
 | `diff(int(X,t),t)` with `X` not tame: `diff(f,t) * f`, an auxiliary, a lambda | `unsupportedIntegral` |
 | `int(diff(p,t),t)` of a non-state, or `int(diff(diff(f,t),t),t)` | `unsupportedIntegral` |
-| An integral under a lambda, or in a polynomial declaration | `unsupportedIntegral` |
+| An integral under a lambda, or nested pairs such as `diff(int(diff(int(f,t),t),t),t)` | `unsupportedIntegral` |
+| Any integral in a polynomial declaration (`integral without an evolution axis`) | `unsupportedIntegral` |
 
 A rejection names unsupported structure, not an unsatisfiable model.
 
@@ -118,8 +119,8 @@ assignments alike; any integral that remains is rejected.
 | Written | Rewritten to | Condition |
 | --- | --- | --- |
 | `diff(int(X, t), t)` | `X` | `X` tame: a polynomial in states and bound parameters, plus sums, negations and literal multiples of first-order `diff(x, t)` of states |
-| `diff(diff(int(x, t), t), t)` | `diff(x, t)` | `x` a state |
-| `int(diff(x, t), t)` | `x - x0` | `x` a state with the declared initial value `x0` |
+| `diff(diff(int(x, t), t), t)` | `diff(x, t)` | `x` a state with a declared initial value, which the proof uses for the continuity of `x` |
+| `int(diff(x, t), t)` | `x - x0` | `x` a state with the declared initial value `x0`; any other operand is rejected |
 
 The boundary term is never dropped: `int(diff(x,t),t)` is `x - x(start)`, and
 `x(start)` is the declared initial value, which `Solves` pins. With `x0 = 2`,
@@ -134,13 +135,18 @@ integrand that is undefined somewhere on the half-line, or is not a derivative t
 has no integral, so an equation using it has no solution. For a continuous integrand
 the antiderivative is the interval integral (`primitiveFrom_eq_integral`); an integrand
 without an antiderivative has none even if Lebesgue-integrable, and no tame integrand is
-such. Under a lambda binder, an integral mentioning the binder has no value.
+such. Under a lambda binder, an integral mentioning the binder has no value. The reading
+names only states and bound parameters, so an integrand naming an auxiliary or a
+derivative port has no value; lowering rejects such integrands.
 
-`Lowered.equations` holds wherever the atoms read each rewritten shape as its rewrite
-does (`Context.Cancels`). `SourceBody.cancels_at` discharges that at every time of a
-signal with differentiable states, its declared initial values and ports carrying the
-actual derivatives: every solution of the source or of the lowered body is one, so the
-end-to-end theorems below are unchanged in statement.
+`Lowered.equations`, `Lowered.source` and `Lowered.observes` hold wherever the atoms
+read each rewritten shape as its rewrite does (`Context.Cancels`). `SourceBody.cancels_at`
+discharges that at every time of a signal with differentiable states, its declared
+initial values and ports carrying the actual derivatives; every solution of the source or
+of the lowered body is one. `SourceBody.ObservedSolution` reads the atoms along the
+signal, with ports carrying the actual derivatives, as `Solves` does. `SourceBody.Observes`
+has no signal, so it reads no integral; `Context.cancels_none` discharges the premise in
+polynomial declarations, which rewrite nothing.
 
 The source relation `SourceBody.Solves` reads `diff(x, t)` as the value of `x`'s
 derivative port, and requires that value to be the actual derivative on `t ≥ start`
@@ -165,7 +171,7 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `Isolated.correct` | The isolated assignment holds exactly when the source equation does |
 | `Term.collapse_eval` | Reading a declared chain as `diff(xk, t)` preserves meaning in every environment |
 | `Term.readVelocities_eval` | Reading other atoms as declared velocities preserves meaning wherever the velocity equations hold (`Context.VelocitiesHold`) |
-| `SourceBody.velocitiesHold` | The source's velocity declarations discharge that premise, so `Lowered.equations` holds in every environment |
+| `SourceBody.velocitiesHold` | The source's velocity declarations discharge that premise, so `Lowered.equations` holds wherever the atoms read the integral rewrites (`Context.Cancels`) |
 | `Solves.lift_eqOn` | In a solution, the coordinate of `xm` equals `iteratedDerivWithin m x` on `t ≥ start` |
 | `Solves.chain_denotes` | In a solution, a chain of `k + 1` derivatives denotes the derivative of `iteratedDerivWithin k x` |
 | `Solves.initial_iterated` | The declared initial value of `xm` is the `m`-th derivative of `x` at `start` |
@@ -174,8 +180,6 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `SourceContinuousModel.classical_iff_realizes` | Iterated-derivative source solutions are exactly the compiled realizations, same initial data |
 | `SourceContinuousModel.realizes_iterated` | The same facts for every realization of the compiled model |
 
-The `Solves.*` chain theorems and `solves_iff_classical` assume `SourceBody.VelocityStates` (each declared velocity is
-a state port), which lowering checks; `realizes_iterated` takes it from the compiled model.
 | `primitiveFrom_eq` | An integral is the unique antiderivative from the start on the half-line |
 | `primitiveFrom_eq_integral` | For a continuous integrand it is the interval integral |
 | `Term.along_integral` | Whenever `int(X,t)` has a value, it is an antiderivative of `X` vanishing at the start |
@@ -190,6 +194,9 @@ a state port), which lowering checks; `realizes_iterated` takes it from the comp
 | `SourceContinuousModel.constrained_iff` | Corollary: any further predicate on the trajectory is preserved |
 | `SourceContinuousModel.observations_correct` | Observed source solutions are observed realizations |
 | `SourcePolynomialModel.correct` | Lambda-bearing polynomial sources against compiled outputs |
+
+The `Solves.*` chain theorems and `solves_iff_classical` assume `SourceBody.VelocityStates` (each declared velocity is
+a state port), which lowering checks; `realizes_iterated` takes it from the compiled model.
 
 The pinned Python compiler turns `3 * diff(x,t) + x = y` into
 `diff(x,t) = (0.3333333333333333 * (y - x))`; Lean yields `rat(1,3) * (y - x)`.
@@ -231,6 +238,11 @@ For integrals ([SourceIntegrals.lean](../Gimle/Asgard/Tests/SourceIntegrals.lean
   the declared initial value.
 - Python accepts `diff(f,t) = int(f,t)` through a hidden integral state whose initial
   value is silently zero; Lean rejects it (`unsupportedIntegral`).
+- Python cancels inverse pairs on any axis and inside integrands, so it accepts
+  `diff(f,t) = diff(int(f,x),x)` and `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`;
+  Lean gives integrals off the evolution axis no value and rewrites only at atom
+  positions, so it rejects both. It also rejects a parameter factor on a derivative in
+  an integrand, `diff(int(p * diff(g,t),t),t)`, which Python accepts.
 - The listed D-of-I fixtures, such as `2 * diff(diff(int(f,t),t),t) = f` and
   `diff(int(2 * diff(f,t) + f,t),t) = 0`, lower to the same rates in both.
 
