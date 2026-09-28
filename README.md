@@ -31,6 +31,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Higher-order isolation](Gimle/Asgard/Examples/HigherOrderIsolation.lean) | `4*D_t(D_t(x)) + x = 0` lowered through a declared velocity state and its initial value, and solved |
 | [Damped oscillator](Gimle/Asgard/Examples/DampedOscillator.lean) | `D_t(D_t(x)) + c*D_t(x) + k*x = 0` with the lower-order atom read as the declared velocity, and solved |
 | [Source integrals](Gimle/Asgard/Examples/SourceIntegrals.lean) | `D_t(I_t(2*D_t(f) + f)) = 0` and `D_t(x) + I_t(D_t(x)) = 1` lowered with the boundary term `x(0)` kept, and solved |
+| [Integral states](Gimle/Asgard/Examples/IntegralStates.lean) | `D_t(f) = I_t(f)` lowered through a declared integral state `F` with `F(0) = 0`, solved by `f = cosh t`, and `I_t(f)` read as `F` in every solution |
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |

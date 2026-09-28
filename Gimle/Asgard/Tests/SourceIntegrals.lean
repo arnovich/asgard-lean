@@ -100,9 +100,9 @@ example : ¬ Examples.SourceIntegrals.boundary.Solves (Examples.SourceIntegrals.
 /-! ## Other Python integral cases -/
 
 -- `diff(f,t) = int(f,t)`. Python: accepted as Form-A `f = int(int(f,t),t) + f0`,
--- whose hidden integral state starts silently at zero. DIFFERS: Lean has no
--- declared integral state, so an integral that no inverse rewrite removes is
--- rejected.
+-- whose hidden integral state starts silently at zero. DIFFERS: an integral that
+-- no inverse rewrite removes is rejected unless a state is declared for it, with
+-- initial value `0` (`Tests.IntegralStates`).
 example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })) =
     some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
 -- `diff(f,t) = int(int(diff(f,t),t),t)`. Python: rejected. Same.

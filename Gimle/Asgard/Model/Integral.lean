@@ -4,7 +4,8 @@ import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-! Source integrals over the evolution axis, from the declared start, and the
-three inverse rewrites between integrals and derivatives.
+three inverse rewrites between integrals and derivatives, and the reading of
+declared integral states.
 
 ## Semantics
 
@@ -31,7 +32,8 @@ continuous one it is the interval integral.
 
 ## Inverse rewrites
 
-`Term.cancelAtom` recognizes exactly three shapes, all on the evolution axis:
+`Term.cancelAtom` recognizes exactly three inverse shapes, all on the evolution
+axis, and reads declared integral states (below):
 
 - `D_t(I_t(X))` becomes `X`, when `X` is `Term.tame`: a polynomial in inputs
   plus literal multiples of first-order state derivatives. The derivative of the
@@ -43,13 +45,23 @@ continuous one it is the interval integral.
   (`Term.along_integral_derivative`), and `x` alone is wrong whenever
   `x(start) ≠ 0` (`integral_derivative_ne`).
 
-`Term.cancel` applies them at the atom positions of a sum, product or negation.
-Every other integral is left in place and rejected by lowering. The rewrite is
-exact wherever the atoms are read along the trajectory (`Context.Cancels`), and
-`Context.cancels` discharges that premise for every trajectory whose states are
-differentiable, whose ports carry the actual derivatives and whose declared
-initial values hold: in particular, at every time of a solution of the source or
-of the lowered body. -/
+## Declared integral states
+
+An integral no inverse rewrite removes is read as a declared state: when the
+boundary declares `F` as the integral of `X` (`Boundary.integral`), `I_t(X)`
+becomes `F`. Nothing is inferred. The trajectory must make `F` the
+antiderivative of the reading of `X` that vanishes at the start
+(`Trajectory.Regular.integral`); then `I_t(X)` reads `F` at every time, because
+the antiderivative from the start is unique (`primitiveFrom_iff`).
+
+`Term.cancel` applies all four at the atom positions of a sum, product or
+negation. Every other integral is left in place and rejected by lowering. The
+rewrite is exact wherever the atoms are read along the trajectory
+(`Context.Cancels`), and `Context.cancels` discharges that premise for every
+trajectory whose states are differentiable, whose ports carry the actual
+derivatives, whose declared initial values hold and whose declared integral
+states are antiderivatives of their integrands: in particular, at every time of a
+solution of the source or of the lowered body. -/
 namespace Gimle.Asgard.Model
 open Polynomial Set
 
@@ -148,6 +160,42 @@ theorem primitiveFrom_eq_integral {start : ℝ} {f : ℝ → Option ℝ} {g : �
   obtain ⟨F, h0, hF, hi⟩ := exists_primitive_of_continuousOn hg
   rw [primitiveFrom_eq h0 hf hF ht, hi t ht]
 
+/-- A function is the integral from `start` at every time of the half-line
+exactly when it vanishes at `start` and is an antiderivative there. This is what
+makes a declared integral state `F = I_t(X)` the pair `D_t(F) = X`, `F(start) = 0`. -/
+theorem primitiveFrom_iff {start : ℝ} {f : ℝ → Option ℝ} {g : ℝ → ℝ} :
+    (∀ t ∈ Ici start, primitiveFrom start f t = some (g t)) ↔
+      g start = 0 ∧ ∀ s ∈ Ici start, ∃ x, f s = some x ∧ HasDerivWithinAt g x (Ici start) s := by
+  constructor
+  · intro h
+    have h0 := h start self_mem_Ici
+    unfold primitiveFrom at h0
+    split_ifs at h0 with ex
+    obtain ⟨c0, cd⟩ := ex.choose_spec
+    have eq : ∀ t ∈ Ici start, ex.choose t = g t := by
+      intro t ht
+      have := h t ht
+      rw [primitiveFrom, dif_pos ex, Option.some.injEq] at this
+      exact this
+    refine ⟨(Option.some.inj h0) ▸ c0, fun s hs => ?_⟩
+    obtain ⟨x, hx, hd⟩ := cd s hs
+    exact ⟨x, hx, hd.congr_of_mem (fun y hy => (eq y hy).symm) hs⟩
+  · rintro ⟨h0, hd⟩ t ht
+    have ex : ∃ F : ℝ → ℝ, F start = 0 ∧
+        ∀ s ∈ Ici start, ∃ x, f s = some x ∧ HasDerivWithinAt F x (Ici start) s := ⟨g, h0, hd⟩
+    rw [primitiveFrom, dif_pos ex]
+    obtain ⟨c0, cd⟩ := ex.choose_spec
+    have deriv : ∀ {G : ℝ → ℝ}, (∀ s ∈ Ici start, ∃ x, f s = some x ∧
+        HasDerivWithinAt G x (Ici start) s) →
+        ∀ s ∈ Ici start, HasDerivWithinAt G (derivWithin g (Ici start) s) (Ici start) s := by
+      intro G hG s hs
+      obtain ⟨x, hx, hGd⟩ := hG s hs
+      obtain ⟨y, hy, hgd⟩ := hd s hs
+      rw [hx, Option.some.injEq] at hy
+      rw [hgd.derivWithin (uniqueDiffOn_Ici start s hs), ← hy]
+      exact hGd
+    rw [eqOn_of_hasDerivWithinAt (deriv cd) (deriv hd) (c0.trans h0.symm) ht]
+
 /-! ## The trajectory reading -/
 
 /-- A trajectory as the source reads it: at each time `s`, the names in `base s`
@@ -243,6 +291,15 @@ def Term.continuous (bd : Boundary) : Term → Bool
   | .neg a => a.continuous bd
   | _ => false
 
+/-- Continuity reads only the inputs of a boundary. -/
+theorem Term.continuous_congr {bd bd' : Boundary} (h : bd.input = bd'.input) (t : Term) :
+    t.continuous bd = t.continuous bd' := by
+  induction t with
+  | var n => simp [continuous, h]
+  | add a b ha hb | mul a b ha hb => simp [continuous, ha, hb]
+  | neg a ha => simp [continuous, ha]
+  | _ => rfl
+
 /-- An integrand with an antiderivative along every differentiable trajectory:
 continuous terms, first-order evolution derivatives of states, and their sums,
 negations and literal multiples. -/
@@ -255,7 +312,9 @@ def Term.tame (c : Context) (bd : Boundary) : Term → Bool
   | t => t.continuous bd
 
 /-- The three inverse rewrites, on the evolution axis of a context with a
-boundary. `I_t(D_t(x))` becomes `x - x0` with the declared initial value `x0`. -/
+boundary, and the reading of declared integral states. `I_t(D_t(x))` becomes
+`x - x0` with the declared initial value `x0`; any other `I_t(X)` becomes `F`
+when the boundary declares `F` as the integral of `X`. -/
 def Term.cancelAtom (c : Context) : Term → Option Term
   | .derivative a (.integral b X) => c.boundary.bind fun bd =>
       if a = c.axis ∧ b = c.axis ∧ X.tame c bd = true then some X else none
@@ -267,6 +326,8 @@ def Term.cancelAtom (c : Context) : Term → Option Term
         if a = c.axis ∧ b = c.axis ∧ (c.locate x).isSome = true then
           some (.add (.var x) (.neg (.constant q)))
         else none
+  | .integral b X => c.boundary.bind fun bd =>
+      (bd.integral X).bind fun F => if b = c.axis then some (.var F) else none
   | _ => none
 
 /-- Apply the inverse rewrites at every atom position of a sum, product or
@@ -319,8 +380,9 @@ theorem Term.cancel_eval (c : Context) (t : Term) (env : String → Option ℝ)
 /-! ## Discharging the premise along a trajectory -/
 
 /-- What the rewrites need of a whole trajectory: inputs are continuous, states
-are differentiable with their derivatives as first-order chains, and a state with
-a declared initial value starts there. -/
+are differentiable with their derivatives as first-order chains, a state with
+a declared initial value starts there, and a declared integral state is an
+antiderivative of the reading of its integrand that vanishes at the start. -/
 structure Trajectory.Regular (T : Trajectory) (c : Context) (bd : Boundary) : Prop where
   axis : T.axis = c.axis
   input : ∀ n, bd.input n = true → ∃ g : ℝ → ℝ, ContinuousOn g (Ici T.start) ∧
@@ -332,6 +394,8 @@ structure Trajectory.Regular (T : Trajectory) (c : Context) (bd : Boundary) : Pr
     ∃ g : ℝ → ℝ, g T.start = q ∧ ∀ s ∈ Ici T.start,
       DifferentiableWithinAt ℝ g (Ici T.start) s ∧ T.base s x = some (g s) ∧
         T.rates s [c.axis] x = some (derivWithin g (Ici T.start) s)
+  integral : ∀ X F, bd.integral X = some F → ∃ g : ℝ → ℝ, g T.start = 0 ∧ ∀ s ∈ Ici T.start,
+    T.base s F = some (g s) ∧ ∃ x, X.along T s = some x ∧ HasDerivWithinAt g x (Ici T.start) s
 
 /-- What the rewrites need at one time: `env` extends the inputs and its ports
 read first-order chains as the trajectory does. -/
@@ -378,16 +442,19 @@ private theorem Term.continuous_along {bd : Boundary} {c : Context} {T : Traject
       exact ⟨fun s => -f s, hf.neg, fun s hs => by simp [Term.along, hfa s hs]⟩
   | _ => simp [continuous] at h
 
-/-- A continuous term reads the same at `t` through `env` as along the trajectory. -/
-private theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
-    {env : String → Option ℝ} {u : Term} (h : u.continuous bd = true) (reg : T.Regular c bd)
-    (hat : T.At c t env) (rates : List String → String → Option ℝ) (atoms : Term → Option ℝ) :
+/-- A continuous term reads the same through `env` as along the trajectory at
+`t`, wherever `env` extends the trajectory's names at `t` and every input has a
+value there. -/
+theorem Term.continuous_agrees_at {bd : Boundary} {T : Trajectory} {t : ℝ}
+    {env : String → Option ℝ} {u : Term} (h : u.continuous bd = true)
+    (input : ∀ n, bd.input n = true → (T.base t n).isSome = true) (base : Agrees (T.base t) env)
+    (rates : List String → String → Option ℝ) (atoms : Term → Option ℝ) :
     u.eval env rates atoms = u.along T t := by
   induction u with
   | var n =>
-      obtain ⟨g, -, hg⟩ := reg.input n h
-      rw [Term.eval, Term.along, hg t hat.mem]
-      exact hat.base n _ (hg t hat.mem)
+      obtain ⟨w, hw⟩ := Option.isSome_iff_exists.mp (input n h)
+      rw [Term.eval, Term.along, hw]
+      exact base n _ hw
   | constant q => rfl
   | add a b ha hb =>
       simp only [continuous, Bool.and_eq_true] at h
@@ -397,6 +464,15 @@ private theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajec
       simp only [Term.eval, Term.along, ha h.1, hb h.2]
   | neg a ha => simp only [Term.eval, Term.along, ha h]
   | _ => simp [continuous] at h
+
+/-- A continuous term reads the same at `t` through `env` as along the trajectory. -/
+private theorem Term.continuous_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
+    {env : String → Option ℝ} {u : Term} (h : u.continuous bd = true) (reg : T.Regular c bd)
+    (hat : T.At c t env) (rates : List String → String → Option ℝ) (atoms : Term → Option ℝ) :
+    u.eval env rates atoms = u.along T t :=
+  continuous_agrees_at h (fun n hn => by
+    obtain ⟨g, -, hg⟩ := reg.input n hn
+    simp [hg t hat.mem]) hat.base rates atoms
 
 /-- A tame term reads the same at `t` through `env` as along the trajectory. -/
 private theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} {t : ℝ}
@@ -541,6 +617,23 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
       rw [Trajectory.atoms, ← reg.axis, this, g0]
       have hx : env x = some (g t) := hat.base x _ (hg t ht).2.1
       simp [Term.eval, hx, sub_eq_add_neg]
+  · -- A declared integral state `F` of `I_t(X)` becomes `F`.
+    rename_i b X _
+    simp only [hb, Option.bind_some] at h
+    cases hF : bd.integral X with
+    | none => simp [hF] at h
+    | some F =>
+      simp only [hF, Option.bind_some] at h
+      split_ifs at h with hc
+      cases h
+      subst hc
+      obtain ⟨g, g0, hg⟩ := reg.integral X F hF
+      have hI : (Term.integral c.axis X).along T t = some (g t) := by
+        rw [← reg.axis]
+        simp only [Term.along, ite_true]
+        exact primitiveFrom_iff.mpr ⟨g0, fun s hs => (hg s hs).2⟩ t ht
+      rw [Trajectory.atoms, hI]
+      exact (hat.base F _ (hg t ht).1).symm
   · simp at h
 
 #print axioms Term.along_integral
@@ -556,4 +649,7 @@ theorem Context.cancels {c : Context} {bd : Boundary} {T : Trajectory} {t : ℝ}
 #print axioms derivFrom_eq
 #print axioms exists_primitive_of_continuousOn
 #print axioms primitiveFrom_eq_integral
+#print axioms primitiveFrom_iff
+#print axioms Term.continuous_congr
+#print axioms Term.continuous_agrees_at
 end Gimle.Asgard.Model

@@ -68,8 +68,11 @@ inductive ErrorCode where
   | nonlinearDerivative | higherOrderDerivative | mixedDerivative
   | unsupportedDerivative | zeroScale
   -- Source integrals (`Model.Integral`): an integral that no inverse rewrite
-  -- removes, or one outside an evolution declaration.
+  -- removes and no declared integral state reads, or one outside an evolution
+  -- declaration.
   | unsupportedIntegral
+  -- A declared integral state whose declared initial value is not `0`.
+  | nonzeroInitial
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
