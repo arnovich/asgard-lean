@@ -418,11 +418,7 @@ example : ((compileSourceContinuous { damped with
     bareEvolution).map (·.model.rates.expressions)).toOption =
     ((compileSourceContinuous damped bareEvolution).map (·.model.rates.expressions)).toOption := by
   decide +kernel
--- An atom in an explicit assignment is never read.
-example : continuous { twoStates with
-    assignments := assignments% { dv := diff(h, t); } } threeEvolution =
-    some ⟨.unsupportedDerivative, "dv", "derivative in an explicit assignment"⟩ := by
-  decide +kernel
+
 -- An atom of a non-state is never read, even under a (bad) velocity declaration:
 -- the differential itself is rejected, at its own site.
 example : continuous { bare with
@@ -436,6 +432,93 @@ example : continuous { damped with velocities := velocities% { df : diff(f, x) =
 -- A polynomial declaration has no evolution axis.
 example : code (compileSourcePolynomial { bare with differentials := [] }) =
     some ⟨.unsupportedDerivative, "df", "differential equation without an evolution axis"⟩ := by
+  decide +kernel
+
+/-! ## Atoms in explicit assignments (task 033)
+
+An evolution-axis atom in an explicit assignment is read as its state's declared
+velocity, exactly as beside a chain, and under the same premise: the velocity
+equations, which the declarations discharge for the whole system. -/
+
+-- `dv := diff(h, t)` with `h' = v` declared is `dv := v`. Before task 033 it was
+-- rejected (`unsupportedDerivative`), although the same relation written as the
+-- differential `dv : diff(v, t) = diff(h, t)` was accepted.
+-- Differs: Python has no explicit assignment. Probed at `fba931e` with the source
+-- `w = diff(h, t)`, it reads that as an equation for `h` and isolates
+-- `h = int(w,t) + h0`, with `w` a forcing input.
+example : ((compileSourceContinuous { twoStates with
+    assignments := assignments% { dv := diff(h, t); } } threeEvolution).map
+    (·.lowered.assignments)).toOption =
+    some [⟨⟨"dv", "dv", .output⟩, .var "v"⟩, ⟨⟨"df", "df", .output⟩, .var "v"⟩,
+      ⟨⟨"dh", "dh", .output⟩, .var "v"⟩] := by decide +kernel
+-- The differential form of the same relation lowers to the same system.
+example : ((compileSourceContinuous { twoStates with
+    assignments := assignments% { dv := diff(h, t); } } threeEvolution).map
+    (·.model.rates.expressions)).toOption =
+    ((compileSourceContinuous { twoStates with
+      assignments := []
+      differentials := differentials% { dv : diff(v, t) = diff(h, t); } } threeEvolution).map
+    (·.model.rates.expressions)).toOption := by decide +kernel
+-- An auxiliary of the damped oscillator: `w := c * diff(f, t)` is `w := c * v`,
+-- and the non-literal factor multiplies a state.
+example : ((compileSourceContinuous { damped with
+    assignments := assignments% { w := c * diff(f, t) + f; } } bareEvolution).map
+    (·.lowered.assignments.head?)).toOption =
+    some (some ⟨⟨"w", "w", .output⟩, .add (.mul (.var "c") (.var "v")) (.var "f")⟩) := by
+  decide +kernel
+-- An auxiliary used by the differential: the same system as `damped`.
+example : ((compileSourceContinuous { damped with
+    assignments := assignments% { w := c * diff(f, t); }
+    differentials := differentials% { dv : diff(diff(f, t), t) + w + k * f = 0; } }
+    bareEvolution).map (·.model.rates.expressions)).toOption =
+    ((compileSourceContinuous damped bareEvolution).map (·.model.rates.expressions)).toOption := by
+  decide +kernel
+-- A declared chain is collapsed first: `w := diff(diff(f, t), t)` over
+-- `f' = v`, `v' = a` is `w := a`.
+example : ((compileSourceContinuous { third with
+    assignments := assignments% { w := diff(diff(f, t), t) - diff(f, t); } } thirdEvolution).map
+    (·.lowered.assignments.head?)).toOption =
+    some (some ⟨⟨"w", "w", .output⟩, .add (.var "a") (.neg (.var "v"))⟩) := by decide +kernel
+
+-- Still rejected: an atom whose state has no declared velocity, here `v` beside
+-- `f' = v` (its port `dv` is defined by the chain, not by a velocity declaration).
+example : continuous { damped with assignments := assignments% { w := diff(v, t); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An atom on another axis.
+example : continuous { damped with assignments := assignments% { w := diff(f, x); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An atom inside a lambda is never read: a binder named like the velocity would
+-- capture the substituted name.
+example : continuous { damped with
+    assignments := assignments% { w := (λ z => diff(f, t) + z)(0); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+example : continuous { damped with
+    assignments := assignments% { w := (λ v => diff(f, t) + v)(0); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An atom in a lambda argument is not read either, although it is outside the
+-- binder's scope: lambdas are left whole.
+example : continuous { damped with
+    assignments := assignments% { w := (λ z => z)(diff(f, t)); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- A chain with an undeclared level collapses to `D_t(v)`, which is not read.
+example : continuous { damped with
+    assignments := assignments% { w := diff(diff(f, t), t); } } =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
+  decide +kernel
+-- An assignment to the port of a state with a declared velocity collides with
+-- that declaration before any term is read.
+example : continuous { third with assignments := assignments% { dv := diff(v, t); } }
+    thirdEvolution = some ⟨.duplicateId, "source", "dv"⟩ := by decide +kernel
+-- A polynomial declaration has no axis and reads no velocity.
+example : code (compileSourcePolynomial { bare with
+    inputs := [⟨"param-f", "f", .parameter⟩], parameters := [⟨"param-f", 1⟩]
+    differentials := [], velocities := [], assignments := assignments% { w := diff(f, t); } }) =
+    some ⟨.unsupportedDerivative, "w", "derivative in an explicit assignment"⟩ := by
   decide +kernel
 
 /-! ## Axiom audits -/
