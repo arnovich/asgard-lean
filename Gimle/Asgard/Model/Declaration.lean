@@ -76,7 +76,8 @@ inductive ErrorCode where
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
-bad name or ID. Validation reports the first error in declaration order. -/
+bad name or ID, or for `unsupportedIntegral` the reason (`axis`, `integrand`,
+`no inverse rewrite`). Validation reports the first error in declaration order. -/
 structure Diagnostic where
   code : ErrorCode
   site : String

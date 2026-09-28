@@ -62,7 +62,7 @@ example : lowered (body (differentials% { df : diff(f, t) = int(f, t); })
 example : (evolution 0).initialValue "initial-F" = some 0 := by decide +kernel
 -- Without the declaration, with `F` an ordinary state: rejected.
 example : rejected (body (differentials% { df : diff(f, t) = int(f, t); dF : diff(F, t) = f; })
-    []) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    []) = some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 
 /-! ## Other Python integral fixtures -/
 
@@ -96,7 +96,8 @@ example : lowered (body (differentials% { df : diff(f, t) = int(f + 1, t); })
 -- below). With only the inner one declared, the outer integral stays and is
 -- rejected...
 example : rejected (body (differentials% { df : diff(f, t) = int(int(f, t), t); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
+    (integrals% { dF : F = int(f, t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by
   decide +kernel
 -- ...and with only the outer one declared, its integrand `int(f,t)` is an
 -- integral no declaration reads, so it is rejected there.
@@ -105,12 +106,14 @@ example : rejected (body (differentials% { df : diff(f, t) = int(int(f, t), t); 
     some ⟨.unsupportedIntegral, "dF", "integrand"⟩ := by decide +kernel
 
 -- `diff(f,t) = diff(int(int(f,t),t),t)`. Python: accepted, `f' = int(f,t)` with
--- hidden states. DIFFERS: the integrand `int(f,t)` of the inverse pair is not
--- tame, and an inverse pair's integrand is never rewritten, so even with `F`
--- declared it is rejected (task 035).
-example : rejected (body (differentials% { df : diff(f, t) = diff(int(int(f, t), t), t); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
-  decide +kernel
+-- hidden states. DIFFERS only in the declaration: the inverse pair's integrand
+-- `int(f,t)` is rewritten first, to the declared `F`, which is tame, so the pair
+-- lowers to `f' = F` (task 035). Without the declaration it stays rejected.
+example : lowered (body (differentials% { df : diff(f, t) = diff(int(int(f, t), t), t); })
+    (integrals% { dF : F = int(f, t); })) = some (.var "F") := by decide +kernel
+example : rejected (body (differentials% {
+    df : diff(f, t) = diff(int(int(f, t), t), t); dF : diff(F, t) = f; })
+    []) = some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 
 /-! ## Where a declared integral is read -/
 
@@ -190,25 +193,29 @@ example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })
     some ⟨.missingBinding, "initialValues", "initial-F"⟩ := by decide +kernel
 -- An undeclared integral beside a declared one.
 example : rejected (body (differentials% { df : diff(f, t) = int(g, t); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
+    (integrals% { dF : F = int(f, t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by
   decide +kernel
 -- Matching is syntactic: `int(1 * f, t)` is not the declared `int(f, t)`. Python:
 -- accepted (probed). Kept rejected: a semantic match needs a proof that the two
 -- integrands read the same at every time, which nothing here decides.
 example : rejected (body (differentials% { df : diff(f, t) = int(1 * f, t); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
+    (integrals% { dF : F = int(f, t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by
   decide +kernel
 -- An integral under a lambda is never read.
 example : rejected (body (differentials% { df : diff(f, t) = (λ w => int(w, t))(f); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
+    (integrals% { dF : F = int(f, t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by
   decide +kernel
 -- An integral in a lambda argument, in a differential or an explicit assignment.
 example : rejected (body (differentials% { df : diff(f, t) = (λ w => w)(int(f, t)); })
-    (integrals% { dF : F = int(f, t); })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by
+    (integrals% { dF : F = int(f, t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by
   decide +kernel
 example : rejected (body (differentials% { df : diff(f, t) = F; })
     (integrals% { dF : F = int(f, t); }) (assignments% { h := (λ w => int(w, t))(f); })) =
-    some ⟨.unsupportedIntegral, "h", "integral in an explicit assignment"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "h", "no inverse rewrite"⟩ := by decide +kernel
 -- One state declared twice, or with both an integral declaration and a
 -- differential: its derivative port is defined twice.
 example : rejected (body (differentials% { df : diff(f, t) = F; })
@@ -219,7 +226,7 @@ example : rejected (body (differentials% { df : diff(f, t) = F; dF : diff(F, t) 
   decide +kernel
 -- A declaration on another axis.
 example : rejected (body (differentials% { df : diff(f, t) = F; })
-    (integrals% { dF : F = int(f, x); })) = some ⟨.unsupportedIntegral, "dF", "x"⟩ := by
+    (integrals% { dF : F = int(f, x); })) = some ⟨.unsupportedIntegral, "dF", "axis"⟩ := by
   decide +kernel
 -- An integrand naming an auxiliary: the trajectory reading of `Solves` names only
 -- states and bound parameters, so the integral would have no value in the source
@@ -553,7 +560,7 @@ info: 'Gimle.Asgard.Model.Context.cancelsUpTo' depends on axioms: [propext, Clas
 -/
 #guard_msgs (whitespace := lax) in #print axioms Context.cancelsUpTo
 /--
-info: 'Gimle.Asgard.Model.Term.cancelAtom_below' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Gimle.Asgard.Model.Term.cancelAtom_below' depends on axioms: [propext, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms Term.cancelAtom_below
 /--

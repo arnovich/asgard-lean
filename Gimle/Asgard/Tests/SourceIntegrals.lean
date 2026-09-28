@@ -76,7 +76,7 @@ example : lowered (body (differentials% { df : 2 * diff(f, t) = int(diff(f, t), 
 -- `diff(f,t) = diff(f,t) + int(f,t)`. Python: rejected ("both sides"). Same
 -- outcome: `I_t(f)` is not an inverse pair, so it is rejected first.
 example : rejected (body (differentials% { df : diff(f, t) = diff(f, t) + int(f, t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- `diff(f,t) = int(diff(f,t),t)`. Python: rejected ("competing derivative").
 -- DIFFERS, as above: Lean accepts `f' = f - 2`.
 example : lowered (body (differentials% { df : diff(f, t) = int(diff(f, t), t); })) =
@@ -104,17 +104,17 @@ example : ¬ Examples.SourceIntegrals.boundary.Solves (Examples.SourceIntegrals.
 -- no inverse rewrite removes is rejected unless a state is declared for it, with
 -- initial value `0` (`Tests.IntegralStates`).
 example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- `diff(f,t) = int(int(diff(f,t),t),t)`. Python: rejected. Same.
 example : rejected (body (differentials% { df : diff(f, t) = int(int(diff(f, t), t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- `0 * diff(f,t) + int(f,t) = g`. Python: rejected. Same.
 example : rejected (body (differentials% { df : 0 * diff(f, t) + int(f, t) = g; })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- `int(diff(diff(f,t),t),t) + 0 * int(int(f,t),t) = g`. Python: rejected. Same.
 example : rejected (body (differentials% {
     df : int(diff(diff(f, t), t), t) + 0 * int(int(f, t), t) = g; })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- `diff(f,t) = diff(diff(int(f,t),t),t)`. Python: rejected. Same: after the
 -- rewrite both sides hold `D_t(f)`.
 example : rejected (body (differentials% { df : diff(f, t) = diff(diff(int(f, t), t), t); })) =
@@ -128,7 +128,7 @@ example : lowered (body (differentials% { df : diff(f, t) = diff(int(f * f, t), 
 -- `diff(f,t) = diff(int(diff(f,t) * f,t),t)`. Python: rejected. Same: a product
 -- with a derivative is not a tame integrand.
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(diff(f, t) * f, t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "integrand"⟩ := by decide +kernel
 -- Python's `g = int(diff(f,t),t)`, here the assignment `h`. Python: `f - f(0)`. Same.
 example : assigned (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := int(diff(f, t), t); })) =
@@ -138,23 +138,25 @@ example : assigned (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := diff(int(f, t), t); })) = some (.var "f") := by decide +kernel
 -- `diff(int(f,x),y) = g`. Python: rejected. Same.
 example : rejected (body (differentials% { df : diff(int(f, x), y) = g; })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "axis"⟩ := by decide +kernel
 -- `diff(f,t) = diff(int(f,x),x)`. Python: accepted, `f' = f`, cancelling the pair on
 -- `x`. DIFFERS: only evolution-axis integrals have a value, so Lean rejects it.
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(f, x), x); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "axis"⟩ := by decide +kernel
 -- `int(diff(diff(f,t),t),t) = g`. Python: rejected. Same.
 example : rejected (body (differentials% { df : int(diff(diff(f, t), t), t) = g; })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
--- `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`. Python: accepted, `f' = f`.
--- DIFFERS: rewrites apply once at atom positions, never inside an integrand (task 035).
-example : rejected (body (differentials% {
-    df : diff(f, t) = diff(int(diff(int(f, t), t), t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
--- `diff(f,t) = diff(int(p * diff(g,t),t),t)`. Python: accepted. DIFFERS: a
--- parameter factor on a derivative is not tame (task 035).
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
+-- `diff(f,t) = diff(int(diff(int(f,t),t),t),t)`. Python: accepted, `f' = f`. Same:
+-- the inverse pair's integrand is rewritten first, to `f` (task 035).
+example : lowered (body (differentials% {
+    df : diff(f, t) = diff(int(diff(int(f, t), t), t), t); })) = some (.var "f") := by
+  decide +kernel
+-- `diff(f,t) = diff(int(p * diff(g,t),t),t)`. Python: accepted, with `diff(g,t)` a
+-- forcing input. A bound parameter factor is tame (task 035), so the pair becomes
+-- `p * diff(g,t)`; DIFFERS in that `g`'s atom is then a second atom, unless read
+-- through a declared velocity (`Wider inverse rewrites` below).
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(p * diff(g, t), t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.competingDerivative, "df", "df"⟩ := by decide +kernel
 -- A tame integrand may hold another state's derivative; it then competes.
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(diff(g, t), t), t); })) =
     some ⟨.competingDerivative, "df", "df"⟩ := by decide +kernel
@@ -163,21 +165,161 @@ example : rejected (body (differentials% { df : diff(f, t) = diff(int(diff(g, t)
 
 -- An integral under a lambda is never rewritten.
 example : rejected (body (differentials% { df : diff(f, t) = (λ w => int(diff(w, t), t))(f); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- An integrand naming an auxiliary is not tame: its reading along the trajectory
--- is not an input's.
+-- is not an input's. Python: accepted (probed). DIFFERS (task 039).
 example : rejected (body (differentials% { df : diff(f, t) = diff(int(z, t), t); })
-    (assignments% { z := f; })) = some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    (assignments% { z := f; })) =
+    some ⟨.unsupportedIntegral, "df", "integrand"⟩ := by decide +kernel
 -- A parameter has no declared initial value and no derivative port.
 example : rejected (body (differentials% { df : diff(f, t) = int(diff(p, t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
--- A higher-order chain under an integral is not rewritten (task 035).
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
+-- A higher-order chain under an integral needs declared velocities (below).
 example : rejected (body (differentials% { df : diff(f, t) = int(diff(diff(f, t), t), t); })) =
-    some ⟨.unsupportedIntegral, "df", "df"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
 -- An integral left in an explicit assignment.
 example : rejected (body (differentials% { df : diff(f, t) = 0; })
     (assignments% { h := int(f, t); })) =
-    some ⟨.unsupportedIntegral, "h", "integral in an explicit assignment"⟩ := by decide +kernel
+    some ⟨.unsupportedIntegral, "h", "no inverse rewrite"⟩ := by decide +kernel
+
+/-! ## Wider inverse rewrites (task 035)
+
+Chains are rewritten through their declared velocities, keeping every boundary
+term. States `f`, `v`, `a` and `g`, with `v` declared as the velocity of `f` and,
+unless stated, `a` as the velocity of `v`; `f(0) = 2`, `v(0) = 5`, `a(0) = 7`,
+`g(0) = 1`, `g' = 0`, and the parameter `p = 3`. -/
+
+def chained (equations : List DifferentialEquation) (extra : List SourceAssignment := [])
+    (velocities : List VelocityDeclaration :=
+      velocities% { df : diff(f, t) = v; dv : diff(v, t) = a; }) : SourceBody := {
+  inputs := [⟨"state-f", "f", .state⟩, ⟨"state-v", "v", .state⟩, ⟨"state-a", "a", .state⟩,
+    ⟨"state-g", "g", .state⟩, ⟨"param-p", "p", .parameter⟩]
+  assignments := assignments% { dg := 0; } ++ extra
+  differentials := equations
+  velocities := velocities
+  parameters := [⟨"param-p", 3⟩]
+}
+
+def chainedEvolution : Evolution := {
+  states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-v", "dv", "initial-v"⟩,
+    ⟨"state-a", "da", "initial-a"⟩, ⟨"state-g", "dg", "initial-g"⟩]
+  initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-v", "v0", .initial⟩,
+    ⟨"initial-a", "a0", .initial⟩, ⟨"initial-g", "g0", .initial⟩]
+  initialValues := [⟨"initial-f", 2⟩, ⟨"initial-v", 5⟩, ⟨"initial-a", 7⟩, ⟨"initial-g", 1⟩]
+  axis := ⟨"time", "t"⟩
+  evolveAlong := "time"
+  start := 0
+}
+
+/-- The lowered right-hand side of a port, when the source compiles. -/
+def chainedLowered (sb : SourceBody) (port : String := "da") : Option NamedExpr :=
+  (compileSourceContinuous sb chainedEvolution).toOption.bind fun m =>
+    (m.lowered.assignments.find? (·.output.id == port)).map (·.rhs)
+
+def chainedRejected (sb : SourceBody) : Option Diagnostic :=
+  match compileSourceContinuous sb chainedEvolution with
+  | .error d => some d
+  | .ok _ => none
+
+-- `I_t(D_t(D_t(f)))` is `v - v(0)`, with `v` the declared velocity of `f`. Python
+-- (probed) accepts `diff(a,t) = int(diff(diff(f,t),t),t)` with `f` a forcing input,
+-- and rejects `diff(g,t) = …` because it then isolates `f`: DIFFERS, Lean reads the
+-- chain through the declared velocity.
+example : chainedLowered (chained (differentials% {
+    da : diff(a, t) = int(diff(diff(f, t), t), t); })) =
+    some (.add (.var "v") (.neg (.constant 5))) := by decide +kernel
+-- A third-order chain climbs two declared velocities: `a - a(0)`. Python rejects
+-- `diff(a,t) = int(diff(diff(diff(f,t),t),t),t)` (probed): DIFFERS.
+example : chainedLowered (chained (differentials% {
+    da : diff(a, t) = int(diff(diff(diff(f, t), t), t), t); })) =
+    some (.add (.var "a") (.neg (.constant 7))) := by decide +kernel
+-- In an explicit assignment.
+example : chainedLowered (chained (differentials% { da : diff(a, t) = 0; })
+    (assignments% { h := int(diff(diff(f, t), t), t) * f; })) "h" =
+    some (.mul (.add (.var "v") (.neg (.constant 5))) (.var "f")) := by decide +kernel
+-- `D_t^4(I_t(f))` is the chain `D_t^3(f)`, read through the declared velocities as
+-- `D_t(a)`. Python accepts `diff(diff(diff(diff(int(f,t),t),t),t),t) = f` (probed),
+-- with hidden zero-start velocities: DIFFERS only in the declarations.
+example : chainedLowered (chained (differentials% {
+    da : diff(diff(diff(diff(int(f, t), t), t), t), t) = f; })) = some (.var "f") := by
+  decide +kernel
+-- `D_t^3(I_t(f))` over one declared velocity is `D_t(v)`. Python accepts
+-- `diff(diff(diff(int(f,t),t),t),t) = f` (probed): DIFFERS only in the declaration.
+example : chainedLowered (chained (differentials% {
+    dv : diff(diff(diff(int(f, t), t), t), t) = f; }) (assignments% { da := 0; })
+    (velocities% { df : diff(f, t) = v; })) "dv" = some (.var "f") := by decide +kernel
+-- A bound parameter factor on a derivative is tame; with `f`'s atom read as its
+-- declared velocity, `D_t(I_t(p * D_t(f)))` is `p * v`.
+example : chainedLowered (chained (differentials% {
+    da : diff(a, t) = diff(int(p * diff(f, t), t), t); })) =
+    some (.mul (.var "p") (.var "v")) := by decide +kernel
+example : chainedLowered (chained (differentials% {
+    da : diff(a, t) = diff(int(2 * p * diff(f, t) + f, t), t); })) =
+    some (.add (.mul (.mul (.constant 2) (.var "p")) (.var "v")) (.var "f")) := by
+  decide +kernel
+-- An applied lambda that beta-normalizes to a polynomial. Python accepts
+-- `diff(f,t) = diff(int(apply(λw.w*w, f),t),t)` (probed): Same.
+example : lowered (body (differentials% {
+    df : diff(f, t) = diff(int((λ w => w * w)(f), t), t); })) =
+    some (.mul (.var "f") (.var "f")) := by decide +kernel
+-- Pairs nested three deep are rewritten from the inside out. Python: accepted,
+-- `f' = f` (probed). Same.
+example : lowered (body (differentials% {
+    df : diff(f, t) = diff(int(diff(int(diff(int(f, t), t), t), t), t), t); })) =
+    some (.var "f") := by decide +kernel
+
+-- In every solution the chain's integral reads `v - 5`: the boundary term `v(0)` is
+-- kept through the declared velocity.
+def chainBody : SourceBody :=
+  chained (differentials% { da : diff(a, t) = int(diff(diff(f, t), t), t); })
+
+example (state : Dynamics.Signal 4) (h : chainBody.Solves chainedEvolution state) (t : ℝ)
+    (ht : t ∈ chainedEvolution.time.domain) :
+    chainBody.atoms chainedEvolution state t (term% int(diff(diff(f, t), t), t)) =
+      some (state t 1 - 5) := by
+  obtain ⟨j, hj, reads⟩ := h.integral_chain (k := 1) (x := "f") (y := "v") (q := 5)
+    (by decide +kernel) (by decide +kernel) (by decide +kernel)
+  have hj' : chainBody.coordinate chainedEvolution "v" = some ⟨1, by decide⟩ := by decide +kernel
+  rw [hj', Option.some.injEq] at hj
+  subst hj
+  have hname : chainedEvolution.axis.name = "t" := rfl
+  have := reads t ht
+  simp only [Term.ofChain, hname, List.replicate] at this
+  exact this
+
+-- Still rejected, each naming its reason. A chain of a state with no declared
+-- velocity.
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = int(diff(diff(g, t), t), t); })) =
+    some ⟨.unsupportedIntegral, "da", "no inverse rewrite"⟩ := by decide +kernel
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = diff(diff(diff(int(g, t), t), t), t); })) =
+    some ⟨.unsupportedIntegral, "da", "no inverse rewrite"⟩ := by decide +kernel
+-- A chain one level longer than the declared velocities.
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = int(diff(diff(diff(diff(f, t), t), t), t), t); })) =
+    some ⟨.unsupportedIntegral, "da", "no inverse rewrite"⟩ := by decide +kernel
+-- Still rejected: a pair under a further derivative, or a pair inside a chain's
+-- integral, is not rewritten inside. Python accepts both (probed), with `f' = f`
+-- for the first: DIFFERS (task 040).
+example : rejected (body (differentials% {
+    df : diff(f, t) = diff(diff(int(int(f, t), t), t), t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
+example : rejected (body (differentials% {
+    df : diff(f, t) = int(diff(int(diff(g, t), t), t), t); })) =
+    some ⟨.unsupportedIntegral, "df", "no inverse rewrite"⟩ := by decide +kernel
+-- A state factor on a derivative is not tame: its antiderivative need not exist.
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = diff(int(f * diff(f, t), t), t); })) =
+    some ⟨.unsupportedIntegral, "da", "integrand"⟩ := by decide +kernel
+-- An inverse pair on another axis.
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = diff(int(f, x), t); })) =
+    some ⟨.unsupportedIntegral, "da", "axis"⟩ := by decide +kernel
+-- A lambda holding an atom.
+example : chainedRejected (chained (differentials% {
+    da : diff(a, t) = diff(int((λ w => diff(w, t))(f), t), t); })) =
+    some ⟨.unsupportedIntegral, "da", "integrand"⟩ := by decide +kernel
 
 /-- A polynomial declaration has no start to integrate from. -/
 def polynomial : SourceBody where
@@ -271,6 +413,30 @@ info: 'Gimle.Asgard.Model.SourceBody.Solves.integral_derivative' depends on axio
 info: 'Gimle.Asgard.Model.SourceBody.Solves.derivative_integral' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.derivative_integral
+/--
+info: 'Gimle.Asgard.Model.SourceBody.Solves.integral_chain' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.integral_chain
+/--
+info: 'Gimle.Asgard.Model.Term.cancelAtom_along' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.cancelAtom_along
+/--
+info: 'Gimle.Asgard.Model.Term.cancel_along' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.cancel_along
+/--
+info: 'Gimle.Asgard.Model.Term.cancelAtom_agrees' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Term.cancelAtom_agrees
+/--
+info: 'Gimle.Asgard.Model.SourceBody.Solves.velocitiesAlong' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms SourceBody.Solves.velocitiesAlong
+/--
+info: 'Gimle.Asgard.Model.Lowered.velocitiesAlong' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Lowered.velocitiesAlong
 /--
 info: 'Gimle.Asgard.Examples.SourceIntegrals.decay_solves' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
