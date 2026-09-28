@@ -5,15 +5,17 @@ import Gimle.Asgard.Model.Continuous
 differential equations and higher-order equations over declared velocities.
 
 A `SourceBody` is lowered to an ordinary `Body`: every explicit assignment is
-beta-normalized, and every differential equation is isolated into an assignment
-to its state's derivative port. A velocity declaration `dx : D_t(x) = v` is
+beta-normalized, with its derivative atoms read as declared velocities, and every
+differential equation is isolated into an assignment to its state's derivative
+port. A velocity declaration `dx : D_t(x) = v` is
 itself such an equation, lowered to `dx := v`; it also licenses the chain
 `D_t(D_t(x))`, which isolation reads as `D_t(v)`. A higher-order equation is
 thus lowered to a first-order system over explicitly declared states: the velocity
 `v` is an ordinary state with its own `StateBinding` and initial value, and
 nothing about it is inferred from names. A lower-order atom `D_t(x)` beside the
-chain is read as `v`; that reading needs the velocity equations, which the
-declarations themselves supply for the whole system (`SourceBody.velocitiesHold`).
+chain, or in an explicit assignment, is read as `v`; that reading needs the velocity
+equations, which the declarations themselves supply for the whole system
+(`SourceBody.velocitiesHold`).
 Before isolation, the three inverse rewrites of `Model.Integral` remove
 integrals: `D_t(I_t(X))` becomes `X`, `D_t(D_t(I_t(x)))` becomes `D_t(x)`, and
 `I_t(D_t(x))` becomes `x - x0`, with the declared initial value `x0` of `x`.
@@ -42,7 +44,8 @@ namespace Gimle.Asgard.Model
 open Polynomial
 
 /-- An explicit named assignment. Its right-hand side may contain applied
-lambdas, but no derivative. -/
+lambdas, and derivative atoms only where lowering reads them as declared
+velocities. -/
 structure SourceAssignment where
   output : Port
   rhs : Term
@@ -878,10 +881,11 @@ theorem SourceBody.solves_iff_classical {sb : SourceBody} {e : Evolution}
 
 /-! ## Velocity equations as a premise
 
-A lower-order atom `D_t(x)` beside a declared chain is read as the declared
-velocity `v` of `x` (`Term.readVelocities`). That is exact only where the
-velocity equation `D_t(x) = v` holds, so the per-equation correspondence of a
-differential takes the velocity equations as a premise. Every velocity
+A lower-order atom `D_t(x)` beside a declared chain, or in an explicit
+assignment, is read as the declared velocity `v` of `x` (`Term.readVelocities`).
+That is exact only where the velocity equation `D_t(x) = v` holds, so the
+per-equation correspondence of a differential or an explicit assignment takes the
+velocity equations as a premise. Every velocity
 declaration is itself a source equation, lowered with no premise, so the
 premise is discharged for the whole system on both sides of `Lowered.equations`. -/
 
@@ -935,8 +939,9 @@ instance (sb : SourceBody) (c : Context) : Decidable (sb.IntegralStates c) :=
 
 /-- A lowered body, with the source/target correspondence of its equations and
 the checked velocity and integral states. The correspondence is for the whole
-system and in every environment, although a single differential's correspondence
-may need the velocity equations: the system contains them on both sides. It holds
+system and in every environment, although a single differential's or explicit
+assignment's correspondence may need the velocity equations: the system contains
+them on both sides. It holds
 wherever the atoms read the integral rewrites as they are rewritten
 (`Context.Cancels`), which `SourceBody.cancels_at` discharges at every time of a
 signal. That discharge needs the integral declarations along the whole signal,
@@ -955,19 +960,24 @@ structure Lowered (sb : SourceBody) (c : Context) where
 def Lowered.body {sb : SourceBody} {c : Context} (l : Lowered sb c) : Body :=
   sb.withAssignments l.assignments
 
-/-- Lower an explicit assignment: apply the integral rewrites, then
-beta-normalize. -/
+/-- Lower an explicit assignment: apply the integral rewrites, collapse declared
+chains, read every evolution-axis atom as its state's declared velocity, then
+beta-normalize. An atom that is not read, such as one whose state has no
+declared velocity, one on another axis or one inside a lambda application, is
+rejected by beta normalization. As for a differential, the correspondence
+holds wherever the velocity equations hold and the atoms read the rewrites. -/
 private def lowerAssignment (c : Context) (a : SourceAssignment) :
     Except Diagnostic {out : Assignment // out.output = a.output ∧ ∀ atoms env,
-      c.Cancels atoms env →
+      c.VelocitiesHold env ∧ c.Cancels atoms env →
       ((env a.output.name ≠ none ∧ a.rhs.eval env (c.rates env) atoms = env a.output.name) ↔
         (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
   if (a.rhs.cancel c).integrals ≠ 0 then
     .error ⟨.unsupportedIntegral, a.output.id, "integral in an explicit assignment"⟩
-  else match h : (a.rhs.cancel c).beta with
+  else match h : (((a.rhs.cancel c).collapse c).readVelocities c a.output.name).beta with
   | none => .error ⟨.unsupportedDerivative, a.output.id, "derivative in an explicit assignment"⟩
-  | some e => .ok ⟨⟨a.output, e⟩, rfl, fun atoms env hc => by
-      rw [(a.rhs.cancel c).beta_correct e h env (c.rates env) atoms,
+  | some e => .ok ⟨⟨a.output, e⟩, rfl, fun atoms env ⟨hold, hc⟩ => by
+      rw [Term.beta_correct _ e h env (c.rates env) atoms,
+        Term.readVelocities_eval c _ _ env atoms hold, Term.collapse_eval,
         a.rhs.cancel_eval c env atoms hc]⟩
 
 /-- Lower a differential equation: apply the integral rewrites, collapse
@@ -1060,8 +1070,9 @@ private theorem equations_append (l r : List Assignment) (env : String → Optio
   simp only [Equations, List.forall_mem_append]
 
 /-- Check scopes and velocity states, isolate integral declarations, apply the
-integral rewrites and beta-normalize explicit assignments, isolate differentials
-after the integral rewrites with lower-order atoms read as declared velocities,
+integral rewrites to explicit assignments and beta-normalize them after collapsing
+declared chains and reading atoms as declared velocities, isolate differentials after the integral rewrites
+with lower-order atoms read as declared velocities,
 isolate velocity declarations, and check that the context reads every integral
 declaration. The lowered assignments keep source order: explicit assignments,
 differentials, velocity declarations, integral declarations. `declares` ties the
@@ -1082,7 +1093,8 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
     -- Integral declarations first: an equation using a rejected declaration's
     -- integral would otherwise be reported instead of the declaration.
     let ⟨is, his, pis⟩ ← lowerList (fun _ _ => True) _ (·.output) (lowerIntegral c) sb.integrals
-    let ⟨as, has, pas⟩ ← lowerList c.Cancels _ (·.output) (lowerAssignment c) sb.assignments
+    let ⟨as, has, pas⟩ ← lowerList (fun atoms env => c.VelocitiesHold env ∧ c.Cancels atoms env)
+      _ (·.output) (lowerAssignment c) sb.assignments
     let ⟨ds, hds, pds⟩ ← lowerList (fun atoms env => c.VelocitiesHold env ∧ c.Cancels atoms env)
       _ (·.output) (lowerDifferential c) sb.differentials
     let ⟨vs, hvs, pvs⟩ ← lowerList (fun _ _ => True) _ (·.output) (lowerVelocity c) sb.velocities
@@ -1092,12 +1104,14 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
           VelocityDeclaration.equation, IntegralDeclaration.equation], fun atoms env hc => by
         simp only [SourceBody.Equations, SourceBody.equations, List.forall_mem_append,
           List.forall_mem_map, equations_append]
-        rw [← pas atoms env hc, ← pvs atoms env trivial, ← pis atoms env trivial]
+        rw [← pvs atoms env trivial, ← pis atoms env trivial]
         constructor
         · rintro ⟨ha, ⟨hd, hv⟩, hi⟩
-          exact ⟨⟨⟨ha, (pds atoms env ⟨velocitiesHold declares hv, hc⟩).mp hd⟩, hv⟩, hi⟩
+          have hold := velocitiesHold declares hv
+          exact ⟨⟨⟨(pas atoms env ⟨hold, hc⟩).mp ha, (pds atoms env ⟨hold, hc⟩).mp hd⟩, hv⟩, hi⟩
         · rintro ⟨⟨⟨ha, hd⟩, hv⟩, hi⟩
-          exact ⟨ha, ⟨(pds atoms env ⟨velocitiesHold declares hv, hc⟩).mpr hd, hv⟩, hi⟩,
+          have hold := velocitiesHold declares hv
+          exact ⟨(pas atoms env ⟨hold, hc⟩).mpr ha, ⟨(pds atoms env ⟨hold, hc⟩).mpr hd, hv⟩, hi⟩,
         fun atoms env h => (pis atoms env trivial).mpr ((equations_append _ _ env).mp h).2,
         states, reads⟩
     else

@@ -277,7 +277,8 @@ example : forcedModel.model.linear.isNone = true := by decide +kernel
 private def continuous (sb : SourceBody) : Option Diagnostic :=
   code (compileSourceContinuous sb forcedEvolution)
 
--- Malformed: a derivative in an explicit assignment.
+-- Malformed: a derivative in an explicit assignment, of a state with no declared
+-- velocity, so it is not read.
 example : continuous { forced with assignments := assignments% { r := diff(g, t); } } =
     some ⟨.unsupportedDerivative, "r", "derivative in an explicit assignment"⟩ := by
   decide +kernel

@@ -37,9 +37,10 @@ zero scale, competing atoms on both sides and repeated atoms on one side (those
 not read as declared velocities),
 non-literal or nonlinear factors, a scale around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
-inside lambda applications, derivatives outside differential equations, and
+inside lambda applications, and
 integrals that no inverse rewrite removed and no declared integral state reads
-(`unsupportedIntegral`). -/
+(`unsupportedIntegral`). An explicit assignment is not isolated; its atoms are read
+as declared velocities, and an atom that is not read is rejected. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -145,12 +146,15 @@ declaration is itself one of the source equations. -/
 def Context.VelocitiesHold (c : Context) (env : String → Option ℝ) : Prop :=
   ∀ x y, c.velocity x = some y → (c.locate x).bind env = env y
 
-/-- Read every lower-order atom as the velocity declared for it. After
-`collapse`, each declared chain is one atom `D_t(y)`; an evolution-axis atom
-`D_t(y)` of a state `y` whose derivative port is not `output`, and which has a
-declared velocity `z`, becomes `z`. The atom defining `output` is kept, as is
-every other atom, so an undeclared one is rejected by isolation exactly as
-before. Lambda applications are left untouched, as in `collapse`. -/
+/-- Read every atom other than the one defining `output` as the velocity
+declared for it. After `collapse`, each declared chain is one atom `D_t(y)`; an
+evolution-axis atom `D_t(y)` of a state `y` whose derivative port is not
+`output`, and which has a declared velocity `z`, becomes `z`. The atom defining
+`output` is kept, as is every other atom, so an undeclared one is left for the
+caller to reject: isolation in a differential, beta normalization in an explicit
+assignment, whose `output` is its own output port. Lambda applications are left
+untouched, as in `collapse`: a binder named like the velocity would capture the
+name substituted for the atom. -/
 def Term.readVelocities (c : Context) (output : String) : Term → Term
   | .add a b => .add (a.readVelocities c output) (b.readVelocities c output)
   | .mul a b => .mul (a.readVelocities c output) (b.readVelocities c output)

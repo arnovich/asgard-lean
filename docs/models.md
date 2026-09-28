@@ -35,11 +35,12 @@ with source terms (`term%`, `assignments%`, `differentials%`, `velocities%`,
 
 | Accepted | Lowered to |
 | --- | --- |
-| `z := (λ w => body)(arg)` in any derivative-free term | Beta-normalized `NamedExpr`; inner binders first, no capture |
+| `z := (λ w => body)(arg)` in any term that is derivative-free once atoms are read as velocities (below) | Beta-normalized `NamedExpr`; inner binders first, no capture |
 | `dx : side = rhs` or `dx : rhs = side`, one side holding the only atom | `dx := (rhs - r) / q`, every residual term kept in source order |
 | `velocities% { dx : diff(x, t) = v; }` | `dx := v`; declares the state `v` as the velocity of `x` |
 | `dv : diff(diff(x,t),t) + c * diff(x,t) + k * x = rhs`, with `v` declared as above | `dv := rhs - (c*v + k*x)`: the lower-order atom is read as `v` |
 | `dy : diff(y,t) + c * diff(x,t) = rhs`, with `v` declared as above | `dy := rhs - c*v`: another state's atom is read the same way |
+| `w := c * diff(x,t) + x`, with `v` declared as above | `w := c*v + x`: an explicit assignment reads its atoms the same way |
 | `integrals% { dF : F = int(X, t); }`, with `F(start) = 0` declared | `dF := X`; `int(X, t)` is read as the state `F` wherever it occurs (below) |
 
 ```text
@@ -67,8 +68,18 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
   velocity of `x`, and a lower chain as the velocity one level above its collapsed state.
   Either side may hold it, under any factor, so `c * diff(x,t)` with a parameter `c` is
   the polynomial term `c * v`; scale, linearity and zero-scale rules apply only to the
-  isolated atom. An atom inside a lambda or an explicit assignment is never read. The atom of a state with no declared velocity on `t`
-  stays a second atom. Velocity declarations themselves are never read this way.
+  isolated atom. The atom of a state with no declared velocity on `t` stays a second
+  atom. Velocity declarations themselves are never read this way.
+- Explicit assignments read atoms the same way, after the same chain collapse:
+  `w := diff(x,t)` is `w := v`, and `w := diff(diff(x,t),t)` over declared `x' = v`,
+  `v' = a` is `w := a`. The reading has the same premise as in a differential, the
+  velocity equations, which the declarations discharge for the whole system, so
+  `Lowered.equations` holds in every environment. An atom the reading leaves, such as
+  one whose state has no declared velocity or one on another axis, is rejected
+  (`unsupportedDerivative`), whatever its shape.
+- An atom inside a lambda application, body or argument, is never read, in any
+  equation: a binder named like the velocity would capture the name substituted for
+  the atom, and no capture-safe reading is proved.
 - A velocity declaration `dx : diff(x, t) = v` names the state `x` whose derivative port
   is `dx`, the evolution axis, and a velocity `v`. The first input named `v` must be a
   state; it has its own `StateBinding`, derivative port and initial value, all declared
@@ -98,7 +109,8 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 | Missing velocity initial value or `StateBinding` | `missingBinding` |
 | A velocity declared twice for one state | `duplicateId` |
 | A declared velocity whose own derivative port no equation defines | `unknownReference` |
-| `diff(x + y, t)`, a non-state, `2 * (diff(x,t) + x)`, a derivative in a lambda or an explicit assignment | `unsupportedDerivative` |
+| `diff(x + y, t)`, a non-state, `2 * (diff(x,t) + x)`, a derivative in a lambda | `unsupportedDerivative` |
+| A derivative in an explicit assignment, whatever its shape, that is not read as a declared velocity | `unsupportedDerivative` |
 | Any differential equation or velocity in a polynomial declaration | `unsupportedDerivative` |
 | `dx` named inside its own equation | `repeatedDerivative` |
 | No atom, or the atom of a state whose derivative port is not `dx` | `missingDerivative` |
@@ -209,7 +221,7 @@ system (`classical_iff_realizes`). Derivatives are taken within `t ≥ start`, s
 | `Term.beta_correct` | Beta normalization preserves meaning in every environment |
 | `Isolated.correct` | The isolated assignment holds exactly when the source equation does |
 | `Term.collapse_eval` | Reading a declared chain as `diff(xk, t)` preserves meaning in every environment |
-| `Term.readVelocities_eval` | Reading other atoms as declared velocities preserves meaning wherever the velocity equations hold (`Context.VelocitiesHold`) |
+| `Term.readVelocities_eval` | Reading other atoms, in differentials and explicit assignments, as declared velocities preserves meaning wherever the velocity equations hold (`Context.VelocitiesHold`) |
 | `SourceBody.velocitiesHold` | The source's velocity declarations discharge that premise, so `Lowered.equations` holds wherever the atoms read the integral rewrites (`Context.Cancels`) |
 | `Solves.lift_eqOn` | In a solution, the coordinate of `xm` equals `iteratedDerivWithin m x` on `t ≥ start` |
 | `Solves.chain_denotes` | In a solution, a chain of `k + 1` derivatives denotes the derivative of `iteratedDerivWithin k x` |
@@ -262,6 +274,9 @@ For higher-order chains
 - Python rejects a lower-order atom beside the chain, such as the damped oscillator
   `diff(diff(f,t),t) + c * diff(f,t) + k * f = 0` (probed at `fba931e`); Lean reads it
   as the declared velocity.
+- Python has no explicit assignment: it reads `w = diff(h,t)` as an equation for `h`,
+  `h = int(w,t) + h0` with `w` a forcing input (probed at `fba931e`). Lean's
+  `w := diff(h,t)` defines `w`, and reads the atom as `h`'s declared velocity.
 
 [HigherOrderIsolation.lean](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) proves
 the unique solution `x = cos(t/2)` of `4 * diff(diff(x,t),t) + x = 0`, `x(0) = 1`,
