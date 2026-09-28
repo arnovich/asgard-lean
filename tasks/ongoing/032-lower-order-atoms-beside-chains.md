@@ -1,9 +1,12 @@
 ---
 title: Accept lower-order derivative atoms beside a declared chain
-state: open
+state: ongoing
 priority: low
 labels: [compiler, isolation, migration]
 related: ["027"]
+claimed_by: claude-032
+claimed_at: 2026-09-28T12:00:00Z
+branch: feat/lower_order_atoms
 ---
 
 ## Context
