@@ -1,6 +1,9 @@
 ---
 title: Declare integral states for nested and non-polynomial integrands
-state: open
+state: ongoing
+claimed_by: claude-a036
+claimed_at: 2026-09-28T14:43:41Z
+branch: feat/integral_states_richer_integrands
 priority: low
 labels: [compiler, isolation, migration]
 related: ["034", "035"]
