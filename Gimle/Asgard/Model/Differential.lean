@@ -14,9 +14,9 @@ cancelled, integrated or dropped.
 The atom is replaced by the declared derivative port of `x`; the equation is
 then an ordinary assignment to that port. The axis, start and initial values
 are not touched by this pass. They stay in the unchanged `Evolution`, and the
-initialized feedback of `Model.Continuous` closes the result. There is no
-integral in this fragment, so no inverse rewrite exists that could erase a
-boundary term.
+initialized feedback of `Model.Continuous` closes the result. Integrals are
+removed before this pass by the inverse rewrites of `Model.Integral`, each of
+which keeps its boundary term; an integral that reaches isolation is rejected.
 
 A higher-order chain `D_t(D_t(x))` is first collapsed to `D_t(v)`, where `v` is
 the state declared as the velocity of `x` (`Context.velocity`); longer chains
@@ -36,18 +36,29 @@ zero scale, competing atoms on both sides and repeated atoms on one side (those
 not read as declared velocities),
 non-literal or nonlinear factors, a scale around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
-inside lambda applications, and derivatives outside differential equations. -/
+inside lambda applications, derivatives outside differential equations, and
+integrals that no inverse rewrite removed (`unsupportedIntegral`). -/
 namespace Gimle.Asgard.Model
 open Polynomial
+
+/-- What an evolution declaration tells the integral rewrites of
+`Model.Integral`: `input` holds for a name read from a state coordinate or a
+bound parameter, and `initial x` is the declared initial value of `x` when the
+first input named `x` is a state: its value at the declared start. -/
+structure Boundary where
+  input : String → Bool
+  initial : String → Option ℚ
 
 /-- `axis` is the evolution axis display name; `locate` maps a state display
 name to the display name of its declared derivative port, and `velocity` maps
 a state display name to the name declared as its first derivative (checked to
-be a state by `SourceBody.VelocityStates`). -/
+be a state by `SourceBody.VelocityStates`). `boundary` is present only for an
+evolution declaration; without it no integral is rewritten. -/
 structure Context where
   axis : String
   locate : String → Option String
   velocity : String → Option String
+  boundary : Option Boundary := none
 
 /-- The state reached from `x` through `k` declared velocities. -/
 def Context.lift (c : Context) : Nat → String → Option String
@@ -67,7 +78,7 @@ def Context.rates {α : Type} (c : Context) (env : String → Option α) :
     ((c.lift (axes.length - 1) state).bind c.locate).bind env else none
 
 /-- A context with no derivatives: every atom is rejected by isolation. -/
-def Context.empty : Context := ⟨"", fun _ => none, fun _ => none⟩
+def Context.empty : Context := ⟨"", fun _ => none, fun _ => none, none⟩
 
 /-- Collapse every evolution-axis chain whose levels all have declared
 velocities to one atom `D_t(top)`. Lambda applications are left untouched: a
@@ -92,10 +103,11 @@ def Term.collapse (c : Context) : Term → Term
 
 /-- Collapsing preserves meaning exactly in every environment, under the
 chain reading of the same context. -/
-theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ) :
-    (t.collapse c).eval env (c.rates env) = t.eval env (c.rates env) := by
+theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ)
+    (atoms : Term → Option ℝ) :
+    (t.collapse c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
   induction t with
-  | var _ | constant _ | apply _ _ _ => rfl
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
   | add a b ha hb => simp only [collapse, Term.eval, ha, hb]
   | mul a b ha hb => simp only [collapse, Term.eval, ha, hb]
   | neg a ha => simp only [collapse, Term.eval, ha]
@@ -151,10 +163,11 @@ def Term.readVelocities (c : Context) (output : String) : Term → Term
 velocity equations hold. Unlike `collapse_eval`, this needs the premise: in an
 arbitrary environment the derivative port of `y` and its velocity are unrelated. -/
 theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
-    (env : String → Option ℝ) (h : c.VelocitiesHold env) :
-    (t.readVelocities c output).eval env (c.rates env) = t.eval env (c.rates env) := by
+    (env : String → Option ℝ) (atoms : Term → Option ℝ) (h : c.VelocitiesHold env) :
+    (t.readVelocities c output).eval env (c.rates env) atoms =
+      t.eval env (c.rates env) atoms := by
   induction t with
-  | var _ | constant _ | apply _ _ _ => rfl
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
   | add a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
   | mul a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
   | neg a ha => simp only [readVelocities, Term.eval, ha]
@@ -171,9 +184,11 @@ theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
           · simp only [readVelocities, if_neg hc]
       | _ => rfl
 
-/-- Classify every derivative node, before counting. -/
+/-- Classify every derivative node, before counting. An integral, anywhere, is
+outside this pass. -/
 def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
   | .var _ | .constant _ => .ok ()
+  | .integral _ _ => .error .unsupportedIntegral
   | .add a b | .mul a b => do a.checkDerivatives c; b.checkDerivatives c
   | .neg a => a.checkDerivatives c
   | .apply _ body arg =>
@@ -184,6 +199,7 @@ def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
           if axis ≠ c.axis then .error .mixedDerivative
           else if (c.locate state).isNone then .error .unsupportedDerivative
           else .ok ()
+      | .integral _ _ => .error .unsupportedIntegral
       | .derivative inner inside =>
           match inside.chain with
           | some (axes, base) =>
@@ -255,14 +271,16 @@ def Term.affine : Term → Except ErrorCode Affine
           else return ⟨p.axis, p.state, p.scale * c, none⟩
       | none, none => .error .nonlinearDerivative
   | .apply _ _ _ => .error .unsupportedDerivative
+  | .integral _ _ => .error .unsupportedIntegral
   | .var _ | .constant _ => .error .missingDerivative
 
 theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
-    (env : String → Option ℝ) (rates : List String → String → Option ℝ) (rate : ℝ)
-    (hrate : rates [p.axis] p.state = some rate) : t.eval env rates = p.value env rate := by
+    (env : String → Option ℝ) (rates : List String → String → Option ℝ)
+    (atoms : Term → Option ℝ) (rate : ℝ)
+    (hrate : rates [p.axis] p.state = some rate) : t.eval env rates atoms = p.value env rate := by
   induction t generalizing p with
   | var _ | constant _ => simp [affine] at h
-  | apply => simp [affine] at h
+  | apply | integral => simp [affine] at h
   | derivative axis operand _ =>
       cases operand <;> simp [affine] at h
       subst h
@@ -290,7 +308,7 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
           | ok q =>
             simp [affine, za, hl, hB] at h
             subst h
-            simp only [Term.eval, ← a.beta_correct l hl env rates, hb q hB hrate]
+            simp only [Term.eval, ← a.beta_correct l hl env rates atoms, hb q hB hrate]
             cases hr : q.remainder with
             | none =>
                 cases hv : l.eval env <;> simp [Affine.value, hr, plusLeft, hv]
@@ -308,7 +326,7 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
             | ok q =>
               simp [affine, za, zb, hr', hA] at h
               subst h
-              simp only [Term.eval, ← b.beta_correct r hr' env rates, ha q hA hrate]
+              simp only [Term.eval, ← b.beta_correct r hr' env rates atoms, ha q hA hrate]
               cases hq : q.remainder with
               | none =>
                   cases hv : r.eval env <;> simp [Affine.value, hq, plusRight, hv]
@@ -328,7 +346,7 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
             | none =>
               simp [affine, hla, hB, hq, Bind.bind, Except.bind, Pure.pure, Except.pure] at h
               subst h
-              simp only [Term.eval, a.literal_correct c hla, hb q hB hrate]
+              simp only [Term.eval, a.literal_correct c hla env rates atoms, hb q hB hrate]
               simp [Affine.value, hq]
               ring
       | none =>
@@ -344,7 +362,7 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
                 simp [affine, hla, hlb, hA, hq, Bind.bind, Except.bind, Pure.pure,
                   Except.pure] at h
                 subst h
-                simp only [Term.eval, b.literal_correct c hlb, ha q hA hrate]
+                simp only [Term.eval, b.literal_correct c hlb env rates atoms, ha q hA hrate]
                 simp [Affine.value, hq]
                 ring
 
@@ -429,9 +447,9 @@ theorem isolatedRhs_eval (q : ℚ) (o : NamedExpr) (r : Option NamedExpr)
 /-- Isolation preserves the equation exactly, for every environment, once the
 atom is read as the value of the derivative port. -/
 theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
-    (i : Isolated c output lhs rhs) (env : String → Option ℝ) :
-    (env output ≠ none ∧ ∃ v, lhs.eval env (c.rates env) = some v ∧
-        rhs.eval env (c.rates env) = some v) ↔
+    (i : Isolated c output lhs rhs) (env : String → Option ℝ) (atoms : Term → Option ℝ) :
+    (env output ≠ none ∧ ∃ v, lhs.eval env (c.rates env) atoms = some v ∧
+        rhs.eval env (c.rates env) atoms = some v) ↔
       (env output ≠ none ∧ i.expr.eval env = env output) := by
   cases hw : env output with
   | none => simp
@@ -439,11 +457,11 @@ theorem Isolated.correct {c : Context} {output : String} {lhs rhs : Term}
     simp only [ne_eq, reduceCtorEq, not_false_eq_true, true_and]
     have hrate : c.rates env [i.affine.axis] i.affine.state = some w := by
       simp [Context.rates, Context.lift, i.axis, i.located, hw]
-    have hside := i.side.affine_correct i.affine i.recognized env (c.rates env) w hrate
-    have hopp := i.opposite.beta_correct i.other i.normalized env (c.rates env)
+    have hside := i.side.affine_correct i.affine i.recognized env (c.rates env) atoms w hrate
+    have hopp := i.opposite.beta_correct i.other i.normalized env (c.rates env) atoms
     have hq : (i.affine.scale : ℝ) ≠ 0 := by exact_mod_cast i.nonzero
-    have key : (∃ v, i.side.eval env (c.rates env) = some v ∧
-        i.opposite.eval env (c.rates env) = some v) ↔ i.expr.eval env = some w := by
+    have key : (∃ v, i.side.eval env (c.rates env) atoms = some v ∧
+        i.opposite.eval env (c.rates env) atoms = some v) ↔ i.expr.eval env = some w := by
       rw [hside, ← hopp, Isolated.expr, isolatedRhs_eval]
       cases hr : i.affine.remainder with
       | none =>

@@ -1,4 +1,4 @@
-import Gimle.Asgard.Model.Differential
+import Gimle.Asgard.Model.Integral
 import Gimle.Asgard.Model.Continuous
 
 /-! Common source declarations with applied lambdas, implicit first-order
@@ -14,6 +14,10 @@ thus lowered to a first-order system over explicitly declared states: the veloci
 nothing about it is inferred from names. A lower-order atom `D_t(x)` beside the
 chain is read as `v`; that reading needs the velocity equations, which the
 declarations themselves supply for the whole system (`SourceBody.velocitiesHold`).
+Before isolation, the three inverse rewrites of `Model.Integral` remove
+integrals: `D_t(I_t(X))` becomes `X`, `D_t(D_t(I_t(x)))` becomes `D_t(x)`, and
+`I_t(D_t(x))` becomes `x - x0`, with the declared initial value `x0` of `x`; any
+other integral is rejected.
 The lowered body then goes through the existing verified compiler unchanged.
 Inputs, parameters and observations are copied, and the `Evolution` (axis,
 start, states and initial values) is used as given.
@@ -24,8 +28,11 @@ required to be the derivative of `x` on the forward domain
 (`Solves.derivative_denotes`). A chain of `k + 1` derivatives denotes the
 `k + 1`-th derivative of `x` on the forward domain, and a declared velocity's
 initial value is the initial derivative (`Solves.chain_denotes`,
-`Solves.initial_iterated`). The main results are `Lowered.solves_iff` and the
-composed `SourceContinuousModel.solves_iff_realizes`. -/
+`Solves.initial_iterated`). Integrals, and derivatives of anything but a chain,
+are read along the whole trajectory (`SourceBody.atoms`): an integral is the
+antiderivative from the declared start, never a totalized integral. The main
+results are `Lowered.solves_iff` and the composed
+`SourceContinuousModel.solves_iff_realizes`. -/
 namespace Gimle.Asgard.Model
 open Polynomial
 
@@ -93,6 +100,16 @@ def SourceBody.coordinate (sb : SourceBody) (e : Evolution) (x : String) :
     Option (Fin e.states.length) :=
   (sb.inputs.find? (fun p => p.name == x && p.role == .state)).bind (index e.stateIds ·.id)
 
+/-- A name is an input when it is read from a state coordinate or a bound
+parameter. The initial value of `x` is declared when the first source input
+named `x` is a state. -/
+def SourceBody.boundary (sb : SourceBody) (e : Evolution) : Boundary where
+  input name := ((sb.withAssignments []).seed e.stateIds name).isSome
+  initial x := (sb.inputs.find? (·.name == x)).bind fun p =>
+    if p.role == .state then (index e.stateIds p.id).bind fun i =>
+      e.initialValue e.states[i].initialId
+    else none
+
 /-- `x` names a state port; its derivative port is the one its binding names,
 and its velocity the one its first velocity declaration on the evolution axis
 names. -/
@@ -104,24 +121,27 @@ def SourceBody.context (sb : SourceBody) (e : Evolution) : Context where
     sb.portName (e.derivativeIds i)
   velocity state :=
     (sb.velocities.find? (fun v => v.state == state && v.axis == e.axis.name)).map (·.velocity)
+  boundary := some (sb.boundary e)
 
 /-! ## Source semantics -/
 
-/-- Every original equation, explicit and differential, with defined outputs. -/
-def SourceBody.Equations (sb : SourceBody) (c : Context) (env : String → Option ℝ) :
-    Prop :=
+/-- Every original equation, explicit and differential, with defined outputs;
+`atoms` reads integrals and derivatives of non-chains. -/
+def SourceBody.Equations (sb : SourceBody) (c : Context) (atoms : Term → Option ℝ)
+    (env : String → Option ℝ) : Prop :=
   (∀ a ∈ sb.assignments, env a.output.name ≠ none ∧
-    a.rhs.eval env (c.rates env) = env a.output.name) ∧
+    a.rhs.eval env (c.rates env) atoms = env a.output.name) ∧
   (∀ d ∈ sb.equations, env d.output.name ≠ none ∧
-    ∃ v, d.lhs.eval env (c.rates env) = some v ∧ d.rhs.eval env (c.rates env) = some v)
+    ∃ v, d.lhs.eval env (c.rates env) atoms = some v ∧
+      d.rhs.eval env (c.rates env) atoms = some v)
 
 noncomputable def SourceBody.inputEnvironment {n : Nat} (sb : SourceBody)
     (ids : Fin n → String) (x : Point n) : String → Option ℝ :=
   (sb.withAssignments []).inputEnvironment ids x
 
-def SourceBody.Source {n : Nat} (sb : SourceBody) (c : Context) (ids : Fin n → String)
-    (x : Point n) (env : String → Option ℝ) : Prop :=
-  Agrees (sb.inputEnvironment ids x) env ∧ sb.Equations c env
+def SourceBody.Source {n : Nat} (sb : SourceBody) (c : Context) (atoms : Term → Option ℝ)
+    (ids : Fin n → String) (x : Point n) (env : String → Option ℝ) : Prop :=
+  Agrees (sb.inputEnvironment ids x) env ∧ sb.Equations c atoms env
 
 def SourceBody.value {α : Type} (sb : SourceBody) (env : String → Option α) (id : String) :
     Option α :=
@@ -132,13 +152,41 @@ theorem SourceBody.value_eq {α : Type} (sb : SourceBody) (env : String → Opti
   unfold SourceBody.value SourceBody.portName
   cases (sb.inputs ++ sb.outputs).find? (·.id == id) <;> rfl
 
+/-- A chain of `k` evolution derivatives of `x`, admitted by the same declared
+velocities as `Context.rates`, read as the `k`-th derivative of `x` at `t`. -/
+noncomputable def SourceBody.classicalRates (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) (t : ℝ) : List String → String → Option ℝ :=
+  fun axes x => if axes ≠ [] ∧ axes.all (· == (sb.context e).axis) then
+    (((sb.context e).lift (axes.length - 1) x).bind (sb.context e).locate).bind fun _ =>
+      (sb.coordinate e x).map fun i =>
+        iteratedDerivWithin axes.length (fun s => state s i) e.time.domain t
+  else none
+
+/-- The signal as the source reads it along the forward domain: inputs by name,
+and chains as actual iterated derivatives. Only states and bound parameters are
+read, so an integrand naming an auxiliary or a derivative port has no value here;
+lowering rejects such integrands. -/
+noncomputable def SourceBody.trajectory (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) : Trajectory where
+  axis := e.axis.name
+  start := e.time.start
+  base s := sb.inputEnvironment e.stateIds (state s)
+  rates s := sb.classicalRates e state s
+
+/-- Integrals, and derivatives of non-chains, read at `t` along the signal. -/
+noncomputable def SourceBody.atoms (sb : SourceBody) (e : Evolution)
+    (state : Dynamics.Signal e.states.length) (t : ℝ) : Term → Option ℝ :=
+  (sb.trajectory e state).atoms t
+
 /-- Initial conditions and the original source equations on the forward domain,
-with each derivative atom read from the state's actual derivative. -/
+with each derivative atom read from the state's actual derivative, and each
+integral and derivative of a non-chain read along the signal. -/
 def SourceBody.Solves (sb : SourceBody) (e : Evolution)
     (state : Dynamics.Signal e.states.length) : Prop :=
   (∀ i, (e.initialValue e.states[i].initialId).map (fun q : ℚ => (q : ℝ)) =
     some (state e.time.start i)) ∧
-  ∀ t ∈ e.time.domain, ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+  ∀ t ∈ e.time.domain, ∃ env, sb.Source (sb.context e) (sb.atoms e state t) e.stateIds
+    (state t) env ∧
     ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
       HasDerivWithinAt (fun t => state t i) rate e.time.domain t
 
@@ -177,7 +225,7 @@ derivative of the state named `x`. -/
 theorem SourceBody.Solves.derivative_at {sb : SourceBody} {e : Evolution}
     {state : Dynamics.Signal e.states.length} (h : sb.Solves e state) {t : ℝ}
     (ht : t ∈ e.time.domain) :
-    ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+    ∃ env, sb.Source (sb.context e) (sb.atoms e state t) e.stateIds (state t) env ∧
       ∀ x r, (sb.context e).rates env [e.axis.name] x = some r →
         ∃ p i, sb.inputs.find? (fun p => p.name == x && p.role == .state) = some p ∧
           e.stateIds i = p.id ∧ HasDerivWithinAt (fun t => state t i) r e.time.domain t := by
@@ -237,7 +285,8 @@ private theorem velocity_declared {sb : SourceBody} {e : Evolution} {x y : Strin
 /-- A velocity equation holds in every environment satisfying the source: the
 derivative port of `x` and the velocity carry the same value. -/
 theorem SourceBody.velocity_equation {sb : SourceBody} {e : Evolution}
-    {env : String → Option ℝ} (equations : sb.Equations (sb.context e) env) {x y : String}
+    {atoms : Term → Option ℝ} {env : String → Option ℝ}
+    (equations : sb.Equations (sb.context e) atoms env) {x y : String}
     (h : (sb.context e).velocity x = some y) :
     ∃ w, ((sb.context e).locate x).bind env = some w ∧ env y = some w := by
   obtain ⟨d, hd, rfl, rfl⟩ := velocity_declared h
@@ -353,7 +402,7 @@ environment witnessing the source equations at `t`. -/
 theorem SourceBody.Solves.chain_denotes {sb : SourceBody} {e : Evolution}
     {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
     (states : sb.VelocityStates) {t : ℝ} (ht : t ∈ e.time.domain) {env : String → Option ℝ}
-    (source : sb.Source (sb.context e) e.stateIds (state t) env)
+    (source : sb.Source (sb.context e) (sb.atoms e state t) e.stateIds (state t) env)
     (rates : ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
       HasDerivWithinAt (fun t => state t i) rate e.time.domain t)
     (axes : List String) (x : String) (r : ℝ)
@@ -397,7 +446,7 @@ theorem SourceBody.Solves.chain_denotes {sb : SourceBody} {e : Evolution}
 theorem SourceBody.Solves.chain_at {sb : SourceBody} {e : Evolution}
     {state : Dynamics.Signal e.states.length} (h : sb.Solves e state)
     (states : sb.VelocityStates) {t : ℝ} (ht : t ∈ e.time.domain) :
-    ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+    ∃ env, sb.Source (sb.context e) (sb.atoms e state t) e.stateIds (state t) env ∧
       ∀ axes x r, (sb.context e).rates env axes x = some r →
         ∃ i, sb.coordinate e x = some i ∧
           HasDerivWithinAt (iteratedDerivWithin (axes.length - 1) (fun s => state s i)
@@ -416,24 +465,16 @@ coincide (`Solves_iff_classical`). -/
 
 /-- The source equations under an arbitrary reading of derivative chains. -/
 def SourceBody.EquationsUnder (sb : SourceBody) (rates : List String → String → Option ℝ)
-    (env : String → Option ℝ) : Prop :=
+    (atoms : Term → Option ℝ) (env : String → Option ℝ) : Prop :=
   (∀ a ∈ sb.assignments, env a.output.name ≠ none ∧
-    a.rhs.eval env rates = env a.output.name) ∧
+    a.rhs.eval env rates atoms = env a.output.name) ∧
   (∀ d ∈ sb.equations, env d.output.name ≠ none ∧
-    ∃ v, d.lhs.eval env rates = some v ∧ d.rhs.eval env rates = some v)
+    ∃ v, d.lhs.eval env rates atoms = some v ∧ d.rhs.eval env rates atoms = some v)
 
-theorem SourceBody.equations_eq (sb : SourceBody) (c : Context) (env : String → Option ℝ) :
-    sb.Equations c env = sb.EquationsUnder (c.rates env) env := rfl
-
-/-- A chain of `k` evolution derivatives of `x`, admitted by the same declared
-velocities as `Context.rates`, read as the `k`-th derivative of `x` at `t`. -/
-noncomputable def SourceBody.classicalRates (sb : SourceBody) (e : Evolution)
-    (state : Dynamics.Signal e.states.length) (t : ℝ) : List String → String → Option ℝ :=
-  fun axes x => if axes ≠ [] ∧ axes.all (· == (sb.context e).axis) then
-    (((sb.context e).lift (axes.length - 1) x).bind (sb.context e).locate).bind fun _ =>
-      (sb.coordinate e x).map fun i =>
-        iteratedDerivWithin axes.length (fun s => state s i) e.time.domain t
-  else none
+theorem SourceBody.equations_eq (sb : SourceBody) (c : Context) (atoms : Term → Option ℝ)
+    (env : String → Option ℝ) :
+    sb.Equations c atoms env = sb.EquationsUnder (c.rates env) atoms env :=
+  rfl
 
 /-- At `t`, `env` extends the inputs and every derivative port carries the
 actual derivative of its differentiable state. -/
@@ -450,7 +491,7 @@ def SourceBody.SolvesClassical (sb : SourceBody) (e : Evolution)
   (∀ i, (e.initialValue e.states[i].initialId).map (fun q : ℚ => (q : ℝ)) =
     some (state e.time.start i)) ∧
   ∀ t ∈ e.time.domain, ∃ env, sb.PortsAt e state t env ∧
-    sb.EquationsUnder (sb.classicalRates e state t) env
+    sb.EquationsUnder (sb.classicalRates e state t) (sb.atoms e state t) env
 
 /-- The velocity equations under a reading. -/
 private def velocityEquations (sb : SourceBody) (rates : List String → String → Option ℝ)
@@ -458,7 +499,8 @@ private def velocityEquations (sb : SourceBody) (rates : List String → String 
   ∀ d ∈ sb.velocities, ∃ w, rates [d.axis] d.state = some w ∧ env d.velocity = some w
 
 private theorem velocityEquations_of {sb : SourceBody} {rates : List String → String → Option ℝ}
-    {env : String → Option ℝ} (h : sb.EquationsUnder rates env) : velocityEquations sb rates env := by
+    {atoms : Term → Option ℝ} {env : String → Option ℝ} (h : sb.EquationsUnder rates atoms env) :
+    velocityEquations sb rates env := by
   intro d hd
   obtain ⟨_, w, hl, hr⟩ := h.2 _ (List.mem_append_right _ (List.mem_map_of_mem hd))
   exact ⟨w, by simpa [VelocityDeclaration.equation, Term.eval, Term.chain] using hl, hr⟩
@@ -479,6 +521,118 @@ private theorem rates_single {sb : SourceBody} {e : Evolution}
       rw [SourceBody.value_eq, hport, Option.bind_some] at hv
       simp [hv, hj, iteratedDerivWithin_one]
   · rfl
+
+/-- Port values that are actual derivatives make `env` read ports as actual. -/
+private theorem ports_of {sb : SourceBody} {e : Evolution} {state : Dynamics.Signal e.states.length}
+    {t : ℝ} (ht : t ∈ e.time.domain) {env : String → Option ℝ}
+    (agrees : Agrees (sb.inputEnvironment e.stateIds (state t)) env)
+    (rates : ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
+      HasDerivWithinAt (fun t => state t i) rate e.time.domain t) :
+    sb.PortsAt e state t env := by
+  refine ⟨agrees, fun i => ?_⟩
+  obtain ⟨rate, hv, hd⟩ := rates i
+  exact ⟨hd.differentiableWithinAt, by rw [hv, hd.derivWithin (uniqueDiffOn_Ici _ t ht)]⟩
+
+/-! ## Integrals along a signal
+
+The inverse rewrites of `Model.Integral` are exact wherever the atoms are read
+along a regular trajectory, at a time where the ports are actual derivatives.
+Every signal with differentiable states and its declared initial values is
+regular, so both a source solution and a lowered solution discharge the premise
+at every time. -/
+
+private theorem seed_shape {b : Body} {n : Nat} {ids : Fin n → String} {name : String}
+    {expr : Expr n} (h : b.seed ids name = some expr) :
+    (∃ q, expr = .constant q) ∨ ∃ i, expr = .var i := by
+  simp only [Body.seed, Body.inputTerm, Option.bind_eq_some_iff] at h
+  obtain ⟨p, -, hp⟩ := h
+  split at hp
+  · obtain ⟨q, -, rfl⟩ := Option.map_eq_some_iff.mp hp
+    exact .inl ⟨q, rfl⟩
+  · obtain ⟨i, -, rfl⟩ := Option.map_eq_some_iff.mp hp
+    exact .inr ⟨i, rfl⟩
+
+/-- The first input named `x` is the state port the context locates. -/
+private theorem initial_coordinate {sb : SourceBody} {e : Evolution} {x : String} {q : ℚ}
+    (h : (sb.boundary e).initial x = some q) :
+    ∃ i, sb.coordinate e x = some i ∧ e.initialValue e.states[i].initialId = some q ∧
+      ∀ y : Point e.states.length, sb.inputEnvironment e.stateIds y x = some (y i) := by
+  simp only [SourceBody.boundary, Option.bind_eq_some_iff] at h
+  obtain ⟨p, hp, hq⟩ := h
+  split at hq
+  · rename_i role
+    obtain ⟨i, hi, hv⟩ := Option.bind_eq_some_iff.mp hq
+    have role' : p.role = .state := role_beq.mp role
+    refine ⟨i, ?_, hv, fun y => ?_⟩
+    · have := find?_and (q := fun p => p.role == .state) hp role
+      simp [SourceBody.coordinate, this, hi]
+    · have notParameter : (p.role == .parameter) = false := by rw [role']; decide
+      simp [SourceBody.inputEnvironment, SourceBody.withAssignments, Body.inputEnvironment, hp,
+        Body.inputValue, notParameter, hi]
+  · simp at hq
+
+/-- A located state is read as its coordinate's derivative by the classical chains. -/
+private theorem classical_single {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} {y port : String}
+    (hl : (sb.context e).locate y = some port) {j : Fin e.states.length}
+    (hj : sb.coordinate e y = some j) (s : ℝ) :
+    sb.classicalRates e state s [(sb.context e).axis] y =
+      some (derivWithin (fun s => state s j) e.time.domain s) := by
+  simp [SourceBody.classicalRates, Context.lift, hl, hj, iteratedDerivWithin_one]
+
+/-- A signal with differentiable states and its declared initial values is a
+regular trajectory for the integral rewrites. -/
+theorem SourceBody.regular {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length}
+    (init : ∀ i, (e.initialValue e.states[i].initialId).map (fun q : ℚ => (q : ℝ)) =
+      some (state e.time.start i))
+    (diff : ∀ s ∈ e.time.domain, ∀ i,
+      DifferentiableWithinAt ℝ (fun s => state s i) e.time.domain s) :
+    (sb.trajectory e state).Regular (sb.context e) (sb.boundary e) where
+  axis := rfl
+  input n h := by
+    obtain ⟨expr, hexpr⟩ := Option.isSome_iff_exists.mp h
+    have base : ∀ s, sb.inputEnvironment e.stateIds (state s) n = some (expr.eval (state s)) := by
+      intro s
+      have := congrFun ((sb.withAssignments []).seed_correct e.stateIds (state s)) n
+      simp only [Evaluated, hexpr, Option.map_some] at this
+      exact this.symm
+    refine ⟨fun s => expr.eval (state s), ?_, fun s _ => base s⟩
+    rcases seed_shape hexpr with ⟨q, rfl⟩ | ⟨i, rfl⟩
+    · exact continuousOn_const
+    · exact fun s hs => (diff s hs i).continuousWithinAt
+  rate y h := by
+    obtain ⟨port, hl⟩ := Option.isSome_iff_exists.mp h
+    obtain ⟨j, hj, -⟩ := coordinate_of_locate hl
+    exact ⟨fun s => state s j, fun s hs => ⟨diff s hs j, classical_single hl hj s⟩⟩
+  initial x q h hq := by
+    obtain ⟨port, hl⟩ := Option.isSome_iff_exists.mp h
+    obtain ⟨i, hi, hv, hbase⟩ := initial_coordinate hq
+    have start := init i
+    rw [hv, Option.map_some, Option.some.injEq] at start
+    exact ⟨fun s => state s i, start.symm, fun s hs =>
+      ⟨diff s hs i, hbase (state s), classical_single hl hi s⟩⟩
+
+/-- Where the ports carry actual derivatives, `env` reads the signal. -/
+theorem SourceBody.at_of {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} {t : ℝ} (ht : t ∈ e.time.domain)
+    {env : String → Option ℝ} (ports : sb.PortsAt e state t env) :
+    (sb.trajectory e state).At (sb.context e) t env where
+  mem := ht
+  base := ports.1
+  rate y _ := rates_single ports _ y
+
+/-- The premise of the integral rewrites holds at every time of a signal with
+differentiable states, its declared initial values and actual ports. -/
+theorem SourceBody.cancels_at {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length}
+    (init : ∀ i, (e.initialValue e.states[i].initialId).map (fun q : ℚ => (q : ℝ)) =
+      some (state e.time.start i))
+    (diff : ∀ s ∈ e.time.domain, ∀ i,
+      DifferentiableWithinAt ℝ (fun s => state s i) e.time.domain s)
+    {t : ℝ} (ht : t ∈ e.time.domain) {env : String → Option ℝ}
+    (ports : sb.PortsAt e state t env) : (sb.context e).Cancels (sb.atoms e state t) env :=
+  Context.cancels rfl (sb.regular init diff) (sb.at_of ht ports)
 
 /-- At `s`, each declared velocity is the actual derivative of its state. -/
 private def velocityHolds (sb : SourceBody) (e : Evolution)
@@ -584,25 +738,16 @@ an iterated derivative have the same solutions, with the same initial data. -/
 theorem SourceBody.solves_iff_classical {sb : SourceBody} {e : Evolution}
     (states : sb.VelocityStates) (state : Dynamics.Signal e.states.length) :
     sb.Solves e state ↔ sb.SolvesClassical e state := by
-  have portsOf : ∀ t ∈ e.time.domain, ∀ env,
-      Agrees (sb.inputEnvironment e.stateIds (state t)) env →
-      (∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
-        HasDerivWithinAt (fun t => state t i) rate e.time.domain t) →
-      sb.PortsAt e state t env := by
-    intro t ht env agrees rates
-    refine ⟨agrees, fun i => ?_⟩
-    obtain ⟨rate, hv, hd⟩ := rates i
-    exact ⟨hd.differentiableWithinAt, by rw [hv, hd.derivWithin (uniqueDiffOn_Ici _ t ht)]⟩
   constructor
   · intro h
     have holds : ∀ s ∈ e.time.domain, velocityHolds sb e state s := by
       intro s hs
       obtain ⟨env, source, rates⟩ := h.2 s hs
-      exact velocityHolds_of states (portsOf s hs env source.1 rates)
+      exact velocityHolds_of states (ports_of hs source.1 rates)
         (velocityEquations_of source.2)
     refine ⟨h.1, fun t ht => ?_⟩
     obtain ⟨env, source, rates⟩ := h.2 t ht
-    have ports := portsOf t ht env source.1 rates
+    have ports := ports_of ht source.1 rates
     refine ⟨env, ports, ?_⟩
     rw [← rates_eq_classical holds ht ports]
     exact source.2
@@ -656,10 +801,10 @@ theorem SourceBody.declares_empty (sb : SourceBody) : sb.Declares Context.empty 
 context the body declares, taking only the velocity equations rather than all
 of `SourceBody.Equations`, so the lowered side can supply them too. -/
 theorem SourceBody.velocitiesHold {sb : SourceBody} {c : Context} (declares : sb.Declares c)
-    {env : String → Option ℝ}
+    {atoms : Term → Option ℝ} {env : String → Option ℝ}
     (h : ∀ d ∈ sb.velocities, env d.equation.output.name ≠ none ∧
-      ∃ v, d.equation.lhs.eval env (c.rates env) = some v ∧
-        d.equation.rhs.eval env (c.rates env) = some v) :
+      ∃ v, d.equation.lhs.eval env (c.rates env) atoms = some v ∧
+        d.equation.rhs.eval env (c.rates env) atoms = some v) :
     c.VelocitiesHold env := by
   intro x y hxy
   obtain ⟨d, hd, rfl, rfl, haxis⟩ := declares x y hxy
@@ -673,71 +818,89 @@ theorem SourceBody.velocitiesHold {sb : SourceBody} {c : Context} (declares : sb
 /-- A lowered body, with the source/target correspondence of its equations and
 the checked velocity states. The correspondence is for the whole system and in
 every environment, although a single differential's correspondence may need the
-velocity equations: the system contains them on both sides. -/
+velocity equations: the system contains them on both sides. It holds wherever
+the atoms read the integral rewrites as they are rewritten (`Context.Cancels`),
+which `SourceBody.cancels_at` discharges at every time of a signal. -/
 structure Lowered (sb : SourceBody) (c : Context) where
   assignments : List Assignment
   outputs : assignments.map (·.output) = sb.outputs
-  equations : ∀ env, sb.Equations c env ↔ Equations assignments env
+  equations : ∀ atoms env, c.Cancels atoms env →
+    (sb.Equations c atoms env ↔ Equations assignments env)
   velocityStates : sb.VelocityStates
 
 def Lowered.body {sb : SourceBody} {c : Context} (l : Lowered sb c) : Body :=
   sb.withAssignments l.assignments
 
+/-- Lower an explicit assignment: apply the integral rewrites, then
+beta-normalize. -/
 private def lowerAssignment (c : Context) (a : SourceAssignment) :
-    Except Diagnostic {out : Assignment // out.output = a.output ∧ ∀ env,
-      (env a.output.name ≠ none ∧ a.rhs.eval env (c.rates env) = env a.output.name) ↔
-        (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name)} :=
-  match h : a.rhs.beta with
+    Except Diagnostic {out : Assignment // out.output = a.output ∧ ∀ atoms env,
+      c.Cancels atoms env →
+      ((env a.output.name ≠ none ∧ a.rhs.eval env (c.rates env) atoms = env a.output.name) ↔
+        (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
+  if (a.rhs.cancel c).integrals ≠ 0 then
+    .error ⟨.unsupportedIntegral, a.output.id, "integral in an explicit assignment"⟩
+  else match h : (a.rhs.cancel c).beta with
   | none => .error ⟨.unsupportedDerivative, a.output.id, "derivative in an explicit assignment"⟩
-  | some e => .ok ⟨⟨a.output, e⟩, rfl, fun env => by
-      rw [a.rhs.beta_correct e h env (c.rates env)]⟩
+  | some e => .ok ⟨⟨a.output, e⟩, rfl, fun atoms env hc => by
+      rw [(a.rhs.cancel c).beta_correct e h env (c.rates env) atoms,
+        a.rhs.cancel_eval c env atoms hc]⟩
 
-/-- Lower a differential equation: collapse declared chains, read lower-order
-atoms as their declared velocities, then isolate. The correspondence holds
-wherever the velocity equations hold. -/
+/-- Lower a differential equation: apply the integral rewrites, collapse
+declared chains, read lower-order atoms as their declared velocities, then
+isolate. The correspondence holds wherever the velocity equations hold and the
+atoms read the rewrites. -/
 private def lowerDifferential (c : Context) (d : DifferentialEquation) :
-    Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ env, c.VelocitiesHold env →
-      ((env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) = some v ∧
-          d.rhs.eval env (c.rates env) = some v) ↔
+    Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ atoms env,
+      c.VelocitiesHold env ∧ c.Cancels atoms env →
+      ((env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) atoms = some v ∧
+          d.rhs.eval env (c.rates env) atoms = some v) ↔
         (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
   if d.lhs.mentions d.output.name || d.rhs.mentions d.output.name then
     .error ⟨.repeatedDerivative, d.output.id, "derivative port named in its own equation"⟩
-  else match isolate c d.output.name ((d.lhs.collapse c).readVelocities c d.output.name)
-      ((d.rhs.collapse c).readVelocities c d.output.name) with
+  else if (d.lhs.cancel c).integrals + (d.rhs.cancel c).integrals ≠ 0 then
+    .error ⟨.unsupportedIntegral, d.output.id, d.output.name⟩
+  else match isolate c d.output.name (((d.lhs.cancel c).collapse c).readVelocities c d.output.name)
+      (((d.rhs.cancel c).collapse c).readVelocities c d.output.name) with
   | .error code => .error ⟨code, d.output.id, d.output.name⟩
-  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env hold => by
-      rw [← i.correct env, Term.readVelocities_eval c _ _ env hold,
-        Term.readVelocities_eval c _ _ env hold, Term.collapse_eval, Term.collapse_eval]⟩
+  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun atoms env ⟨hold, hc⟩ => by
+      rw [← i.correct env atoms, Term.readVelocities_eval c _ _ env atoms hold,
+        Term.readVelocities_eval c _ _ env atoms hold, Term.collapse_eval, Term.collapse_eval,
+        Term.cancel_eval c _ env atoms hc, Term.cancel_eval c _ env atoms hc]⟩
 
 /-- Lower a velocity declaration as the first-order equation it states, with no
 premise. It is kept apart from `lowerDifferential` so that a declaration is
 never read through `Term.readVelocities`: its correspondence must hold in every
 environment, because it is what discharges that reading for the system. -/
 private def lowerVelocity (c : Context) (v : VelocityDeclaration) :
-    Except Diagnostic {out : Assignment // out.output = v.output ∧ ∀ env, True →
-      ((env v.equation.output.name ≠ none ∧ ∃ w, v.equation.lhs.eval env (c.rates env) = some w ∧
-          v.equation.rhs.eval env (c.rates env) = some w) ↔
+    Except Diagnostic {out : Assignment // out.output = v.output ∧ ∀ (atoms : Term → Option ℝ) env,
+      True →
+      ((env v.equation.output.name ≠ none ∧
+          ∃ w, v.equation.lhs.eval env (c.rates env) atoms = some w ∧
+            v.equation.rhs.eval env (c.rates env) atoms = some w) ↔
         (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))} :=
   let d := v.equation
   if d.lhs.mentions d.output.name || d.rhs.mentions d.output.name then
     .error ⟨.repeatedDerivative, d.output.id, "derivative port named in its own equation"⟩
   else match isolate c d.output.name d.lhs d.rhs with
   | .error code => .error ⟨code, d.output.id, d.output.name⟩
-  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun env _ => i.correct env⟩
+  | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun atoms env _ => i.correct env atoms⟩
 
-private def lowerList {α : Type} (H : (String → Option ℝ) → Prop)
-    (P : α → (String → Option ℝ) → Prop) (port : α → Port)
-    (f : (a : α) → Except Diagnostic {out : Assignment // out.output = port a ∧ ∀ env, H env →
-      (P a env ↔ (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))}) :
+private def lowerList {α : Type} (H : (Term → Option ℝ) → (String → Option ℝ) → Prop)
+    (P : α → (Term → Option ℝ) → (String → Option ℝ) → Prop) (port : α → Port)
+    (f : (a : α) → Except Diagnostic {out : Assignment // out.output = port a ∧ ∀ atoms env,
+      H atoms env →
+      (P a atoms env ↔ (env out.output.name ≠ none ∧ out.rhs.eval env = env out.output.name))}) :
     (as : List α) → Except Diagnostic {out : List Assignment //
-      out.map (·.output) = as.map port ∧ ∀ env, H env → ((∀ a ∈ as, P a env) ↔ Equations out env)}
-  | [] => .ok ⟨[], rfl, fun env _ => by simp [Equations]⟩
+      out.map (·.output) = as.map port ∧ ∀ atoms env, H atoms env →
+        ((∀ a ∈ as, P a atoms env) ↔ Equations out env)}
+  | [] => .ok ⟨[], rfl, fun _ _ _ => by simp [Equations]⟩
   | a :: rest => do
       let ⟨x, hx, px⟩ ← f a
       let ⟨xs, hxs, pxs⟩ ← lowerList H P port f rest
-      return ⟨x :: xs, by simp [hx, hxs], fun env hold => by
-        have h1 := px env hold
-        have h2 := pxs env hold
+      return ⟨x :: xs, by simp [hx, hxs], fun atoms env hold => by
+        have h1 := px atoms env hold
+        have h2 := pxs atoms env hold
         simp only [List.forall_mem_cons, Equations] at *
         rw [h1, h2]⟩
 
@@ -745,10 +908,11 @@ private theorem equations_append (l r : List Assignment) (env : String → Optio
     Equations (l ++ r) env ↔ Equations l env ∧ Equations r env := by
   simp only [Equations, List.forall_mem_append]
 
-/-- Check scopes and velocity states, beta-normalize explicit assignments,
-isolate differentials with lower-order atoms read as declared velocities, and
-isolate velocity declarations. `declares` ties the velocities `c` reads to the
-body's declarations, whose equations discharge that reading. -/
+/-- Check scopes and velocity states, apply the integral rewrites and
+beta-normalize explicit assignments, isolate differentials after the integral
+rewrites with lower-order atoms read as declared velocities, and isolate velocity
+declarations. `declares` ties the velocities `c` reads to the body's
+declarations, whose equations discharge that reading. -/
 def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) :
     Except Diagnostic (Lowered sb c) := do
   let names := (sb.inputs ++ sb.outputs).map Port.name
@@ -761,23 +925,21 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
     | .error name, _ | _, .error name => throw ⟨.unknownReference, d.output.id, name⟩
     | .ok (), .ok () => pure ()
   if states : sb.VelocityStates then
-    let ⟨as, has, pas⟩ ← lowerList (fun _ => True) _ (·.output)
-      (fun a => (lowerAssignment c a).map fun ⟨o, ho, po⟩ => ⟨o, ho, fun env _ => po env⟩)
-      sb.assignments
-    let ⟨ds, hds, pds⟩ ← lowerList c.VelocitiesHold _ (·.output) (lowerDifferential c)
-      sb.differentials
-    let ⟨vs, hvs, pvs⟩ ← lowerList (fun _ => True) _ (·.output) (lowerVelocity c) sb.velocities
+    let ⟨as, has, pas⟩ ← lowerList c.Cancels _ (·.output) (lowerAssignment c) sb.assignments
+    let ⟨ds, hds, pds⟩ ← lowerList (fun atoms env => c.VelocitiesHold env ∧ c.Cancels atoms env)
+      _ (·.output) (lowerDifferential c) sb.differentials
+    let ⟨vs, hvs, pvs⟩ ← lowerList (fun _ _ => True) _ (·.output) (lowerVelocity c) sb.velocities
     return ⟨as ++ ds ++ vs, by
       simp [SourceBody.outputs, SourceBody.equations, has, hds, hvs, Function.comp_def,
-        VelocityDeclaration.equation], fun env => by
+        VelocityDeclaration.equation], fun atoms env hc => by
       rw [SourceBody.Equations, SourceBody.equations, List.forall_mem_append,
-        List.forall_mem_map, equations_append, equations_append, ← pas env trivial,
-        ← pvs env trivial]
+        List.forall_mem_map, equations_append, equations_append, ← pas atoms env hc,
+        ← pvs atoms env trivial]
       constructor
       · rintro ⟨ha, hd, hv⟩
-        exact ⟨⟨ha, (pds env (velocitiesHold declares hv)).mp hd⟩, hv⟩
+        exact ⟨⟨ha, (pds atoms env ⟨velocitiesHold declares hv, hc⟩).mp hd⟩, hv⟩
       · rintro ⟨⟨ha, hd⟩, hv⟩
-        exact ⟨ha, (pds env (velocitiesHold declares hv)).mpr hd, hv⟩, states⟩
+        exact ⟨ha, (pds atoms env ⟨velocitiesHold declares hv, hc⟩).mpr hd, hv⟩, states⟩
   else
     match sb.velocities.find? (fun v =>
         !(sb.inputs.find? (·.name == v.velocity)).any (·.role == .state)) with
@@ -793,35 +955,103 @@ theorem Lowered.value {sb : SourceBody} {c : Context} (l : Lowered sb c)
   simp [Body.value, SourceBody.value, Lowered.body, SourceBody.withAssignments, l.outputs]
 
 theorem Lowered.source {sb : SourceBody} {c : Context} (l : Lowered sb c) {n : Nat}
-    (ids : Fin n → String) (x : Point n) (env : String → Option ℝ) :
-    sb.Source c ids x env ↔ l.body.Source ids x env := by
-  simp only [SourceBody.Source, Body.Source, l.equations]
+    (ids : Fin n → String) (x : Point n) {atoms : Term → Option ℝ} (env : String → Option ℝ)
+    (h : c.Cancels atoms env) :
+    sb.Source c atoms ids x env ↔ l.body.Source ids x env := by
+  simp only [SourceBody.Source, Body.Source, l.equations atoms env h]
   rfl
+
+/-- In a solution of the source or of the lowered body, every state is
+differentiable on the forward domain. -/
+private theorem differentiable_of {e : Evolution} {state : Dynamics.Signal e.states.length}
+    {value : (String → Option ℝ) → String → Option ℝ} {Source : ℝ → (String → Option ℝ) → Prop}
+    (h : ∀ t ∈ e.time.domain, ∃ env, Source t env ∧ ∀ i, ∃ rate,
+      value env (e.derivativeIds i) = some rate ∧
+        HasDerivWithinAt (fun t => state t i) rate e.time.domain t) :
+    ∀ s ∈ e.time.domain, ∀ i, DifferentiableWithinAt ℝ (fun s => state s i) e.time.domain s := by
+  intro s hs i
+  obtain ⟨env, -, rates⟩ := h s hs
+  obtain ⟨rate, -, hd⟩ := rates i
+  exact hd.differentiableWithinAt
 
 /-- The original differential equations and the lowered explicit body have the
 same solutions: same states, axis, start, forward domain and initial values. -/
 theorem Lowered.solves_iff {sb : SourceBody} {e : Evolution} (l : Lowered sb (sb.context e))
     (state : Dynamics.Signal e.states.length) :
     sb.Solves e state ↔ l.body.Solves e state := by
-  simp only [SourceBody.Solves, Body.Solves, l.source, l.value]
+  constructor
+  · rintro ⟨init, h⟩
+    have diff := differentiable_of h
+    refine ⟨init, fun t ht => ?_⟩
+    obtain ⟨env, source, rates⟩ := h t ht
+    have hc := sb.cancels_at init diff ht (ports_of ht source.1 rates)
+    exact ⟨env, (l.source _ _ env hc).mp source, fun i => by rw [l.value]; exact rates i⟩
+  · rintro ⟨init, h⟩
+    have diff := differentiable_of h
+    refine ⟨init, fun t ht => ?_⟩
+    obtain ⟨env, source, rates⟩ := h t ht
+    have rates' : ∀ i, ∃ rate, sb.value env (e.derivativeIds i) = some rate ∧
+        HasDerivWithinAt (fun t => state t i) rate e.time.domain t := fun i => by
+      rw [← l.value]; exact rates i
+    have hc := sb.cancels_at init diff ht (ports_of ht source.1 rates')
+    exact ⟨env, (l.source _ _ env hc).mpr source, rates'⟩
 
-/-- Hidden states and auxiliaries are existential, as in `Body.Observes`. -/
+/-- In a solution, `I_t(D_t(x))` reads `x - x0` at every time, with the declared
+initial value `x0` of the state `x`: the boundary term is part of the meaning. -/
+theorem SourceBody.Solves.integral_derivative {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state) {x : String} {q : ℚ}
+    (hl : ((sb.context e).locate x).isSome = true) (hq : (sb.boundary e).initial x = some q) :
+    ∃ i, sb.coordinate e x = some i ∧ ∀ t ∈ e.time.domain,
+      sb.atoms e state t (.integral e.axis.name (.derivative e.axis.name (.var x))) =
+        some (state t i - q) := by
+  obtain ⟨port, hport⟩ := Option.isSome_iff_exists.mp hl
+  obtain ⟨i, hi, hv, -⟩ := initial_coordinate hq
+  have start := h.1 i
+  rw [hv, Option.map_some, Option.some.injEq] at start
+  have diff := differentiable_of h.2
+  refine ⟨i, hi, fun t ht => ?_⟩
+  have := Term.along_integral_derivative (T := sb.trajectory e state) (x := x)
+    (g := fun s => state s i) (fun s hs => ⟨diff s hs i, classical_single hport hi s⟩) ht
+  rw [SourceBody.atoms, Trajectory.atoms]
+  exact this.trans (by rw [start]; rfl)
+
+/-- In a solution, `D_t(I_t(X))` reads as `X` along the solution, for a tame
+integrand `X`: the derivative of the integral is the integrand. -/
+theorem SourceBody.Solves.derivative_integral {sb : SourceBody} {e : Evolution}
+    {state : Dynamics.Signal e.states.length} (h : sb.Solves e state) {X : Term}
+    (hX : X.tame (sb.context e) (sb.boundary e) = true) {t : ℝ} (ht : t ∈ e.time.domain) :
+    sb.atoms e state t (.derivative e.axis.name (.integral e.axis.name X)) =
+      X.along (sb.trajectory e state) t := by
+  obtain ⟨F, g, h0, hF⟩ := Term.tame_primitive hX (sb.regular h.1 (differentiable_of h.2))
+  exact Term.along_derivative_integral (T := sb.trajectory e state) h0 (fun s hs => (hF s hs).1)
+    (fun s hs => (hF s hs).2) ht
+
+/-- Hidden states and auxiliaries are existential, as in `Body.Observes`. There
+is no trajectory, so no integral or derivative of a non-chain has a value. -/
 def SourceBody.Observes {n m : Nat} (sb : SourceBody) (c : Context) (ids : Fin n → String)
     (refs : Fin m → String) (x : Point n) (y : Point m) : Prop :=
-  ∃ env, sb.Source c ids x env ∧ ∀ i, sb.value env (refs i) = some (y i)
+  ∃ env, sb.Source c (fun _ => none) ids x env ∧ ∀ i, sb.value env (refs i) = some (y i)
 
+/-- Without a trajectory, only a context that rewrites no integral, such as the
+polynomial one, relates the observations. -/
 theorem Lowered.observes {sb : SourceBody} {c : Context} (l : Lowered sb c) {n m : Nat}
-    (ids : Fin n → String) (refs : Fin m → String) (x : Point n) (y : Point m) :
+    (ids : Fin n → String) (refs : Fin m → String) (x : Point n) (y : Point m)
+    (h : c.boundary = none) :
     sb.Observes c ids refs x y ↔ l.body.Observes ids refs x y := by
-  simp only [SourceBody.Observes, Body.Observes, l.source, l.value]
+  simp only [SourceBody.Observes, Body.Observes, l.value]
+  exact exists_congr fun env => and_congr_left fun _ =>
+    l.source ids x env (Context.cancels_none h _ env)
 
 def SourceBody.observationIds (sb : SourceBody) (i : Fin sb.observations.length) : String :=
   sb.observations[i].sourceId
 
+/-- Observed outputs of a solution, read at each time from an environment whose
+ports carry the actual derivatives, as in `Solves`. -/
 def SourceBody.ObservedSolution (sb : SourceBody) (e : Evolution)
     (output : Dynamics.Signal sb.observations.length) : Prop :=
-  ∃ state, sb.Solves e state ∧ ∀ t ∈ e.time.domain,
-    sb.Observes (sb.context e) e.stateIds sb.observationIds (state t) (output t)
+  ∃ state, sb.Solves e state ∧ ∀ t ∈ e.time.domain, ∃ env, sb.PortsAt e state t env ∧
+    sb.Equations (sb.context e) (sb.atoms e state t) env ∧
+      ∀ i, sb.value env (sb.observationIds i) = some (output t i)
 
 /-! ## Compilation -/
 
@@ -835,11 +1065,13 @@ structure SourcePolynomialModel (sb : SourceBody) where
   model : PolynomialModel lowered.body
 
 /-- A polynomial declaration has no evolution axis, so every derivative atom,
-differential equation and velocity declaration is rejected. -/
+integral, differential equation and velocity declaration is rejected. -/
 def compileSourcePolynomial (sb : SourceBody) :
     Except Diagnostic (SourcePolynomialModel sb) := do
   if let some d := sb.equations.head? then
     throw ⟨.unsupportedDerivative, d.output.id, "differential equation without an evolution axis"⟩
+  if let some a := sb.assignments.find? (·.rhs.integrals ≠ 0) then
+    throw ⟨.unsupportedIntegral, a.output.id, "integral without an evolution axis"⟩
   (Declaration.polynomial sb.interface).validate
   let lowered ← sb.lower Context.empty sb.declares_empty
   let model ← compilePolynomial lowered.body
@@ -850,7 +1082,7 @@ theorem SourcePolynomialModel.correct {sb : SourceBody} (p : SourcePolynomialMod
     (x : Point p.lowered.body.runtimePorts.length) (y : Point sb.observations.length) :
     sb.Observes Context.empty p.lowered.body.runtimeIds sb.observationIds x y ↔
       p.model.outputs.circuit.run x = y := by
-  rw [p.lowered.observes]
+  rw [p.lowered.observes _ _ _ _ rfl]
   exact p.model.outputs.correct x y
 
 structure SourceContinuousModel (sb : SourceBody) (e : Evolution) where
@@ -886,9 +1118,27 @@ theorem SourceContinuousModel.observations_correct {sb : SourceBody} {e : Evolut
     (p : SourceContinuousModel sb e) (output : Dynamics.Signal sb.observations.length) :
     sb.ObservedSolution e output ↔ p.model.ObservedRealization output := by
   rw [← p.model.observations_correct]
-  simp only [SourceBody.ObservedSolution, Body.ObservedSolution, p.lowered.solves_iff,
-    p.lowered.observes]
-  rfl
+  refine exists_congr fun state => ?_
+  rw [p.lowered.solves_iff]
+  refine and_congr_right fun hs => ?_
+  have init := hs.1
+  have diff := differentiable_of hs.2
+  have field := ((p.model.solves_iff_field state).mp hs).2
+  refine forall₂_congr fun t ht => ?_
+  constructor
+  · rintro ⟨env, ports, equations, observed⟩
+    have hc := sb.cancels_at init diff ht ports
+    exact ⟨env, (p.lowered.source _ _ env hc).mp ⟨ports.1, equations⟩,
+      fun i => by rw [p.lowered.value]; exact observed i⟩
+  · rintro ⟨env, source, observed⟩
+    have ports : sb.PortsAt e state t env := by
+      refine ⟨source.1, fun i => ⟨(field t ht i).differentiableWithinAt, ?_⟩⟩
+      have forced := p.lowered.body.value_agrees (p.model.prepared.forced (state t) env source)
+        (e.derivativeIds i) _ (p.model.rates.value_correct (state t) i)
+      rw [← p.lowered.value, forced, (field t ht i).derivWithin (uniqueDiffOn_Ici _ t ht)]
+    have hc := sb.cancels_at init diff ht ports
+    exact ⟨env, ports, ((p.lowered.source _ _ env hc).mpr source).2,
+      fun i => by rw [← p.lowered.value]; exact observed i⟩
 
 /-- Every realization of a compiled model is a solution in which each chain of
 derivatives denotes the iterated derivative on the forward domain, each state
@@ -898,7 +1148,8 @@ declared initial value is the iterated derivative at the start.
 theorem SourceContinuousModel.realizes_iterated {sb : SourceBody} {e : Evolution}
     (p : SourceContinuousModel sb e) {state : Dynamics.Signal e.states.length}
     (h : p.model.Realizes state) :
-    (∀ t ∈ e.time.domain, ∃ env, sb.Source (sb.context e) e.stateIds (state t) env ∧
+    (∀ t ∈ e.time.domain, ∃ env, sb.Source (sb.context e) (sb.atoms e state t) e.stateIds
+      (state t) env ∧
       ∀ axes x r, (sb.context e).rates env axes x = some r →
         ∃ i, sb.coordinate e x = some i ∧
           HasDerivWithinAt (iteratedDerivWithin (axes.length - 1) (fun s => state s i)
@@ -932,6 +1183,10 @@ theorem SourceContinuousModel.classical_iff_realizes {sb : SourceBody} {e : Evol
 #print axioms SourceBody.Solves.chain_denotes
 #print axioms SourceContinuousModel.realizes_iterated
 #print axioms Lowered.solves_iff
+#print axioms SourceBody.Solves.integral_derivative
+#print axioms SourceBody.regular
+#print axioms SourceBody.cancels_at
+#print axioms SourceBody.Solves.derivative_integral
 #print axioms SourcePolynomialModel.correct
 #print axioms SourceContinuousModel.solves_iff_realizes
 #print axioms SourceContinuousModel.constrained_iff

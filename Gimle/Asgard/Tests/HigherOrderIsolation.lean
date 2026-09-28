@@ -24,13 +24,13 @@ def locate (s : String) : Option String :=
   else if s = "a" then some "da" else if s = "g" then some "dg" else none
 
 def context : Context :=
-  ⟨"t", locate, fun s => if s = "f" then some "v" else if s = "v" then some "a" else none⟩
+  ⟨"t", locate, fun s => if s = "f" then some "v" else if s = "v" then some "a" else none, none⟩
 
 /-- Only `f` has a declared velocity. -/
-def secondOnly : Context := ⟨"t", locate, fun s => if s = "f" then some "v" else none⟩
+def secondOnly : Context := ⟨"t", locate, fun s => if s = "f" then some "v" else none, none⟩
 
 /-- No velocity is declared. -/
-def firstOnly : Context := ⟨"t", locate, fun _ => none⟩
+def firstOnly : Context := ⟨"t", locate, fun _ => none, none⟩
 
 /-- The side isolation reads, as `SourceBody.lower` prepares it: declared
 chains collapsed, and lower-order atoms read as their declared velocities. -/
@@ -175,7 +175,7 @@ example : solve context "dv" (term% diff(diff(f, t), t) + f * diff(f, t)) (term%
     some (.add (.constant 0) (.neg (.mul (.var "f") (.var "v")))) := by decide +kernel
 -- Over the cycle `f' = v`, `v' = f` a third-order chain climbs back to `v`.
 example : solve ⟨"t", locate, fun s => if s = "f" then some "v" else if s = "v" then some "f"
-    else none⟩ "dg" (term% diff(g, t)) (term% diff(diff(diff(f, t), t), t)) =
+    else none, none⟩ "dg" (term% diff(g, t)) (term% diff(diff(diff(f, t), t), t)) =
     some (.var "v") := by decide +kernel
 example : reject context "dv" (term% diff(f, t)) (term% g) = some .missingDerivative := by
   decide +kernel

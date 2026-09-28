@@ -21,7 +21,7 @@ state. Equations are solved for `df`. -/
 
 def context : Context :=
   ⟨"t", fun s => if s = "f" then some "df" else if s = "g" then some "dg" else none,
-    fun _ => none⟩
+    fun _ => none, none⟩
 
 def solve (lhs rhs : Term) : Option NamedExpr :=
   ((isolate context "df" lhs rhs).map Isolated.expr).toOption
@@ -171,7 +171,7 @@ example : reject (term% diff(f, t) ^ 2) (term% f) = some .repeatedDerivative := 
 
 -- A derivative under a binder of the same name is not the outer state's rate.
 example : (term% (λ f => diff(f, t))(g)).eval (fun _ => none)
-    (fun _ s => if s = "f" then some 7 else none) = none := by
+    (fun _ s => if s = "f" then some 7 else none) (fun _ => some 1) = none := by
   simp [Term.eval, Term.chain]
 
 /-! ## Scoped beta normalization -/
@@ -184,7 +184,8 @@ example : (term% (λ x => (λ y => x + y)(1))(y)).beta =
 example : (term% (λ x => (λ x => x)(7))(3)).beta = some (.constant 7) := by decide +kernel
 
 -- An argument is passed by name: an unused undefined argument is not evaluated.
-example : (term% (λ w => 5)(missing)).eval (fun _ => none) (fun _ _ => none) = some 5 := by
+example : (term% (λ w => 5)(missing)).eval (fun _ => none) (fun _ _ => none) (fun _ => none) =
+    some 5 := by
   simp [Term.eval]
 
 -- Beta normalization is not total over derivatives.
