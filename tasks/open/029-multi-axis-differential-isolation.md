@@ -4,6 +4,7 @@ state: open
 priority: low
 labels: [compiler, isolation, streams, migration]
 related: ["027", "028", "030"]
+depends_on: ["043"]
 ---
 
 ## Context

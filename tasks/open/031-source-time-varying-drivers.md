@@ -1,7 +1,7 @@
 ---
 title: Admit time-varying drivers in source declarations
 state: open
-priority: low
+priority: medium
 labels: [compiler, isolation, migration]
 related: ["030"]
 ---
@@ -27,3 +27,16 @@ common source declarations cannot reach them.
 - The Python fixture above is restated with its outcome; an undeclared driver
   or a derivative of a fixed parameter stays rejected.
 - Full `lake build` is clean and axiom audits show only standard axioms.
+
+## Conversation
+
+### note · claude/084 · 2026-09-29T08:00:59Z
+
+gimle-forseti 084 (`docs/model-family-contracts.md`, "Driven continuous
+models") puts this task at the head of the medium-priority chain (then 041,
+gimle-asgard 259, gimle-forseti 170), because it replaces the trajectory lane's
+vacuous `fun _ => True` driver predicate. The contract asks that a declared
+driver derivative be bound inside the relation to the driver's actual
+derivative, never an unconstrained extra input, and that the stated driver
+precondition include the regularity the classical relation needs (at least
+continuity), as forseti-lean `DisturbedFeedback.admitted` does.
