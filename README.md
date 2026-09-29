@@ -35,6 +35,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Nested integral states](Gimle/Asgard/Examples/NestedIntegralStates.lean) | `D_t(f) = I_t(I_t(f))` lowered through two declared integral states, the outer integrand read through the inner, and solved |
 | [Formal heat](Gimle/Asgard/Examples/FormalHeat.lean) | Formal derivatives and boundary-preserving integration |
 | [Declared heat](Gimle/Asgard/Examples/DeclaredHeat.lean) | Heat declared as a stream equation; its solution set from boundary `x²` is exactly `x² + 2t` |
+| [Heat isolation](Gimle/Asgard/Examples/HeatIsolation.lean) | `diff(u,t) = diff(diff(u,x),x)` isolated to the declared heat equation, with the same solution set |
 | [Polynomial heat](Gimle/Asgard/Examples/PolynomialHeat.lean) | Heat evolution of any polynomial profile, as a stream and a real field |
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |
 | [Exponential heat](Gimle/Asgard/Examples/ExpHeat.lean) | The analytic profile `e^x` evolves to `e^(x+t)`, with a kernel-computed certified truncation bound |

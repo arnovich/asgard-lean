@@ -438,9 +438,10 @@ Not yet in the source grammar (open tasks):
   as Python's `diff(f,t) = diff(diff(int(int(f,t),t),t),t)` (040);
 - a declared integral matched up to the meaning of its integrand, such as `int(1 * f, t)`
   against a declared `int(f, t)` (038);
-- multi-axis equations such as heat (029). Stream equations already in isolated
-  form `D_t u = F(u)` can be [declared](formal-streams.md#declared-stream-equations);
-  isolating a scaled time derivative is 029;
+- multi-axis equations such as heat in the continuous ODE adapter. They belong
+  to the stream interpretation, where `2 * diff(u,t) = diff(diff(u,x),x)` is
+  [isolated](formal-streams.md#isolating-a-scaled-derivative) to the declared
+  `D_t u = 1/2 · D_x(D_x(u))` with its boundary kept (029);
 - real atomics, division by expressions, literal products or negative numerals, and
   decimal literals (030). An atomic that feeds a continuous model's field may now be
   admitted through [partial-field feedback](#guarantees-and-limits), which keeps its
