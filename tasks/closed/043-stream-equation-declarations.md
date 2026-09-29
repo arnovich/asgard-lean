@@ -1,12 +1,9 @@
 ---
 title: Declare formal stream equations with a solution-set theorem
-state: ongoing
+state: closed
 priority: low
 labels: [compiler, streams, declaration]
 blocks: ["029"]
-claimed_by: claude-043
-claimed_at: 2026-09-29T10:21:07Z
-branch: feat/stream_equation_declarations
 ---
 
 ## Context

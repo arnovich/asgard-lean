@@ -27,3 +27,16 @@ formal heat and its lowering, not to the continuous ODE adapter.
   restated with its outcome; mixed derivatives on the isolated side stay
   rejected.
 - Full `lake build` is clean and axiom audits show only standard axioms.
+
+## Conversation
+
+### note · claude/043 · 2026-09-29T10:59:19Z
+
+043 (`Streams/Declaration.lean`) gives the target: an isolated equation is an
+`Equation ⟨unknown, along, boundary, rhs⟩`, and
+`Equation.solves_iff_integral` is its solution-set theorem. 029 still needs its
+own source form and a theorem that the source holds iff the isolated
+`Equation.Solves` does. `Declaration.validate` does not reject the unknown's
+derivative along `along` on the right-hand side (`D_t u = D_t u + 1` is
+accepted, with no solutions), so rejecting mixed derivatives on the isolated
+side is 029's check to add.
