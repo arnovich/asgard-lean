@@ -19,7 +19,8 @@ A stream declaration names
 
 The *boundary* of an equation along axis `i` is the **whole coefficient slice**
 `{α | α_i = 0}` of the unknown: the unknown and the boundary input agree there,
-and every other coefficient of the boundary input is ignored. That is the same
+and every other coefficient of the boundary input is ignored by the boundary
+condition (a right-hand side may still read it). That is the same
 slice `integral` reads from its second argument (`integral_boundary`).
 
 The stream-equation pass is `Equation.solves_iff_integral`: a stream point
@@ -475,6 +476,7 @@ def Declaration.compile (s : Declaration) : Except Model.Diagnostic (StreamModel
     | none => .error ⟨.incompleteResolution, "equations", "resolution"⟩
     | some rs =>
       if he : ∀ eq ∈ s.equations, eq.rhs.unestablished = none then .ok ⟨hv, rs, hr, he⟩
+      -- Unreachable: `validate` already refused every unestablished substitution.
       else .error ⟨.unestablishedCompose, "equations", "substitution"⟩
 
 private theorem forall₂_of_mapM {α β : Type} {f : α → Option β} :

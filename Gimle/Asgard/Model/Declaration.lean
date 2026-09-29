@@ -95,6 +95,8 @@ inductive ErrorCode where
   | nonzeroInitial
   -- Stream declarations (`Streams.Declaration`): a series substitution whose
   -- inner argument is not syntactically known to have zero constant coefficient.
+  -- Like the codes above, it names an unsupported form, never an unsatisfiable
+  -- model.
   | unestablishedCompose
   deriving Repr, DecidableEq, BEq
 

@@ -29,6 +29,8 @@ def withRhs (rhs : NamedExpr) : Declaration :=
 /-! ### The declared heat equation -/
 
 example : refusal declaration = none := by decide
+-- The same declaration in the EGF basis is a different, equally accepted model.
+example : refusal { declaration with basis := .egf } = none := by decide
 
 /-- The basis is part of the identity: the EGF declaration is another value,
 and it resolves to an EGF expression. -/
@@ -151,6 +153,11 @@ info: 'Gimle.Asgard.Streams.derivative_iff_integral'
   depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms derivative_iff_integral
+/--
+info: 'Gimle.Asgard.Streams.NamedExpr.composable_sound'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms NamedExpr.composable_sound
 /--
 info: 'Gimle.Asgard.Streams.Equation.solves_iff_integral'
   depends on axioms: [propext, Classical.choice, Quot.sound]

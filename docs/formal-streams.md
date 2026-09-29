@@ -33,7 +33,8 @@ equations `D_along u = F(u)` rather than hand-building `NamedExpr` values. A
 
 The **boundary** of an equation along axis `i` is the whole zero slice
 `{α | α_i = 0}` of the unknown, the slice `integral` reads from its boundary
-argument; the boundary input's other coefficients are ignored.
+argument; the boundary input's other coefficients are ignored by the boundary
+condition, although a right-hand side may read them.
 
 `Declaration.validate` reports the first error as a `Diagnostic`: empty or
 repeated axis and input IDs or names, input roles, an unknown that is not a
@@ -41,6 +42,18 @@ repeated axis and input IDs or names, input roles, an unknown that is not a
 name in an equation, an unestablished substitution (`unestablishedCompose`),
 and unknowns or boundaries bound by no equation or by two. `compile` returns a
 `StreamModel`: the equations resolved in declared order, with the evidence.
+Every refusal names an unsupported form, never an unsatisfiable model:
+`unestablishedCompose` refuses a substitution whose inner argument is not
+syntactically known to have zero constant coefficient, even when it has one for
+semantic reasons. An accepted substitution is defined (`StreamModel.rhs_defined`)
+but, like every `seriesCompose`, is not lowered to a coefficient window.
+
+`Streams.Declaration` is a type of its own rather than a case of
+`Model.Declaration`, whose `body` is a polynomial `Body` that stream equations do
+not have; the model-family contract's "declaration case" is met by this type.
+There are no Python parity fixtures here: the pinned Python compiler has no
+stream-declaration counterpart, and the heat fixture's parity belongs to the
+isolation of 029.
 
 | Theorem | Statement |
 | --- | --- |
