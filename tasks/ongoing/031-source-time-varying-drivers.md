@@ -1,9 +1,12 @@
 ---
 title: Admit time-varying drivers in source declarations
-state: open
+state: ongoing
 priority: medium
 labels: [compiler, isolation, migration]
 related: ["030"]
+claimed_by: claude-031
+claimed_at: 2026-09-29T08:06:41Z
+branch: feat/source_time_varying_drivers
 ---
 
 ## Context
