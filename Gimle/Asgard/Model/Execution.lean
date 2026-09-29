@@ -1,5 +1,5 @@
-import Gimle.Asgard.Model.Continuous
-import Gimle.Asgard.Simulation.Rational
+import Gimle.Asgard.Model.Driven
+import Gimle.Asgard.Simulation.Driven
 
 /-! Optional execution adapters retain compiler-derived syntax and interfaces.
 These imports do not belong to the core circuit or semantic modules. -/
@@ -66,6 +66,36 @@ def ContinuousModel.observationRequest {b : Body} {e : Evolution} (p : Continuou
     requestId := requestId
     artifactId := artifactId
     settings := .points points
+  }
+
+/-- Driver ports come from the declaration in `DriverBinding.ports` order, each
+derivative port tagged with its driver; the field, derivative ports and exact
+initial data are the accepted model's. The samples are the runtime's held
+driver, one row per interval, not the declared signal. -/
+def DrivenModel.eulerRequest {b : Body} {e : Evolution} {ds : List DriverBinding}
+    (p : DrivenModel b e ds) (requestId artifactId : String) (step : Float) (steps : Nat)
+    (samples : Array (Array ℚ)) :
+    Except String (Simulation.Driven.Request (DriverBinding.width ds) e.states.length) := do
+  let drivers ← (DriverBinding.ports ds).mapM fun id => do
+    let some port := b.program.inputs.find? (·.id == id) | throw "missing driver port"
+    return ⟨port, (ds.find? (·.derivativeId == some id)).map DriverBinding.driverId⟩
+  let outputs ← e.states.mapM fun binding => do
+    let some a := b.program.assignments.find? (·.output.id == binding.derivativeId)
+      | throw "missing compiled derivative port"
+    return {a.output with role := .output}
+  return {
+    circuit := p.rates.circuit
+    drivers := drivers
+    states := ← b.statePorts e
+    outputs := outputs
+    sourceIds := b.sourceIds
+    outputSources := e.states.map Dynamics.StateBinding.derivativeId
+    initialization := ⟨(List.ofFn p.initials).toArray, e.start, e.axis.id⟩
+    requestId := requestId
+    artifactId := artifactId
+    step := step
+    steps := steps
+    samples := samples
   }
 
 end Gimle.Asgard.Model
