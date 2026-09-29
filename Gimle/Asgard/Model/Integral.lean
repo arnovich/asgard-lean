@@ -237,6 +237,8 @@ noncomputable def Term.along : Term → Trajectory → ℝ → Option ℝ
       | none => if axis = T.axis then derivFrom T.start (operand.along T) s else none
   | .integral axis operand, T, s =>
       if axis = T.axis then primitiveFrom T.start (operand.along T) s else none
+  | .unary op a, T, s => (a.along T s).bind op.partial
+  | .binary op a b, T, s => do op.partial (← a.along T s) (← b.along T s)
 
 /-- The non-local atoms of `Term.eval`, read along a trajectory at `t`. -/
 noncomputable def Trajectory.atoms (T : Trajectory) (t : ℝ) : Term → Option ℝ :=
@@ -318,6 +320,37 @@ theorem _root_.Gimle.Asgard.Polynomial.NamedExpr.eval_reads {e : NamedExpr}
       simp only [NamedExpr.eval, ha h.1, hb h.2]
   | neg a ha => simp only [NamedExpr.eval, ha h]
 
+/-- A literal reads its value at every time of every trajectory. -/
+theorem Term.literal_along (t : Term) (q : ℚ) (h : t.literal = some q) (T : Trajectory)
+    (s : ℝ) : t.along T s = some (q : ℝ) := by
+  induction t generalizing q with
+  | constant c => cases h; rfl
+  | neg a ha =>
+      cases hA : a.literal <;> simp [literal, hA] at h
+      subst h
+      simp [Term.along, ha _ hA]
+  | mul a b ha hb =>
+      cases hA : a.literal <;> cases hB : b.literal <;> simp [literal, hA, hB] at h
+      subst h
+      simp [Term.along, ha _ hA, hb _ hB]
+  | binary op a b ha hb =>
+      cases op <;> simp only [literal, reduceCtorEq] at h
+      cases hB : b.literal with
+      | none => simp [hB, Bind.bind, Option.bind] at h
+      | some d =>
+        by_cases hd : d = 0
+        · simp [hB, hd, Bind.bind, Option.bind] at h
+        · cases hA : a.literal with
+          | none => simp [hB, hA, Bind.bind, Option.bind] at h
+          | some n =>
+            simp [hB, hA, hd, Bind.bind, Option.bind, Pure.pure] at h
+            subst h
+            have hd' : (d : ℝ) ≠ 0 := by exact_mod_cast hd
+            simp [Term.along, ha _ hA, hb _ hB, RealAtomics.Binary.partial_of_domain
+              (show RealAtomics.Binary.division.Domain (n : ℝ) d from hd'),
+              RealAtomics.Binary.value]
+  | _ => simp [literal] at h
+
 /-- Beta normalization preserves the trajectory reading too: a lambda rebinds its
 binder along the whole trajectory, and a beta-normal term has no atom. -/
 theorem Term.beta_along (t : Term) (e : NamedExpr) (h : t.beta = some e) (T : Trajectory)
@@ -344,6 +377,25 @@ theorem Term.beta_along (t : Term) (e : NamedExpr) (h : t.beta = some e) (T : Tr
       simp only [harg _ hA]
   | derivative _ _ _ => simp [beta] at h
   | integral _ _ _ => simp [beta] at h
+  | unary _ _ _ => simp [beta] at h
+  | binary op a b ha hb =>
+      cases op <;> simp only [beta, reduceCtorEq] at h
+      cases hB : b.literal with
+      | none => simp [hB, Bind.bind, Option.bind] at h
+      | some d =>
+        by_cases hd : d = 0
+        · simp [hB, hd, Bind.bind, Option.bind] at h
+        · cases hA : a.beta with
+          | none => simp [hB, hA, Bind.bind, Option.bind] at h
+          | some n =>
+            simp [hB, hA, hd, Bind.bind, Option.bind, Pure.pure] at h
+            subst h
+            have hd' : (d : ℝ) ≠ 0 := by exact_mod_cast hd
+            rw [Term.along, b.literal_along d hB T s, ha n hA T]
+            cases hn : n.eval (T.base s) <;>
+              simp [NamedExpr.eval, hn, RealAtomics.Binary.partial_of_domain
+                (show RealAtomics.Binary.division.Domain _ (d : ℝ) from hd'),
+                RealAtomics.Binary.value, div_eq_mul_inv]
 
 /-- A named expression as a term. -/
 def _root_.Gimle.Asgard.Polynomial.NamedExpr.toTerm : NamedExpr → Term
@@ -531,6 +583,8 @@ def Term.offAxis (axis : String) : Term → Bool
   | .neg a => a.offAxis axis
   | .apply _ body arg => body.offAxis axis || arg.offAxis axis
   | .derivative a op | .integral a op => a != axis || op.offAxis axis
+  | .unary _ a => a.offAxis axis
+  | .binary _ a b => a.offAxis axis || b.offAxis axis
 
 /-- Why an integral is left after the rewrites, for a diagnostic: `"axis"` when the
 integral, or the derivatives around or inside it, are on another axis;
@@ -550,6 +604,8 @@ def Term.integralReason (axis : String) : Term → Option String
       if op.integrals = 0 then none
       else some (if a != axis || op.offAxis axis then "axis" else "no inverse rewrite")
   | .integral b X => some (if b != axis || X.offAxis axis then "axis" else "no inverse rewrite")
+  | .unary _ a => a.integralReason axis
+  | .binary _ a b => (a.integralReason axis).orElse fun _ => b.integralReason axis
 
 /-- The atoms read each rewritten shape as its rewrite does. -/
 def Context.Cancels (c : Context) (atoms : Term → Option ℝ) (env : String → Option ℝ) : Prop :=
@@ -592,6 +648,8 @@ def Term.size : Term → Nat
   | .neg a => a.size + 1
   | .apply _ body arg => body.size + arg.size + 1
   | .derivative _ op | .integral _ op => op.size + 1
+  | .unary _ a => a.size + 1
+  | .binary _ a b => a.size + b.size + 1
 
 /-- The atoms read the rewritten shapes of at most `n` nodes as they are
 rewritten. A declared integral state's own equation needs this only below the
@@ -625,7 +683,8 @@ theorem Term.cancel_eval_upTo (c : Context) (t : Term) (env : String → Option 
   | neg a ha =>
       simp only [size] at hn
       simp only [cancel, Term.eval, ha (by omega)]
-  | var _ | constant _ | apply _ _ _ => simp [cancel, cancelAtom]
+  | var _ | constant _ | apply _ _ _ | unary _ _ _ | binary _ _ _ _ _ =>
+      simp [cancel, cancelAtom]
   | derivative a op _ =>
       rw [cancel_derivative]
       cases hc : (Term.derivative a op).cancelStep c with
@@ -803,7 +862,7 @@ private theorem Term.tame_agrees {bd : Boundary} {c : Context} {T : Trajectory} 
         exact NamedExpr.eval_reads h (fun n hn => by
           obtain ⟨g, -, hg⟩ := reg.input n hn
           simp [hg t hat.mem]) hat.base
-  | integral _ _ => simp [tame, continuous] at h
+  | integral _ _ | unary _ _ | binary _ _ _ => simp [tame, continuous] at h
   | derivative a op _ =>
       cases op with
       | var y =>
@@ -866,7 +925,7 @@ theorem Term.tame_primitive {bd : Boundary} {c : Context} {T : Trajectory} {u : 
         refine ⟨F, g, h0, fun s hs => ⟨?_, (hF s hs).2⟩⟩
         rw [Term.beta_along _ e hb T s, ← NamedExpr.toTerm_along]
         exact (hF s hs).1
-  | integral _ _ => simp [tame, continuous] at h
+  | integral _ _ | unary _ _ | binary _ _ _ => simp [tame, continuous] at h
   | derivative a op _ =>
       cases op with
       | var y =>
@@ -1291,7 +1350,8 @@ theorem Term.cancel_along {c : Context} {bd : Boundary} {T : Trajectory}
     | neg a =>
         simp only [Term.size] at hu
         simp only [Term.cancel, Term.along, ih a (by omega) s hs]
-    | var _ | constant _ | apply _ _ _ => simp [Term.cancel, Term.cancelAtom]
+    | var _ | constant _ | apply _ _ _ | unary _ _ | binary _ _ _ =>
+      simp [Term.cancel, Term.cancelAtom]
     | integral b op =>
         rw [Term.cancel_integral]
         cases hc : (Term.integral b op).cancelStep c with
@@ -1360,6 +1420,7 @@ def Term.pointwise (axis : String) (locate : String → Option String) (input : 
       | .var y => a == axis && (locate y).isSome
       | _ => op.chain.isNone
   | .integral _ _ => true
+  | .unary _ _ | .binary _ _ _ => false
 
 /-- A pointwise term reads the same at `t` through `env` as along the trajectory,
 wherever `env` extends the trajectory's inputs at `t`, every input has a value there
@@ -1383,6 +1444,7 @@ theorem Term.pointwise_agrees {c : Context} {input : String → Bool} {T : Traje
       simp only [Term.eval, Term.along, ha h.1, hb h.2]
   | neg a ha => simp only [Term.eval, Term.along, ha h]
   | integral _ _ _ => rfl
+  | unary _ _ _ | binary _ _ _ _ _ => simp [pointwise] at h
   | apply x body arg _ _ =>
       cases hb : (Term.apply x body arg).beta with
       | none => simp [pointwise, hb] at h
@@ -1439,6 +1501,7 @@ theorem Term.tame_congr {c c' : Context} {bd bd' : Boundary} (ha : c.axis = c'.a
   | mul a b ha' hb' => simp [tame, ha', hb', Term.continuous_congr hi, Term.fixed_congr hp]
   | apply _ _ _ _ _ => simp [tame, hi]
   | integral _ _ _ => simp [tame, Term.continuous_congr hi]
+  | unary _ _ _ | binary _ _ _ _ _ => rfl
   | derivative a op _ =>
       cases op <;> simp [tame, ha, hl, Term.continuous_congr hi]
 
@@ -1530,7 +1593,8 @@ theorem Term.cancel_below {c : Context} {n : Nat} :
     | neg a =>
         simp only [size] at hu
         simp only [Term.cancel, (ih a (by omega) (by omega)).1]
-    | var _ | constant _ | apply _ _ _ => simp [Term.cancel, Term.cancelAtom]
+    | var _ | constant _ | apply _ _ _ | unary _ _ | binary _ _ _ =>
+      simp [Term.cancel, Term.cancelAtom]
     | derivative a op => rw [Term.cancel_derivative, Term.cancel_derivative, step]
     | integral b op => rw [Term.cancel_integral, Term.cancel_integral, step]
 

@@ -135,9 +135,9 @@ example : reject (term% 2 * diff(f, t)) (term% diff(diff(f, x), x)) =
 example : reject (term% (λ w => 2)(1) * diff(f, t)) (term% f) =
     some .nonlinearDerivative := by decide +kernel
 
--- Python accepts, and these are not yet in Lean notation (asgard-lean 030):
--- `diff(f,t) / (2 * 3)`, `diff(f,t) / (-(2 * 3))` and `(-2 / -4) * diff(f,t)`.
--- The equal scales `rat(1,6)`, `-rat(1,6)` and `rat(1,2)` are written as literals:
+-- Python accepts `diff(f,t) / (2 * 3)`, `diff(f,t) / (-(2 * 3))` and
+-- `(-2 / -4) * diff(f,t)`; `Tests.AtomicSource` isolates them exactly (030).
+-- The equal scale `rat(1,6)` written as a literal:
 example : solve (term% diff(f, t) * rat(1, 6)) (term% f) =
     some (.mul (.constant 6) (.var "f")) := by decide +kernel
 -- Python keeps `diff(a,t) = diff($z,t)` with `$z` an external forcing

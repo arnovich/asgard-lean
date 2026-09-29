@@ -11,6 +11,7 @@
 | [`Model.Linear`](../Gimle/Asgard/Model/Linear.lean) | Recognize homogeneous linear systems and prove forward existence/uniqueness |
 | [`Model.Source`](../Gimle/Asgard/Model/Source.lean) | `compileSourcePolynomial` / `compileSourceContinuous`: applied lambdas, implicit first-order ODEs, higher-order ODEs over declared velocities, source integrals and declared integral states, lowered to a `Body` |
 | [`Model.DrivenSource`](../Gimle/Asgard/Model/DrivenSource.lean) | `compileSourceDriven`: source equations with declared drivers and driver derivatives, lowered by `Model.Source` |
+| [`Model.AtomicSource`](../Gimle/Asgard/Model/AtomicSource.lean) | `compileAtomicPolynomial` / `compileAtomicContinuous`: source terms with real atomics and division by expressions, compiled to `RealAtomics` circuits with every domain kept |
 | [`Model.Integral`](../Gimle/Asgard/Model/Integral.lean) | The trajectory reading of integrals from the declared start, the inverse rewrites that keep boundary terms, and the reading of declared integral states |
 
 - Use `equations%` from `Gimle.Asgard.Compile.Syntax` for named polynomial assignments.
@@ -33,6 +34,10 @@ with source terms (`term%`, `assignments%`, `differentials%`, `velocities%`,
 
 - `term%` adds `diff(e, t)`, `int(e, t)`, `(λ w => body)(arg)` at its application site only,
   unary `+`, `/` by a positive numeral, and `^` by a positive numeral.
+- Decimal and scientific literals (`2.5`, `1e-309`) are the exact rationals they write.
+- `sqrt`, `log`, `exp`, `abs`, `sin`, `cos`, `sinh`, `cosh` and `tanh` applied as `f(e)`,
+  `/` by any other term and `^` by any other exponent are the `RealAtomics` operations
+  (see [Real atomics and division](#real-atomics-and-division)).
 - A binder shadows a state of the same name, for derivatives too.
 
 | Accepted | Lowered to |
@@ -47,12 +52,15 @@ with source terms (`term%`, `assignments%`, `differentials%`, `velocities%`,
 
 ```text
 side := A | side + r | r + side | side - r | r - side | -side
-A    := D | lit * A | A * lit | A / n | -A
+A    := D | lit * A | A * lit | A / n | A / lit | -A
 D    := diff(x, t) | diff(D, t)
-lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
+lit  := numeral | decimal | rat(n, d) | -lit | lit * lit | lit / n | lit / lit
 ```
 
 - `q` is the product of the literals and signs around the atom, and must be nonzero.
+  A quotient `lit / lit` is a literal only when its denominator is a nonzero literal, so
+  Python's `diff(f,t) / (2 * 3)`, `diff(f,t) / (-(2 * 3))` and `(-2 / -4) * diff(f,t)`
+  isolate to the rates `6`, `-6` and `2`, and `diff(f,t) / (2 * 0)` is `zeroScale`.
   A literal factor wraps only a residual-free `A`; a negation may wrap a whole side.
 - `r` and `rhs` are derivative-free terms, lambdas allowed, once lower-order atoms are
   read as velocities (below). A lambda that reduces to a literal is not a scale.
@@ -101,7 +109,9 @@ lit  := numeral | rat(n, d) | -lit | lit * lit | lit / n
 | `0 * diff(x,t)` on the isolated atom | `zeroScale` |
 | Atoms on both sides, neither read as a declared velocity | `competingDerivative` |
 | Two atoms on one side, not read as declared velocities, including `diff(x,t) - diff(x,t)` | `repeatedDerivative` |
-| Non-literal factor on the isolated atom: `x * diff(x,t)`, `a * diff(x,t)`, `(2 + 3) * diff(x,t)` | `nonlinearDerivative` |
+| Non-literal factor on the isolated atom: `x * diff(x,t)`, `a * diff(x,t)`, `(2 + 3) * diff(x,t)`, `diff(x,t) / x` | `nonlinearDerivative` |
+| A derivative under a real atomic or in a denominator: `sin(diff(x,t))`, `1 / diff(x,t)`, `x / diff(y,t)` | `atomicDerivative` |
+| A real atomic or a division by a non-literal given to `compileSourcePolynomial`, `compileSourceContinuous` or `compileSourceDriven` | `unsupportedAtomic` |
 | `diff(diff(x,t),t)` of a state with no declared velocity, or a longer chain missing one | `higherOrderDerivative` |
 | A chain over a non-state, such as `diff(diff(p,t),t)` or `diff(diff(x + y,t),t)` | `unsupportedDerivative` |
 | Another axis, or a mixed chain, declared velocities or not | `mixedDerivative` |
@@ -405,6 +415,45 @@ the unique solution of `diff(f,t) = int(int(f,t),t)`, `f(0) = 1`, with both inte
 declared: `f = (eᵗ + 2e^(-t/2) cos(√3t/2))/3`, and in every solution `int(f,t)` reads
 `F` and `int(int(f,t),t)` reads `G`.
 
+### Real atomics and division
+
+A source term may apply a [`RealAtomics`](../Gimle/Asgard/RealAtomics/Circuit.lean)
+operation: `sqrt`, `log`, `exp`, `abs`, the trigonometric and hyperbolic functions, the
+real power `e ^ p`, and division `e / d` by any term. `Term.eval` gives such a node a value
+only inside its domain, strictly in every child, so the unchanged `SourceBody.Solves` and
+`SourceBody.Observes` carry the complete `Defined` predicate: of every equation, of an unused
+assignment, and under a zero multiplier (`0 * log(x)` has no value at `x = -1`). The polynomial
+compilers reject such terms (`unsupportedAtomic`), except a division by a nonzero literal,
+which is a product with its inverse. `compileAtomicPolynomial` and `compileAtomicContinuous`
+compile them:
+
+- explicit assignments and the derivative-free residuals of differentials are
+  beta-normalized keeping the atomics (`Term.betaPartial`), and differentials are isolated
+  as above (`isolatePartial`), with the same scales and diagnostics;
+- assignments are resolved to coordinate `RealAtomics.Expr`s, parameters specialized;
+- the circuit (`RealAtomics.guardedField`) evaluates the selected outputs and every
+  resolved assignment, and discards the latter, so its relation needs all of them `Defined`.
+
+`AtomicPolynomialModel.correct` relates `SourceBody.Observes` to that circuit's `Rel`.
+`AtomicContinuousModel.solves_iff_closes` relates `SourceBody.Solves` to the partial-field
+feedback `RealAtomics.Circuit.CloseRel`, not to the total `Dynamics.close`, and
+`AtomicContinuousModel.solves_iff` spells it out: the initial values, every rate and every
+assignment `Defined` along the state at every `t ≥ start`, and the rates as derivatives.
+[AtomicSource.lean](../Gimle/Asgard/Examples/AtomicSource.lean) observes
+`r/(1 + r)`, `r = √(x² + y²)`, in `[0, 1)` and as `5/6` at `(3, 4)`; shows that `0 * log(x)`
+observes nothing at `x = -1`; solves `2x' = 1/x`, `x(0) = 1` by `x = √(1 + t)`; and shows that
+`x' = -1`, `x(0) = 1` with the unused `w := log(x)` has no solution at all.
+[Tests/AtomicSource.lean](../Gimle/Asgard/Tests/AtomicSource.lean) restates the Python
+fixtures: the three literal-quotient scales, `sin(diff(f,t)) = f` and `diff(f,t) / f = 1`
+are the same; `1e-309 * diff(f,t) = f` and the other scales binary64 cannot hold differ,
+isolated exactly in Lean.
+
+Limits: nothing is simplified, so the `Laws.lean` rewrites are not applied and `log(exp(x))`
+keeps both domains; a derivative anywhere under an atomic or a non-literal division is
+rejected, even a lower-order one a declared velocity would read; integrals and integral
+declarations are rejected (`unsupportedIntegral`); drivers are not supported, and the
+observations of a continuous declaration are not compiled.
+
 ### Drivers
 
 A driver is a `.driver` port declared by a `DriverBinding` and compiled with
@@ -440,10 +489,8 @@ Not yet in the source grammar (open tasks):
 - multi-axis equations such as heat (029). Stream equations already in isolated
   form `D_t u = F(u)` can be [declared](formal-streams.md#declared-stream-equations);
   isolating a scaled time derivative is 029;
-- real atomics, division by expressions, literal products or negative numerals, and
-  decimal literals (030). An atomic that feeds a continuous model's field may now be
-  admitted through [partial-field feedback](#guarantees-and-limits), which keeps its
-  domain at every time of the trajectory;
+- integrals, drivers and continuous observations beside real atomics (see
+  [Real atomics and division](#real-atomics-and-division));
 - integrals in a driven declaration: the driven relation reads no integral, and every
   integral there is rejected (053).
 
@@ -460,7 +507,8 @@ Not yet in the source grammar (open tasks):
 | [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation, lower-order atoms only through declared velocities |
 | [Driven isolation](../Gimle/Asgard/Examples/DrivenForcing.lean) | Original driven source ↔ compiled driven feedback, for each admitted driver signal, same initial data | Declared drivers only; continuous drivers, derivative ports bound to actual derivatives; no integrals; no existence claim, and nothing about sampled or held driver signals |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
-| [Partial-field feedback](../Gimle/Asgard/Examples/PartialFeedback.lean) | `RealAtomics.Circuit.CloseRel` ↔ the initialized ODE with the field `Defined` along the state at every `t ≥ start` (`Circuit.close_correct`, `Expr.close_correct`) | A `RealAtomics` field over [drivers, state]; generators read time; relation only, with no declaration case yet (030); no existence or uniqueness claim |
+| [Partial-field feedback](../Gimle/Asgard/Examples/PartialFeedback.lean) | `RealAtomics.Circuit.CloseRel` ↔ the initialized ODE with the field `Defined` along the state at every `t ≥ start` (`Circuit.close_correct`, `Expr.close_correct`) | A `RealAtomics` field over [drivers, state]; generators read time; no existence or uniqueness claim |
+| [Source atomics](../Gimle/Asgard/Examples/AtomicSource.lean) | Original source with atomics and division ↔ compiled `RealAtomics` circuit (`AtomicPolynomialModel.correct`) or partial-field feedback (`AtomicContinuousModel.solves_iff_closes`), every assignment `Defined` | No derivative under an atomic or in a denominator; no integrals or drivers; no simplification by `Laws.lean` |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
 | [Stochastic translation](../Gimle/Asgard/Examples/StochasticJump.lean) | Source/process-circuit correspondence | Same supplied integral interpretation; no general SDE existence, Itô formula, or probability bounds |
 | [Approximation](../Gimle/Asgard/Examples/Approximation.lean) | Uniform coordinate error bounds on a stated region | Feedforward real circuits; nonnegative budgets, coverage, and Lipschitz premises for composition |

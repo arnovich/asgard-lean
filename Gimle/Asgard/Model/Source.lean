@@ -1307,7 +1307,8 @@ private theorem equations_append (l r : List Assignment) (env : String → Optio
     Equations (l ++ r) env ↔ Equations l env ∧ Equations r env := by
   simp only [Equations, List.forall_mem_append]
 
-/-- Check scopes and velocity states, isolate integral declarations, apply the
+/-- Check scopes, that no term holds a real atomic or a partial binary operation
+(`unsupportedAtomic`), and velocity states, isolate integral declarations, apply the
 integral rewrites to explicit assignments and beta-normalize them after collapsing
 declared chains and reading atoms as declared velocities, isolate differentials after
 the integral rewrites with lower-order atoms read as declared velocities, isolate
@@ -1327,6 +1328,12 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
     match d.lhs.checkScope names, d.rhs.checkScope names with
     | .error name, _ | _, .error name => throw ⟨.unknownReference, d.output.id, name⟩
     | .ok (), .ok () => pure ()
+  -- Lowering targets a polynomial `Body`; `Model.AtomicSource` compiles atomics.
+  for a in sb.assignments do
+    if a.rhs.partials ≠ 0 then throw ⟨.unsupportedAtomic, a.output.id, "real atomic"⟩
+  for d in sb.equations do
+    if d.lhs.partials + d.rhs.partials ≠ 0 then
+      throw ⟨.unsupportedAtomic, d.output.id, "real atomic"⟩
   if states : sb.VelocityStates then
     -- Integral declarations first: an equation using a rejected declaration's
     -- integral would otherwise be reported instead of the declaration. Every
