@@ -112,7 +112,10 @@ inductive ErrorCode where
 /-- `site` identifies the declaration being checked; `reference` identifies the
 bad name or ID, or for `unsupportedIntegral` the reason (`axis`, `integrand`,
 `no inverse rewrite`), or for `invalidInverse` the product that fails (`left`,
-`right`). Validation reports the first error in declaration order. -/
+`right`). Stream declarations and isolation put the axis ID in `reference` for
+the derivative codes, and the side (`lhs`, `rhs`) for `unsupportedIntegral` and
+`unsupportedApplication` in a source equation. Validation reports the first error
+in declaration order. -/
 structure Diagnostic where
   code : ErrorCode
   site : String

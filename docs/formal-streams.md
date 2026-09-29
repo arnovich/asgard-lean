@@ -43,7 +43,11 @@ name in an equation, an unestablished substitution (`unestablishedCompose`), a
 derivative of the unknown along its own axis on the right-hand side
 (`NamedExpr.selfDerivative`: `competingDerivative` for `D_t u = D_t u + 1`,
 `higherOrderDerivative`, `mixedDerivative` for `D_x(D_t u)` or `D_t(D_x u)`),
-and unknowns or boundaries bound by no equation or by two. `compile` returns a
+and unknowns or boundaries bound by no equation or by two. The derivative check
+also refuses `D_t(I_t(u, u0))` on the right-hand side, although it means `u`, and
+concerns only an equation's own unknown: a system such as `D_t u = D_t v`,
+`D_t v = D_t u + 1` is accepted and may be implicit or have no solution; nothing
+here claims existence. `compile` returns a
 `StreamModel`: the equations resolved in declared order, with the evidence.
 Every refusal names an unsupported form, never an unsatisfiable model:
 `unestablishedCompose` refuses a substitution whose inner argument is not

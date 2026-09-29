@@ -41,8 +41,13 @@ every input (`StreamModel.rhs_defined`).
 An equation is explicit: its right-hand side may not contain a derivative of its
 own unknown along its own axis (`NamedExpr.selfDerivative`), such as the
 `D_t u` of `D_t u = D_t u + 1` or a mixed `D_x(D_t u)`; such a declaration is
-refused with a diagnostic naming the form. Isolating a scaled derivative from a
-source equation is `Streams.Isolation`. -/
+refused with a diagnostic naming the form. The check reaches inside every
+operand, so a derivative of an integral of the unknown, such as
+`D_t(I_t(u, u0))`, is refused too, although it means `u`. It concerns only the
+equation's own unknown: another unknown's derivative on the same axis is
+allowed, so a system such as `D_t u = D_t v`, `D_t v = D_t u + 1` is accepted
+and may be implicit or have no solution; nothing here claims existence.
+Isolating a scaled derivative from a source equation is `Streams.Isolation`. -/
 namespace Gimle.Asgard.Streams
 
 /-! ## Constant coefficients -/
