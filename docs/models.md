@@ -504,7 +504,7 @@ Not yet in the source grammar (open tasks):
   to the stream interpretation, where `2 * diff(u,t) = diff(diff(u,x),x)` is
   [isolated](formal-streams.md#isolating-a-scaled-derivative) to the declared
   `D_t u = 1/2 · D_x(D_x(u))` with its boundary kept (029);
-- integrals, drivers and continuous observations beside real atomics (see
+- integrals, drivers and continuous observations beside real atomics (054; see
   [Real atomics and division](#real-atomics-and-division));
 - integrals in a driven declaration: the driven relation reads no integral, and every
   integral there is rejected (053).
