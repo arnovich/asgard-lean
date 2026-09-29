@@ -12,6 +12,7 @@
 | [`Model.Source`](../Gimle/Asgard/Model/Source.lean) | `compileSourcePolynomial` / `compileSourceContinuous`: applied lambdas, implicit first-order ODEs, higher-order ODEs over declared velocities, source integrals and declared integral states, lowered to a `Body` |
 | [`Model.DrivenSource`](../Gimle/Asgard/Model/DrivenSource.lean) | `compileSourceDriven`: source equations with declared drivers and driver derivatives, lowered by `Model.Source` |
 | [`Model.Integral`](../Gimle/Asgard/Model/Integral.lean) | The trajectory reading of integrals from the declared start, the inverse rewrites that keep boundary terms, and the reading of declared integral states |
+| [`Algebraic.Declaration`](../Gimle/Asgard/AlgebraicDeclaration.lean) | `compile`: simultaneous affine algebraic loops with a checked supplied inverse, eliminated to a feedforward circuit on admitted inputs; see [Algebraic loops](#algebraic-loops) |
 
 - Use `equations%` from `Gimle.Asgard.Compile.Syntax` for named polynomial assignments.
 - Syntax: variables, naturals, `rat(n,d)` with positive denominator, `+`, `-`, `*`, natural powers.
@@ -447,6 +448,45 @@ Not yet in the source grammar (open tasks):
 - integrals in a driven declaration: the driven relation reads no integral, and every
   integral there is rejected (053).
 
+## Algebraic loops
+
+The common compiler rejects every cycle as `cyclicDependency`.
+[`Algebraic.Declaration`](../Gimle/Asgard/AlgebraicDeclaration.lean) declares a
+stateless affine loop instead: ports in coordinate order [loop, external] (`.state`
+loop ports, `.input` or `.parameter` external ports, `.output` outputs), the exact
+rational `Problem` `z = M z + b(u)`, `y = C (z ++ u) + c`, a supplied inverse of
+`1 - M`, a loop domain, admitted inputs, and the **membership obligation**
+`∀ u, admitted u → domain (solution u)`. The obligation is a proof carried by the
+declaration value, not a validator check: when it is false the declaration cannot
+be written down. `validate` checks the ports and then both products of the supplied
+inverse; a failing product is refused with `invalidInverse` (`left` or `right`), so
+a singular loop is refused whatever it supplies and is never solved. `compile`
+returns an `AlgebraicModel` carrying the checked `Inverse`.
+
+| Theorem | Statement |
+| --- | --- |
+| `Declaration.solves_iff_rel` | every input, every declaration: source equations ↔ `Rel` of the compiled loop and output circuits (`compile_correct`); no existence or uniqueness |
+| `AlgebraicModel.eliminate_correct` | accepted declaration, admitted input: exactly one loop point in the domain, and `Rel` holds of exactly the eliminated circuit's output (`Problem.eliminate_correct`) |
+| `AlgebraicModel.solves_iff_eliminated` | the two combined: on an admitted input the source holds of exactly the eliminated output |
+| `Declaration.coordinates_loop`, `.coordinates_external` | coordinates `0 … n-1` are the loop ports and carry the loop point, `n … n+d-1` the external ports and the input |
+
+Nothing is said about inputs outside `admitted`. Only affine loops are declared;
+nonlinear elimination is out of scope, and `compile_correct`'s set-level relation is
+the only nonlinear claim. The declaration is a type of its own rather than a case of
+`Model.Declaration`, which is plain data whose polynomial `Body` the common compiler
+schedules; this one carries predicates and a proof.
+[DeclaredAlgebraic.lean](../Gimle/Asgard/Examples/DeclaredAlgebraic.lean) declares
+`halfLoop`, `z = z/2 + u` and `y = z` with inverse `2`, `u ∈ [-1, 1]` and
+`z ∈ [-2, 2]`, whose source holds of exactly `y = 2u` (`half_declared`).
+[AlgebraicDeclarations.lean](../Gimle/Asgard/Tests/AlgebraicDeclarations.lean) refuses
+`z = z + 1` for every supplied inverse (`unit_rejected`) and shows that `z = z/2 + 1`
+on `z ∈ [-1, 1]` cannot be completed: the obligation is false for the true inverse
+(`off_obligation_false`), and any declaration that admits an input is refused
+(`off_rejected`). There are no *same* Python parity fixtures: the pinned Python
+equation compiler accepts all three as unguarded `trace` circuits, whose stream
+runtime does not compute the algebraic fixed point, and its multi-equation algebraic
+layering refuses a cycle; the test file records each case as *differs*.
+
 ## Guarantees and limits
 
 | Feature | Proved | Conditions / limits |
@@ -461,6 +501,7 @@ Not yet in the source grammar (open tasks):
 | [Driven isolation](../Gimle/Asgard/Examples/DrivenForcing.lean) | Original driven source ↔ compiled driven feedback, for each admitted driver signal, same initial data | Declared drivers only; continuous drivers, derivative ports bound to actual derivatives; no integrals; no existence claim, and nothing about sampled or held driver signals |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
 | [Partial-field feedback](../Gimle/Asgard/Examples/PartialFeedback.lean) | `RealAtomics.Circuit.CloseRel` ↔ the initialized ODE with the field `Defined` along the state at every `t ≥ start` (`Circuit.close_correct`, `Expr.close_correct`) | A `RealAtomics` field over [drivers, state]; generators read time; relation only, with no declaration case yet (030); no existence or uniqueness claim |
+| [Algebraic loops](../Gimle/Asgard/Examples/DeclaredAlgebraic.lean) | Source ↔ `Rel` for every input; on admitted inputs a unique loop point in the domain and exactly the eliminated output | Affine loops with an exact rational inverse of `1 - M`, both products checked; membership of every admitted input's solution in the domain is a proof obligation of the declaration; no nonlinear elimination |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
 | [Stochastic translation](../Gimle/Asgard/Examples/StochasticJump.lean) | Source/process-circuit correspondence | Same supplied integral interpretation; no general SDE existence, Itô formula, or probability bounds |
 | [Approximation](../Gimle/Asgard/Examples/Approximation.lean) | Uniform coordinate error bounds on a stated region | Feedforward real circuits; nonnegative budgets, coverage, and Lipschitz premises for composition |

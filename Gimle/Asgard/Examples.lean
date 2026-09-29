@@ -11,6 +11,7 @@ import Gimle.Asgard.Examples.Feedback
 import Gimle.Asgard.Examples.LinearOscillator
 import Gimle.Asgard.Examples.LinearDiagram
 import Gimle.Asgard.Examples.AlgebraicFeedback
+import Gimle.Asgard.Examples.DeclaredAlgebraic
 import Gimle.Asgard.Examples.StochasticJump
 import Gimle.Asgard.Examples.VariableIsolation
 import Gimle.Asgard.Examples.DifferentialIsolation
