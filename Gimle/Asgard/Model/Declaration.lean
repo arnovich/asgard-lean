@@ -98,6 +98,10 @@ inductive ErrorCode where
   -- Like the codes above, it names an unsupported form, never an unsatisfiable
   -- model.
   | unestablishedCompose
+  -- Stream source isolation (`Streams.Isolation`): a lambda application in a
+  -- stream source term, which has no stream reading. It names an unsupported
+  -- form, never an unsatisfiable model.
+  | unsupportedApplication
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
