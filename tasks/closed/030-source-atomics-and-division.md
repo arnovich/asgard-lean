@@ -1,13 +1,10 @@
 ---
 title: Admit real atomics and non-literal division in source terms
-state: ongoing
+state: closed
 priority: low
 labels: [compiler, isolation, migration]
 related: ["029", "031"]
 depends_on: ["042"]
-claimed_by: claude-030
-claimed_at: 2026-09-29T11:02:12Z
-branch: feat/source_atomics_division
 ---
 
 ## Context
