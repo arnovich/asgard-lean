@@ -36,20 +36,40 @@ structure Evolution where
   start : ℚ
   deriving Repr, DecidableEq
 
+/-- A declared time-varying driver of a continuous evolution: the `.driver`
+port `driverId`, read as an arbitrary external signal on the evolution axis,
+and, only when it is declared differentiable, the `.driver` port `derivativeId`,
+which the driven relation binds to the actual derivative of that signal. -/
+structure DriverBinding where
+  driverId : String
+  derivativeId : Option String := none
+  deriving Repr, DecidableEq
+
+/-- The driver ports in coordinate order: each driver, then its derivative port
+when it declares one. -/
+def DriverBinding.ports (ds : List DriverBinding) : List String :=
+  ds.flatMap fun d => d.driverId :: d.derivativeId.toList
+
 inductive Declaration where
   | polynomial (body : Body)
   | continuous (body : Body) (evolution : Evolution)
+  /-- A continuous evolution with declared drivers. Nothing is inferred: every
+  `.driver` port is declared here, and only declared ports may be drivers. -/
+  | driven (body : Body) (evolution : Evolution) (drivers : List DriverBinding)
   deriving Repr, DecidableEq
 
 /-- Inspect the exact original named program, without reordering or substitution. -/
 def Declaration.body : Declaration → Body
   | .polynomial b => b
   | .continuous b _ => b
+  | .driven b _ _ => b
 
 /-- Metadata projection to the existing continuous interface. This does not
 schedule equations, specialize parameters, or invoke System.prepare. System
 treats parameters as external signals and does not carry fixed values or start
-time; this raw view alone does not retain the full declaration semantics. -/
+time; this raw view alone does not retain the full declaration semantics. Nor
+does it name the drivers of a driven declaration, which `Model.Driven` reads
+from its `DriverBinding`s. -/
 def Evolution.system (e : Evolution) (b : Body) : Dynamics.System where
   program := b.program
   states := e.states
@@ -157,6 +177,16 @@ private def checkEvolution (b : Body) (e : Evolution) : Except Diagnostic Unit :
   for p in e.initialPorts do
     require (e.states.any (·.initialId == p.id)) .missingBinding "initials" p.id
 
+/-- Every declared driver port is a `.driver` input, declared once, and every
+`.driver` input is declared, as a driver or as a driver's derivative. -/
+private def checkDrivers (b : Body) (ds : List DriverBinding) : Except Diagnostic Unit := do
+  checkUnique (DriverBinding.ports ds) .duplicateBinding "drivers"
+  for id in DriverBinding.ports ds do
+    require (b.program.inputs.any (fun p => p.id == id && p.role == .driver))
+      .unknownReference "drivers" id
+  for p in b.program.inputs.filter (·.role == .driver) do
+    require ((DriverBinding.ports ds).contains p.id) .missingBinding "drivers" p.id
+
 /-- Checks declaration shape only. Forward references and auxiliary cycles are
 left to the scheduling pass. State feedback is never treated
 as an auxiliary dependency cycle. Unsupported operations are not constructors of
@@ -166,6 +196,10 @@ def Declaration.validate : Declaration → Except Diagnostic Unit
   | .continuous b e => do
       checkBody b [.state, .parameter] e.initialPorts
       checkEvolution b e
+  | .driven b e ds => do
+      checkBody b [.state, .parameter, .driver] e.initialPorts
+      checkEvolution b e
+      checkDrivers b ds
 
 /-- A declaration together with evidence of this metadata check, not a compiled
 circuit or a proof of existence, uniqueness, or a model property. -/

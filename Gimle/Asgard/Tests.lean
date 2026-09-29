@@ -22,6 +22,7 @@ import Gimle.Asgard.Tests.DifferentialIsolation
 import Gimle.Asgard.Tests.HigherOrderIsolation
 import Gimle.Asgard.Tests.SourceIntegrals
 import Gimle.Asgard.Tests.IntegralStates
+import Gimle.Asgard.Tests.Drivers
 import Gimle.Asgard.Tests.ThreeState
 import Gimle.Asgard.Tests.RationalInterchange
 import Gimle.Asgard.Tests.RationalSimulation

@@ -4,11 +4,13 @@
 
 | Entry point | Purpose |
 | --- | --- |
-| [`Model.Declaration`](../Gimle/Asgard/Model/Declaration.lean) | Polynomial or continuous model, exact parameters, ordered observations |
+| [`Model.Declaration`](../Gimle/Asgard/Model/Declaration.lean) | Polynomial, continuous or driven model, exact parameters, declared drivers, ordered observations |
 | [`Model.Compiler`](../Gimle/Asgard/Model/Compiler.lean) | `compilePolynomial`: validate, schedule, specialize, compile |
 | [`Model.Continuous`](../Gimle/Asgard/Model/Continuous.lean) | `compileContinuous`: compile the field and initialized feedback |
+| [`Model.Driven`](../Gimle/Asgard/Model/Driven.lean) | `compileDriven`: a continuous model whose field also reads declared drivers, closed with those drivers as external input |
 | [`Model.Linear`](../Gimle/Asgard/Model/Linear.lean) | Recognize homogeneous linear systems and prove forward existence/uniqueness |
 | [`Model.Source`](../Gimle/Asgard/Model/Source.lean) | `compileSourcePolynomial` / `compileSourceContinuous`: applied lambdas, implicit first-order ODEs, higher-order ODEs over declared velocities, source integrals and declared integral states, lowered to a `Body` |
+| [`Model.DrivenSource`](../Gimle/Asgard/Model/DrivenSource.lean) | `compileSourceDriven`: source equations with declared drivers and driver derivatives, lowered by `Model.Source` |
 | [`Model.Integral`](../Gimle/Asgard/Model/Integral.lean) | The trajectory reading of integrals from the declared start, the inverse rewrites that keep boundary terms, and the reading of declared integral states |
 
 - Use `equations%` from `Gimle.Asgard.Compile.Syntax` for named polynomial assignments.
@@ -403,6 +405,30 @@ the unique solution of `diff(f,t) = int(int(f,t),t)`, `f(0) = 1`, with both inte
 declared: `f = (eᵗ + 2e^(-t/2) cos(√3t/2))/3`, and in every solution `int(f,t)` reads
 `F` and `int(int(f,t),t)` reads `G`.
 
+### Drivers
+
+A driver is a `.driver` port declared by a `DriverBinding` and compiled with
+`compileSourceDriven`; nothing is inferred from a name or a `$` prefix, and the
+other compilers reject every `.driver` port. A driver reads as a value in residuals
+and explicit assignments. `D_t(z)` has a value only when `z` is declared
+differentiable with a derivative port `dz`, and is read as `dz`; the derivative of a
+driver without one, of a parameter, or a second derivative of a driver is rejected.
+Python's `diff(a,t) = diff($z,t)` is declared as `da : diff(a, t) = diff(z, t)` with
+`⟨"driver-z", some "driver-dz"⟩` and lowers to `da := dz`.
+
+The driver signal is part of the relation (`SourceBody.SolvesDriven`): it must be
+admitted (`Evolution.Admitted`), meaning every driver is continuous on `t ≥ start`
+and every derivative port carries its driver's actual derivative there, so a
+derivative port is never an unconstrained input. The coordinates are the driver
+ports, then the states, and `SourceDrivenModel.solves_iff_realizes` relates the
+source, for each admitted signal, to `Dynamics.close` of the compiled field with the
+drivers as its external input. A derivative port need not be continuous, so a
+contract that needs existence or uniqueness states that regularity itself.
+[DrivenForcing.lean](../Gimle/Asgard/Examples/DrivenForcing.lean) solves
+`diff(x,t) + x = diff(u,t) + u` for `u = sin`, `du = cos`, and shows that `u = sin`
+with `du = 0` is not admitted, so nothing solves the source with it.
+[Drivers.lean](../Gimle/Asgard/Tests/Drivers.lean) restates the Python fixtures.
+
 Not yet in the source grammar (open tasks):
 
 - integrands naming auxiliaries, in inverse pairs and declared integral states alike:
@@ -414,7 +440,8 @@ Not yet in the source grammar (open tasks):
 - multi-axis equations such as heat (029);
 - real atomics, division by expressions, literal products or negative numerals, and
   decimal literals (030);
-- time-varying drivers, such as Python's `diff(a,t) = diff($z,t)` (031).
+- integrals in a driven declaration: the driven relation reads no integral, and every
+  integral there is rejected (053).
 
 ## Guarantees and limits
 
@@ -427,6 +454,7 @@ Not yet in the source grammar (open tasks):
 | [Differential isolation](../Gimle/Asgard/Examples/DifferentialIsolation.lean) | Original implicit first-order ODE ↔ compiled feedback, same initial data | One atom `q*D_t(x)`, exact nonzero literal `q`, derivative-free residuals once other atoms are read through declared velocities; see [Source equations](#source-equations-lambdas-and-differential-isolation) |
 | [Source integrals](../Gimle/Asgard/Examples/SourceIntegrals.lean) | Original source with integrals ↔ compiled feedback, same initial data; integrals denote antiderivatives from the start | Only the inverse rewrites `D(I(X)) = X` (tame `X`, rewritten inside first), `D^m(I(x)) = D^(m-1)(x)` and `I(D^(k+1)(x)) = y - y0` through declared velocities, and [declared integral states](../Gimle/Asgard/Examples/IntegralStates.lean) for pointwise `X`, [nested](../Gimle/Asgard/Examples/NestedIntegralStates.lean) through the declarations of their inner integrals, with initial value `0`; every other integral is rejected |
 | [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation, lower-order atoms only through declared velocities |
+| [Driven isolation](../Gimle/Asgard/Examples/DrivenForcing.lean) | Original driven source ↔ compiled driven feedback, for each admitted driver signal, same initial data | Declared drivers only; continuous drivers, derivative ports bound to actual derivatives; no integrals; no existence claim, and nothing about sampled or held driver signals |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
 | [Stochastic translation](../Gimle/Asgard/Examples/StochasticJump.lean) | Source/process-circuit correspondence | Same supplied integral interpretation; no general SDE existence, Itô formula, or probability bounds |
