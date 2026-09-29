@@ -1,9 +1,12 @@
 ---
 title: Close continuous models over partial real vector fields
-state: open
+state: ongoing
 priority: low
 labels: [compiler, atomics, dynamics]
 blocks: ["030"]
+claimed_by: claude-042
+claimed_at: 2026-09-29T10:21:05Z
+branch: feat/partial_field_trace
 ---
 
 ## Context
