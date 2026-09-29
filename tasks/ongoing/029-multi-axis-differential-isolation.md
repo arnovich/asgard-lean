@@ -1,10 +1,13 @@
 ---
 title: Connect multi-axis differential isolation to the stream interpretation
-state: open
+state: ongoing
 priority: low
 labels: [compiler, isolation, streams, migration]
 related: ["027", "028", "030"]
 depends_on: ["043"]
+claimed_by: claude-029
+claimed_at: 2026-09-29T11:02:09Z
+branch: feat/multi_axis_isolation
 ---
 
 ## Context
