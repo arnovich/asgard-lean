@@ -8,6 +8,7 @@ import Gimle.Asgard.Tests.Algebraic
 import Gimle.Asgard.Tests.Stochastic
 import Gimle.Asgard.Tests.Normalization
 import Gimle.Asgard.Tests.RealAtomics
+import Gimle.Asgard.Tests.PartialFeedback
 import Gimle.Asgard.Tests.Streams
 import Gimle.Asgard.Tests.StreamLowering
 import Gimle.Asgard.Tests.StreamRealization
