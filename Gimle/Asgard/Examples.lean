@@ -21,6 +21,7 @@ import Gimle.Asgard.Examples.DrivenForcing
 import Gimle.Asgard.Examples.IntegralStates
 import Gimle.Asgard.Examples.NestedIntegralStates
 import Gimle.Asgard.Examples.RealAtomics
+import Gimle.Asgard.Examples.PartialFeedback
 import Gimle.Asgard.Examples.FormalHeat
 import Gimle.Asgard.Examples.DeclaredHeat
 import Gimle.Asgard.Examples.PolynomialHeat

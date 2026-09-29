@@ -441,7 +441,9 @@ Not yet in the source grammar (open tasks):
   form `D_t u = F(u)` can be [declared](formal-streams.md#declared-stream-equations);
   isolating a scaled time derivative is 029;
 - real atomics, division by expressions, literal products or negative numerals, and
-  decimal literals (030);
+  decimal literals (030). An atomic that feeds a continuous model's field may now be
+  admitted through [partial-field feedback](#guarantees-and-limits), which keeps its
+  domain at every time of the trajectory;
 - integrals in a driven declaration: the driven relation reads no integral, and every
   integral there is rejected (053).
 
@@ -458,12 +460,16 @@ Not yet in the source grammar (open tasks):
 | [Higher-order isolation](../Gimle/Asgard/Examples/HigherOrderIsolation.lean) | Original higher-order ODE ↔ compiled feedback of the augmented system; chains denote iterated derivatives, velocity initial values the initial derivatives | Every lower level has an explicitly declared velocity state with its own initial value; one top atom per equation, lower-order atoms only through declared velocities |
 | [Driven isolation](../Gimle/Asgard/Examples/DrivenForcing.lean) | Original driven source ↔ compiled driven feedback, for each admitted driver signal, same initial data | Declared drivers only; continuous drivers, derivative ports bound to actual derivatives; no integrals; no existence claim, and nothing about sampled or held driver signals |
 | [Real atomics](../Gimle/Asgard/Examples/RealAtomics.lean) | Compilation and rewrites preserve values **and domains** | `sqrt`: nonnegative; `log` and rational/real powers: positive base; division: nonzero denominator |
+| [Partial-field feedback](../Gimle/Asgard/Examples/PartialFeedback.lean) | `RealAtomics.Circuit.CloseRel` ↔ the initialized ODE with the field `Defined` along the state at every `t ≥ start` (`Circuit.close_correct`, `Expr.close_correct`) | A `RealAtomics` field over [drivers, state]; generators read time; relation only, with no declaration case yet (030); no existence or uniqueness claim |
 | [External components](../Gimle/Asgard/Examples/ExternalBlend.lean) | Pointwise contracts and finite weighted partitions | Fixed explicit environment; all branches defined, weights nonnegative and sum to one; no certification of external code |
 | [Stochastic translation](../Gimle/Asgard/Examples/StochasticJump.lean) | Source/process-circuit correspondence | Same supplied integral interpretation; no general SDE existence, Itô formula, or probability bounds |
 | [Approximation](../Gimle/Asgard/Examples/Approximation.lean) | Uniform coordinate error bounds on a stated region | Feedforward real circuits; nonnegative budgets, coverage, and Lipschitz premises for composition |
 
 Partial operations stay undefined even when their result is discarded or
-multiplied by zero. Trace hides internal signals; it does not guarantee a solution.
+multiplied by zero. Inside an ODE this holds at every time of the forward domain:
+the partial-field relation carries `Defined` itself, so a trajectory that leaves the
+domain once, or a fixed point of the totalized `value` only, has no relation output.
+Trace hides internal signals; it does not guarantee a solution.
 Formal streams use a [separate coefficient interpretation](formal-streams.md), with
 [their own declarations](formal-streams.md#declared-stream-equations).
 
