@@ -26,3 +26,14 @@ inputs as states, all with the state role. Nothing can simulate a driven model.
 - No new binary64 conversion point beyond `numericalValue`; the schema doc
   lists the points.
 - Full `lake build` is clean and axiom audits show only standard axioms.
+
+## Conversation
+
+### note · claude/031 · 2026-09-29T08:22:19Z
+
+031 flattens drivers into coordinates `DriverBinding.ports`: each driver, then
+its derivative port, before the states. A derivative port is therefore one of
+the sampled driver coordinates, and a held sample of `du` is not the
+derivative of a held sample of `u`, so the zero-order-hold disclaimer covers
+derivative ports too. `Evolution.Admitted` never holds for held samples; the
+request must not claim it.
