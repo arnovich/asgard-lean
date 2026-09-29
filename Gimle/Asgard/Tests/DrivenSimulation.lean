@@ -11,13 +11,29 @@ private def request (samples : Array (Array ℚ)) :
   model.model.eulerRequest "driven-regression" "driven-forcing" 0.5 2 samples
 
 private def response (request : Json) (rows : Array (Array Float)) (times : Json)
-    (schema : String := Driven.responseSchema) (worker : String := Driven.workerVersion) : Json :=
+    (schema : String := Driven.responseSchema) (worker : String := Driven.workerVersion)
+    (message : String := Driven.heldMessage) : Json :=
   Json.mkObj [("schema", .str schema), ("kind", .str "observation"),
     ("request", request), ("trajectory", encodeRows rows), ("times", times),
     ("provenance", Json.mkObj [("worker", .str worker),
       ("package", .str "test"), ("python", .str "test"), ("jax", .str "test"),
       ("arithmetic", .str "cpu-binary64-materialized"), ("module", .str "test")]),
-    ("diagnostics", Json.mkObj [("certifiedError", .null), ("message", .str "observations")])]
+    ("diagnostics", Json.mkObj [("certifiedError", .null), ("message", .str message)])]
+
+/-- The same interface with no driver, reading only the state. -/
+private def undriven {k s : Nat} (good : Driven.Request k s) : Driven.Request 0 s where
+  circuit := Polynomial.route fun i => Fin.cast (Nat.zero_add s).symm i
+  drivers := []
+  states := good.states
+  outputs := good.outputs
+  sourceIds := good.sourceIds
+  outputSources := good.outputSources
+  initialization := good.initialization
+  requestId := good.requestId
+  artifactId := good.artifactId
+  step := good.step
+  steps := 1
+  samples := #[#[]]
 
 private def refuses (r : Except String Json) (reason : String) : IO Unit :=
   match r with
@@ -62,6 +78,11 @@ private def refuses (r : Except String Json) (reason : String) : IO Unit :=
   refuses { good with drivers := good.drivers.map fun (d : Driven.DriverPort) =>
     { d with port := { d.port with role := .input } } }.toJson "invalid port role"
   refuses { good with drivers := good.drivers.take 1 }.toJson "interface length/wire limit"
+  -- A sample the runtime cannot represent is refused, not approximated.
+  refuses ((← IO.ofExcept ((request #[#[0, 1], #[1 / (10 ^ 400 : ℚ), 1]]).mapError IO.userError)).toJson)
+    "unsupported numerical rational conversion"
+  -- A driven request has a driver.
+  refuses (undriven good).toJson "driven request needs a driver"
   -- The response is a state trajectory on the uniform grid, bound to the request.
   let .euler initial start step steps ← IO.ofExcept (good.numericalSettings.mapError IO.userError)
     | throw (IO.userError "wrong method")
@@ -73,7 +94,8 @@ private def refuses (r : Except String Json) (reason : String) : IO Unit :=
       response json rows times Driven.responseSchema "gimle.asgard.lean_worker/v2",
       (response json rows times).setObjVal! "request"
         (json.setObjVal! "settings" (settings.setObjVal! "samples" (.arr #[]))),
-      response json (rows.push initial) times] do
+      response json (rows.push initial) times,
+      response json rows times (message := "observations")] do
     if (Driven.decodeObservation good bad.compress).isOk then
       throw (IO.userError "accepted a mismatched driven observation")
 )

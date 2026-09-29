@@ -24,7 +24,7 @@ request/response limits, deadlines, and process-group cleanup; it is not a sandb
 | --- | --- | --- |
 | v1 | Integer coefficients with magnitude at most `2^53` | Point evaluation or simultaneous Euler steps |
 | v2 | Canonical rational coefficients; exact initial state/start for Euler | Converts to binary64; unsupported or nonfinite conversions fail |
-| driven v1 | v2 data, plus declared driver ports (each derivative port tagged with its driver) and one exact rational sample row per Euler interval | Holds sample row `i` on `[t_i, t_{i+1})`; converts to binary64 as v2 |
+| driven v1 | v2 data, plus at least one declared driver port (each derivative port tagged with its driver) and one exact rational sample row per Euler interval | Holds sample row `i` on `[t_i, t_{i+1})`; converts to binary64 as v2 |
 
 - Responses must match the original request, shapes, finite values, and time grid.
 - Euler returns the initial row plus one row per step; observations preserve declared order.

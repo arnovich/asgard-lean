@@ -26,6 +26,10 @@ def responseSchema := "asgard.driven-simulation-response/v1"
 def workerVersion := "gimle.asgard.lean_worker/driven-v1"
 /-- Sample row `i` is applied on `[t_i, t_{i+1})`, by forward Euler from `t_i`. -/
 def holdConvention := "zero-order-previous"
+/-- The worker's fixed statement, required in every decoded driven response. -/
+def heldMessage :=
+  "Numerical observations only; drivers held as zero-order samples, not the declared signal; " ++
+    "no accuracy, stability or proof claim"
 
 /-- One driver coordinate: its `.driver` port, and, for a derivative port, the
 ID of the driver whose declared derivative it is. -/
@@ -76,6 +80,7 @@ private def checkDerivatives (drivers : List DriverPort) : Except String Unit :=
 
 def Request.toJson {k s : Nat} (r : Request k s) : Except String Json := do
   let inputs := r.drivers.map (·.port) ++ r.states
+  if k == 0 then throw "driven request needs a driver"
   if k + s > 64 || s == 0 || r.drivers.length != k || r.states.length != s ||
       r.outputs.length != s || r.outputSources.length != s then
     throw "interface length/wire limit"
@@ -120,13 +125,18 @@ def Request.toJson {k s : Nat} (r : Request k s) : Except String Json := do
   if result.compress.utf8ByteSize > maxRequestBytes then throw "request byte limit"
   return result
 
-/-- A state trajectory on the uniform grid, bound to the caller's request. -/
+/-- A state trajectory on the uniform grid, bound to the caller's request, whose
+diagnostics state `heldMessage`: the drivers were held samples, not the
+declared signal. -/
 structure Observation {k s : Nat} (original : Request k s) extends ResponseData
 
 def decodeObservation {k s : Nat} (original : Request k s) (text : String) :
     Except String (Observation original) := do
-  return ⟨← decodeResponse (← original.toJson) (← original.numericalSettings) s
-    responseSchema workerVersion text⟩
+  let data ← decodeResponse (← original.toJson) (← original.numericalSettings) s
+    responseSchema workerVersion text
+  unless (← data.diagnostics.getObjValAs? String "message") == heldMessage do
+    throw "driver hold not stated"
+  return ⟨data⟩
 
 def run {k s : Nat} (request : Request k s) (worker : Worker)
     (cancelled : IO.Ref Bool) : IO (Observation request) := do
