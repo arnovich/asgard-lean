@@ -49,6 +49,7 @@ def NamedExpr.ofTerm : Model.Term → Except Model.ErrorCode NamedExpr
   | .derivative axis a => do return .unary (.derivative axis) (← ofTerm a)
   | .integral _ _ => .error .unsupportedIntegral
   | .apply _ _ _ => .error .unsupportedApplication
+  | .unary _ _ | .binary _ _ _ => .error .unsupportedAtomic
 
 /-! ## Scaling -/
 

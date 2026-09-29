@@ -6,7 +6,8 @@ higher-order chains.
 One source equation `lhs = rhs` in which exactly one side contains exactly one
 derivative atom, of the form `q*D_t(x) + r = rhs`, once every other atom whose
 state has a declared velocity is read as that velocity (below). The scale `q` is
-an exact nonzero signed literal product and `r` and `rhs` are then
+an exact nonzero signed literal product, or a quotient of such products with a
+nonzero denominator (`Term.literal`), and `r` and `rhs` are then
 derivative-free polynomial terms, with applied lambdas allowed. It is isolated to
 `D_t(x) = (rhs - r)/q` with every residual term retained: nothing is
 cancelled, integrated or dropped.
@@ -35,7 +36,9 @@ velocity stays a second atom and is rejected.
 Rejected, each with its own diagnostic, never as a claim of unsatisfiability:
 zero scale, competing atoms on both sides and repeated atoms on one side (those
 not read as declared velocities),
-non-literal or nonlinear factors, a scale around a sum, higher-order chains
+non-literal or nonlinear factors (a division by a non-literal included), a
+derivative under a real atomic or in a denominator (`atomicDerivative`), a scale
+around a sum, higher-order chains
 without declared velocities, mixed-axis and non-state derivatives, derivatives
 inside lambda applications, and
 integrals that no inverse rewrite removed and no declared integral state reads
@@ -91,7 +94,8 @@ def Context.rates {α : Type} (c : Context) (env : String → Option α) :
 def Context.empty : Context := ⟨"", fun _ => none, fun _ => none, none⟩
 
 /-- Collapse every evolution-axis chain whose levels all have declared
-velocities to one atom `D_t(top)`. Lambda applications are left untouched: a
+velocities to one atom `D_t(top)`, also under real atomics and partial binary
+operations, whose meaning is compositional. Lambda applications are left untouched: a
 derivative inside one is rejected later. That is also why `collapse_eval` holds:
 a binder masks only a chain's base name in `Term.eval`, not the velocities it
 climbs, so under a binder named like a velocity the collapsed atom would read
@@ -100,6 +104,8 @@ def Term.collapse (c : Context) : Term → Term
   | .add a b => .add (a.collapse c) (b.collapse c)
   | .mul a b => .mul (a.collapse c) (b.collapse c)
   | .neg a => .neg (a.collapse c)
+  | .unary op a => .unary op (a.collapse c)
+  | .binary op a b => .binary op (a.collapse c) (b.collapse c)
   | .derivative axis operand =>
       match operand.chain with
       | some (axes, state) =>
@@ -118,6 +124,8 @@ theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ
     (t.collapse c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
   induction t with
   | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
+  | unary op a ha => simp only [collapse, Term.eval, ha]
+  | binary op a b ha hb => simp only [collapse, Term.eval, ha, hb]
   | add a b ha hb => simp only [collapse, Term.eval, ha, hb]
   | mul a b ha hb => simp only [collapse, Term.eval, ha, hb]
   | neg a ha => simp only [collapse, Term.eval, ha]
@@ -180,7 +188,7 @@ theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
     (t.readVelocities c output).eval env (c.rates env) atoms =
       t.eval env (c.rates env) atoms := by
   induction t with
-  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ | unary _ _ _ | binary _ _ _ _ _ => rfl
   | add a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
   | mul a b ha hb => simp only [readVelocities, Term.eval, ha, hb]
   | neg a ha => simp only [readVelocities, Term.eval, ha]
@@ -219,7 +227,7 @@ theorem Term.readPorts_eval (c : Context) (t : Term) (env : String → Option �
     (atoms : Term → Option ℝ) :
     (t.readPorts c).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
   induction t with
-  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ | unary _ _ _ | binary _ _ _ _ _ => rfl
   | add a b ha hb => simp only [readPorts, Term.eval, ha, hb]
   | mul a b ha hb => simp only [readPorts, Term.eval, ha, hb]
   | neg a ha => simp only [readPorts, Term.eval, ha]
@@ -244,6 +252,11 @@ def Term.checkDerivatives (c : Context) : Term → Except ErrorCode Unit
   | .neg a => a.checkDerivatives c
   | .apply _ body arg =>
       if body.derivatives + arg.derivatives = 0 then .ok () else .error .unsupportedDerivative
+  | .unary _ a => if a.derivatives = 0 then .ok () else .error .atomicDerivative
+  | .binary .division a b =>
+      if b.derivatives = 0 then a.checkDerivatives c else .error .atomicDerivative
+  | .binary _ a b =>
+      if a.derivatives + b.derivatives = 0 then .ok () else .error .atomicDerivative
   | .derivative axis operand =>
       match operand with
       | .var state =>
@@ -321,6 +334,16 @@ def Term.affine : Term → Except ErrorCode Affine
           if p.remainder.isSome then .error .unsupportedDerivative
           else return ⟨p.axis, p.state, p.scale * c, none⟩
       | none, none => .error .nonlinearDerivative
+  | .binary .division a b =>
+      match b.literal with
+      | some c =>
+          if c = 0 then .error .zeroScale
+          else do
+            let p ← a.affine
+            if p.remainder.isSome then .error .unsupportedDerivative
+            else return ⟨p.axis, p.state, p.scale / c, none⟩
+      | none => .error .nonlinearDerivative
+  | .binary _ _ _ | .unary _ _ => .error .atomicDerivative
   | .apply _ _ _ => .error .unsupportedDerivative
   | .integral _ _ => .error .unsupportedIntegral
   | .var _ | .constant _ => .error .missingDerivative
@@ -331,7 +354,28 @@ theorem Term.affine_correct (t : Term) (p : Affine) (h : t.affine = .ok p)
     (hrate : rates [p.axis] p.state = some rate) : t.eval env rates atoms = p.value env rate := by
   induction t generalizing p with
   | var _ | constant _ => simp [affine] at h
-  | apply | integral => simp [affine] at h
+  | apply | integral | unary => simp [affine] at h
+  | binary op a b ha hb =>
+      cases op <;> simp only [affine, reduceCtorEq] at h
+      cases hlb : b.literal with
+      | none => simp [hlb] at h
+      | some c =>
+        by_cases hc : c = 0
+        · simp [hlb, hc] at h
+        · cases hA : a.affine with
+          | error e => simp [hlb, hc, hA, Bind.bind, Except.bind] at h
+          | ok q =>
+            cases hq : q.remainder with
+            | some _ => simp [hlb, hc, hA, hq, Bind.bind, Except.bind] at h
+            | none =>
+              simp [hlb, hc, hA, hq, Bind.bind, Except.bind, Pure.pure, Except.pure] at h
+              subst h
+              have hc' : (c : ℝ) ≠ 0 := by exact_mod_cast hc
+              simp only [Term.eval, b.literal_correct c hlb env rates atoms, ha q hA hrate]
+              simp [Affine.value, hq, RealAtomics.Binary.partial_of_domain
+                (show RealAtomics.Binary.division.Domain (q.scale * rate) c from hc'),
+                RealAtomics.Binary.value]
+              ring
   | derivative axis operand _ =>
       cases operand <;> simp [affine] at h
       subst h

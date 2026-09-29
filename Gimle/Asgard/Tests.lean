@@ -10,6 +10,7 @@ import Gimle.Asgard.Tests.Stochastic
 import Gimle.Asgard.Tests.Normalization
 import Gimle.Asgard.Tests.RealAtomics
 import Gimle.Asgard.Tests.PartialFeedback
+import Gimle.Asgard.Tests.AtomicSource
 import Gimle.Asgard.Tests.Streams
 import Gimle.Asgard.Tests.StreamLowering
 import Gimle.Asgard.Tests.StreamDeclarations

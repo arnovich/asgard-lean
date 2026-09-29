@@ -70,7 +70,7 @@ theorem Term.readRates_eval (c : Context) (rate : String → Option String)
     (env : String → Option ℝ) (atoms : Term → Option ℝ) :
     (t.readRates c.axis rate).eval env (c.rates env) atoms = t.eval env (c.rates env) atoms := by
   induction t with
-  | var _ | constant _ | apply _ _ _ | integral _ _ _ => rfl
+  | var _ | constant _ | apply _ _ _ | integral _ _ _ | unary _ _ _ | binary _ _ _ _ _ => rfl
   | add a b ha hb => simp only [readRates, Term.eval, ha, hb]
   | mul a b ha hb => simp only [readRates, Term.eval, ha, hb]
   | neg a ha => simp only [readRates, Term.eval, ha]

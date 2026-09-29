@@ -560,7 +560,7 @@ info: 'Gimle.Asgard.Model.Context.cancelsUpTo' depends on axioms: [propext, Clas
 -/
 #guard_msgs (whitespace := lax) in #print axioms Context.cancelsUpTo
 /--
-info: 'Gimle.Asgard.Model.Term.cancelAtom_below' depends on axioms: [propext, Quot.sound]
+info: 'Gimle.Asgard.Model.Term.cancelAtom_below' depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms Term.cancelAtom_below
 /--

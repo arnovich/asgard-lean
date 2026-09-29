@@ -87,6 +87,14 @@ inductive ErrorCode where
   | missingDerivative | competingDerivative | repeatedDerivative
   | nonlinearDerivative | higherOrderDerivative | mixedDerivative
   | unsupportedDerivative | zeroScale
+  -- A derivative under a real atomic or in a denominator (`Model.Differential`),
+  -- such as `sin(diff(f,t))` or `1 / diff(f,t)`: outside the accepted
+  -- differential fragment, never an unsatisfiable model.
+  | atomicDerivative
+  -- A real atomic or a non-literal division given to a polynomial compiler
+  -- (`Model.Source`); `Model.AtomicSource` compiles it. It names an unsupported
+  -- form, never an unsatisfiable model.
+  | unsupportedAtomic
   -- Source integrals (`Model.Integral`): an integral that no inverse rewrite
   -- removes and no declared integral state reads, or one outside an evolution
   -- declaration.

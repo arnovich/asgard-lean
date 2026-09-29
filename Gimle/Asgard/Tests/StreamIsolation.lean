@@ -100,6 +100,9 @@ example : reject (sourceEquation% (u, t, u0) diff(u, t) = int(u, x)) =
     some ⟨.unsupportedIntegral, "u", "rhs"⟩ := by decide +kernel
 example : reject (sourceEquation% (u, t, u0) (λ w => diff(w, t))(u) = u) =
     some ⟨.unsupportedApplication, "u", "lhs"⟩ := by decide +kernel
+/-- Real atomics have no formal-stream reading either. -/
+example : reject (sourceEquation% (u, t, u0) diff(u, t) = sqrt(u)) =
+    some ⟨.unsupportedAtomic, "u", "rhs"⟩ := by decide +kernel
 
 /-! ### Declarations -/
 
