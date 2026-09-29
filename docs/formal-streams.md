@@ -17,6 +17,61 @@ for explicit axis permutations.
 - Checked laws: `D(I(a,b))=a` and `I(D(a),a)=a`.
 - Axis IDs and input IDs are separate; permutations require an explicit bijection.
 
+## Declared stream equations
+
+[`Streams.Declaration`](../Gimle/Asgard/Streams/Declaration.lean) declares
+equations `D_along u = F(u)` rather than hand-building `NamedExpr` values. A
+`Declaration` names:
+
+- the **basis**, a field of the value and part of the model's identity: an OGF
+  and an EGF declaration differ, and resolve to `Expr .ogf` and `Expr .egf`;
+- the **ordered axes**, by stable ID; position is declared order;
+- the **inputs**: unknowns are `.state` ports, boundary profiles `.boundary`
+  ports, and anything else `.parameter` ports read as arbitrary streams;
+- the **equations** `⟨unknown, along, boundary, rhs⟩`: the boundary profile is a
+  declared input on the named axis `along`.
+
+The **boundary** of an equation along axis `i` is the whole zero slice
+`{α | α_i = 0}` of the unknown, the slice `integral` reads from its boundary
+argument; the boundary input's other coefficients are ignored.
+
+`Declaration.validate` reports the first error as a `Diagnostic`: empty or
+repeated axis and input IDs or names, input roles, an unknown that is not a
+`.state` input, a boundary that is not a `.boundary` input, an unknown axis or
+name in an equation, an unestablished substitution (`unestablishedCompose`),
+and unknowns or boundaries bound by no equation or by two. `compile` returns a
+`StreamModel`: the equations resolved in declared order, with the evidence.
+
+| Theorem | Statement |
+| --- | --- |
+| `derivative_iff_integral` | `D_i u = f` and `u = b` on the zero slice along `i` ↔ `u = I_i(f, b)` |
+| `Equation.solves_iff_integral` | an accepted equation holds (named meaning of `F`, derivative, boundary slice) ↔ `∃ v, rhs.compile.Rel x ![v] ∧ u = I(v, b)`; `F` is read through the relation of `Context.compiled_iff` |
+| `Equation.solves_iff_rebuilt` | the same ↔ the compiled `I(F(u), b)` circuit returns `u` |
+| `StreamModel.solves_iff`, `.solves_iff_integral` | a declaration holds ↔ every equation's reconstruction returns its unknown; with no domain left, `u = I(F(x), b)` along each declared axis |
+| `StreamModel.rhs_defined` | every accepted right-hand side is defined on every input |
+| `Equation.resolve_ids` | the resolved axis and inputs sit at the declared positions of their IDs |
+
+Nothing is claimed about existence or uniqueness; a declaration's solution set
+may be empty or large. `seriesCompose` is accepted only where `CanCompose` is
+**established** syntactically: the inner argument is `0`, an axis variable, a
+sum of such, a product with such a factor, or an integral whose boundary is such
+(`NamedExpr.composable_sound`, `canCompose_iff`: a zero raw coefficient at the
+origin). An input is never evidence. Anywhere else, even when the substitution's
+value is discarded or multiplied by zero, the declaration is refused. A
+repeated axis ID is refused by validation and by resolution (`resolve = none`).
+
+[DeclaredHeat.lean](../Gimle/Asgard/Examples/DeclaredHeat.lean) declares
+`D_t u = D_x² u` with boundary `u_at_t0` on `time`. It resolves to
+`FormalHeat.rhs` and `FormalHeat.circuit`, and with boundary `x²` its solution
+set is exactly `u = x² + 2t` (`solutions`). Declared with axes `[space, time]` it
+resolves along axis 1, and its solution set is the permuted stream
+(`swapped_solutions`). The tests lower the declared circuit as `heat_lowers`
+does, and refuse `0 · u(t ↦ 1)` and a repeated axis ID with diagnostics.
+
+```sh
+lake build Gimle.Asgard.Tests.StreamDeclarations
+```
+
 ## Substitution and truncation
 
 - `seriesCompose` substitutes one selected variable. The inner series must have
@@ -263,7 +318,8 @@ lake build Gimle.Asgard.Tests.AnalyticHeat
 
 [FormalHeat.lean](../Gimle/Asgard/Examples/FormalHeat.lean) checks `u=x²+2t`,
 `u_t=u_xx=2`, and `u(0,x)=x²`. The compiled circuit returns `[2,u]` using the
-supplied boundary. On its own this is a formal coefficient theorem; the analytic
+supplied boundary; *Declared stream equations* above declares the same equation
+and proves its solution set. On its own this is a formal coefficient theorem; the analytic
 bridge for every polynomial profile is in *Polynomial heat evolution* above.
 
 ```sh

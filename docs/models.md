@@ -437,7 +437,9 @@ Not yet in the source grammar (open tasks):
   as Python's `diff(f,t) = diff(diff(int(int(f,t),t),t),t)` (040);
 - a declared integral matched up to the meaning of its integrand, such as `int(1 * f, t)`
   against a declared `int(f, t)` (038);
-- multi-axis equations such as heat (029);
+- multi-axis equations such as heat (029). Stream equations already in isolated
+  form `D_t u = F(u)` can be [declared](formal-streams.md#declared-stream-equations);
+  isolating a scaled time derivative is 029;
 - real atomics, division by expressions, literal products or negative numerals, and
   decimal literals (030);
 - integrals in a driven declaration: the driven relation reads no integral, and every
@@ -462,7 +464,8 @@ Not yet in the source grammar (open tasks):
 
 Partial operations stay undefined even when their result is discarded or
 multiplied by zero. Trace hides internal signals; it does not guarantee a solution.
-Formal streams use a [separate coefficient interpretation](formal-streams.md).
+Formal streams use a [separate coefficient interpretation](formal-streams.md), with
+[their own declarations](formal-streams.md#declared-stream-equations).
 
 ## Three-state example
 

@@ -93,6 +93,9 @@ inductive ErrorCode where
   | unsupportedIntegral
   -- A declared integral state whose declared initial value is not `0`.
   | nonzeroInitial
+  -- Stream declarations (`Streams.Declaration`): a series substitution whose
+  -- inner argument is not syntactically known to have zero constant coefficient.
+  | unestablishedCompose
   deriving Repr, DecidableEq, BEq
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
