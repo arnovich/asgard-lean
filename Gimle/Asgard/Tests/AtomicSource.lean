@@ -165,6 +165,47 @@ example : code (compileAtomicContinuous { exponential (differentials% {
   decide +kernel
 example : atomic (differentials% { dx : diff(x, t) = log(int(x, t)); }) =
     some ⟨.unsupportedIntegral, "dx", "integral in an atomic declaration"⟩ := by decide +kernel
+-- A lambda argument holding an atomic is rejected: it is passed by name, so an
+-- unused one would drop its domain. The source relation reads `(λ w => 1)(log(x))`
+-- as `1` even at `x = -1`, which is why no accepted model may contain it. No pinned
+-- Python fixture applies a lambda to an atomic argument.
+example : (term% (λ w => 1)(log(x))).eval (fun _ => some (-1)) (fun _ _ => none)
+    (fun _ => none) = some 1 := by
+  simp [Term.eval]
+example : (term% (λ w => 1)(log(x))).betaPartial = none := by decide +kernel
+example : code (compileAtomicPolynomial { Examples.AtomicSource.zeroLog with
+    assignments := assignments% { z := (λ w => 1)(log(x)); } }) =
+    some ⟨.unsupportedAtomic, "z", "real atomic in a lambda argument"⟩ := by decide +kernel
+example : atomic (differentials% { dx : diff(x, t) = (λ w => x)(1 / x); }) =
+    some ⟨.unsupportedAtomic, "dx", "real atomic in a lambda argument"⟩ := by decide +kernel
+-- An atomic in the body, applied to a partial-free argument, is kept.
+example : ((compileAtomicPolynomial { Examples.AtomicSource.zeroLog with
+    assignments := assignments% { z := (λ w => log(w))(x + 1); } }).toOption.map
+      (fun p => p.outputs ⟨0, by decide⟩)) =
+    some (.unary .log (.binary .add (.input ⟨0, by decide⟩) (.constant 1))) := by decide +kernel
+
+-- A continuous declaration's observations are not compiled, so they are refused.
+example : code (compileAtomicContinuous { exponential (differentials% {
+    dx : diff(x, t) = exp(x); }) with observations := [⟨⟨"obs-x", "y", .output⟩, "state-x"⟩] }
+    evolution) = some ⟨.unsupportedRole, "observations", "obs-x"⟩ := by decide +kernel
+
+/-! ## Powers -/
+
+-- An exponent that writes a positive natural number is repeated multiplication,
+-- defined everywhere; any other is the real power, with a positive base.
+example : term% x ^ (2) = term% x ^ 2 := by decide +kernel
+example : term% x ^ 2.0 = term% x ^ 2 := by decide +kernel
+example : term% x ^ (-1) = .binary .realPower (.var "x") (.neg (.constant 1)) := by
+  decide +kernel
+example : term% x ^ 0.5 = .binary .realPower (.var "x") (.constant (5 / 10)) := by
+  decide +kernel
+example : (term% x ^ 2).eval (fun _ => some (-1)) (fun _ _ => none) (fun _ => none) =
+    some 1 := by
+  simp [Term.eval, Term.pow]
+example : (term% x ^ (-1)).eval (fun _ => some (-1)) (fun _ _ => none) (fun _ => none) =
+    none := by
+  simp [Term.eval, RealAtomics.Binary.partial, RealAtomics.Binary.Domain]
+
 -- An unknown function name is a notation error.
 /-- error: Unknown real atomic `foo` -/
 #guard_msgs in

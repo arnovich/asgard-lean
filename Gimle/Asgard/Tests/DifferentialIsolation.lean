@@ -159,7 +159,8 @@ example : solve (term% (2 ^ 3) * diff(f, t)) (term% f) =
 example : solve (term% diff(f, t) ^ 1) (term% f) = some (.var "f") := by decide +kernel
 example : reject (term% diff(f, t) ^ 2) (term% f) = some .repeatedDerivative := by decide +kernel
 
--- Division is by a positive numeral only; a zero denominator is a notation error.
+-- A numeral denominator must be positive: `/ 0` is a notation error. Other
+-- denominators are partial divisions (`Tests.AtomicSource`).
 /-- error: Division is by a positive numeral -/
 #guard_msgs in
 #check term% diff(f, t) / 0

@@ -15,8 +15,9 @@ identity.
 A decimal or scientific literal such as `2.5` or `1e-309` is the exact rational
 it writes, never a binary64 value. `f(e)` for `f` among `sqrt`, `log`, `exp`,
 `abs`, `sin`, `cos`, `sinh`, `cosh` and `tanh` is that real atomic;
-`e / d` for any other denominator `d` is the partial division, and `e ^ p` for any
-exponent `p` other than a numeral is the real power with a positive base. Each is
+`e / d` for any other denominator `d` is the partial division. `e ^ p` is repeated
+multiplication when `p` writes a positive natural number (`2`, `(2)`, `2.0`), and
+otherwise, `-1` and `1/2` included, the real power with a positive base. Each is
 defined only inside its `RealAtomics` domain. The guarantees start at the
 resulting `Term` AST; this macro is tested, not a verified parser. -/
 namespace Gimle.Asgard.Model
@@ -43,6 +44,21 @@ syntax:75 "-" asgardTerm:75 : asgardTerm
 syntax:75 "+" asgardTerm:75 : asgardTerm
 syntax:80 asgardTerm:81 " ^ " asgardTerm:81 : asgardTerm
 syntax "term% " asgardTerm : term
+
+/-- The natural number an exponent writes, if it is a numeral, a decimal or
+scientific literal with an integral value such as `2.0`, or one of these in
+parentheses. Such a power is repeated multiplication, defined everywhere; any
+other exponent, `-1` and `1/2` included, is the real power with a positive base. -/
+partial def naturalExponent? (p : Lean.TSyntax `asgardTerm) : Option Nat :=
+  match p with
+  | `(asgardTerm| $n:num) => some n.getNat
+  | `(asgardTerm| $s:scientific) => do
+      let (mantissa, negative, exponent) ← s.raw.isScientificLit?
+      if negative then
+        if mantissa % 10 ^ exponent == 0 then some (mantissa / 10 ^ exponent) else none
+      else some (mantissa * 10 ^ exponent)
+  | `(asgardTerm| ($q:asgardTerm)) => naturalExponent? q
+  | _ => none
 
 /-- The real atomic a function name writes, if any. -/
 def atomicNamed : String → Option RealAtomics.Unary
@@ -95,11 +111,11 @@ macro_rules
   | `(term% -$a:asgardTerm) => `(Term.neg (term% $a))
   | `(term% +$a:asgardTerm) => `(term% $a)
   | `(term% $a:asgardTerm ^ $p:asgardTerm) => do
-      match p with
-      | `(asgardTerm| $n:num) =>
-          if n.getNat == 0 then Lean.Macro.throwErrorAt n "Exponent must be a positive numeral"
-          `(Term.pow (term% $a) $n)
-      | _ => `(Term.binary .realPower (term% $a) (term% $p))
+      match naturalExponent? p with
+      | some n =>
+          if n == 0 then Lean.Macro.throwErrorAt p "Exponent must be a positive numeral"
+          `(Term.pow (term% $a) $(Lean.quote n))
+      | none => `(Term.binary .realPower (term% $a) (term% $p))
 
 /-- Explicit assignments, each with an output port whose ID and name are the
 written identifier. -/

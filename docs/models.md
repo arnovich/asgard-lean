@@ -421,9 +421,13 @@ declared: `f = (eᵗ + 2e^(-t/2) cos(√3t/2))/3`, and in every solution `int(f,
 A source term may apply a [`RealAtomics`](../Gimle/Asgard/RealAtomics/Circuit.lean)
 operation: `sqrt`, `log`, `exp`, `abs`, the trigonometric and hyperbolic functions, the
 real power `e ^ p`, and division `e / d` by any term. `Term.eval` gives such a node a value
-only inside its domain, strictly in every child, so the unchanged `SourceBody.Solves` and
-`SourceBody.Observes` carry the complete `Defined` predicate: of every equation, of an unused
-assignment, and under a zero multiplier (`0 * log(x)` has no value at `x = -1`). The polynomial
+only inside its domain, strictly in every child except a lambda argument, which is passed by
+name: `(λ w => 1)(log(x))` reads `1` at `x = -1`. The atomic compilers therefore reject a lambda
+application whose argument holds an atomic or a partial division (`unsupportedAtomic`, `real
+atomic in a lambda argument`); no pinned Python fixture has a counterpart. For every model they
+accept, the unchanged `SourceBody.Solves` and `SourceBody.Observes` carry the complete `Defined`
+predicate: of every equation, of an unused assignment, and under a zero multiplier (`0 * log(x)`
+has no value at `x = -1`). The polynomial
 compilers reject such terms (`unsupportedAtomic`), except a division by a nonzero literal,
 which is a product with its inverse. `compileAtomicPolynomial` and `compileAtomicContinuous`
 compile them:
@@ -449,11 +453,20 @@ fixtures: the three literal-quotient scales, `sin(diff(f,t)) = f` and `diff(f,t)
 are the same; `1e-309 * diff(f,t) = f` and the other scales binary64 cannot hold differ,
 isolated exactly in Lean.
 
+`e ^ p` is repeated multiplication, defined everywhere, when `p` writes a positive natural
+number (`2`, `(2)`, `2.0`); any other exponent, `-1` and `1/2` included, is the real power,
+defined only for a positive base, so `x ^ (-1)` has no value at `x = -1` while `x ^ 2` does.
+
 Limits: nothing is simplified, so the `Laws.lean` rewrites are not applied and `log(exp(x))`
 keeps both domains; a derivative anywhere under an atomic or a non-literal division is
 rejected, even a lower-order one a declared velocity would read; integrals and integral
 declarations are rejected (`unsupportedIntegral`); drivers are not supported, and the
-observations of a continuous declaration are not compiled.
+observations of a continuous declaration are refused (`unsupportedRole`, site
+`observations`). A division by a nonzero literal is read as a scale by isolation and as a
+product by beta normalization only: the integral rewrites, the reading of declared
+velocities and the pointwise and tame checks do not look inside it, so `int(X, t) / (2 * 3)`
+or `diff(x, t) / (2 * 3)` as a lower-order atom is rejected where `/ 6` is accepted. This
+is a gap in completeness, not in soundness.
 
 ### Drivers
 

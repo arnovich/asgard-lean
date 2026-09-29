@@ -7,11 +7,14 @@ import Gimle.Asgard.RealAtomics.Feedback
 A source term may apply a `RealAtomics` operation (`Term.unary`, `Term.binary`):
 `sqrt`, `log`, `exp`, the trigonometric and hyperbolic functions, real powers and
 division by an expression. `Term.eval` gives such a node a value only inside its
-domain, strictly in every child, so the unchanged source relation
-`SourceBody.Solves` (and `SourceBody.Observes`) already carries the complete
-`Defined` predicate of every equation, including unused assignments and domains
-under a zero multiplier. This module lowers such a body and compiles it without
-dropping any of those conditions:
+domain, strictly in every child. A lambda argument is passed by name, so
+`(λ w => 1)(log(x))` reads `1` even at `x = -1`; every other position is strict.
+This module therefore rejects a lambda application whose argument holds an
+atomic or a partial division (`unsupportedAtomic`), and for every model it
+accepts, the unchanged source relation `SourceBody.Solves` (and
+`SourceBody.Observes`) carries the complete `Defined` predicate of every
+equation, including unused assignments and domains under a zero multiplier. It
+lowers such a body and compiles it without dropping any of those conditions:
 
 - explicit assignments and the derivative-free residuals of differential
   equations are beta-normalized to `PartialExpr`, named partial expressions over
@@ -36,8 +39,10 @@ field to be `Defined` along the state at every time of the forward domain
 the total `Dynamics.close` is not used, since it would drop those conditions.
 
 Out of scope here, and rejected with a diagnostic: integrals and integral
-declarations (`unsupportedIntegral`), observations of a continuous declaration,
-drivers, and a derivative anywhere under an atomic or a non-literal division,
+declarations (`unsupportedIntegral`), observations of a continuous declaration
+(`unsupportedRole`), drivers (by the continuous validation), a lambda argument
+holding an atomic (`unsupportedAtomic`), and a derivative anywhere under an
+atomic or a non-literal division,
 even one that `Term.readVelocities` would read at top level. The `Laws.lean`
 rewrites are not applied: nothing is simplified, so `log(exp(x))` keeps both
 nodes, and `0 * log(x)` keeps the domain of `log`. -/
@@ -180,16 +185,30 @@ theorem PartialExpr.subst_eval (e : PartialExpr) (name : String) (value : Partia
   | unary op a ha => simp only [PartialExpr.subst, PartialExpr.eval, ha]
   | binary op a b ha hb => simp only [PartialExpr.subst, PartialExpr.eval, ha, hb]
 
+/-- Whether some lambda application passes an argument holding a real atomic or
+a partial division (`Term.partials`). The argument is passed by name
+(`Term.eval`), so an unused one would drop its domain; `SourceBody.lowerAtomic`
+rejects such a term (`unsupportedAtomic`). -/
+def Term.partialArgument : Term → Bool
+  | .var _ | .constant _ => false
+  | .add a b | .mul a b | .binary _ a b => a.partialArgument || b.partialArgument
+  | .neg a | .unary _ a | .derivative _ a | .integral _ a => a.partialArgument
+  | .apply _ body arg => arg.partials != 0 || body.partialArgument || arg.partialArgument
+
 /-- Scoped beta normalization that keeps real atomics and partial binary
 operations, as `Term.beta` keeps polynomial nodes. A derivative or an integral
-anywhere returns `none`. -/
+anywhere returns `none`, and so does a lambda application whose argument holds a
+real atomic or a partial division: it is passed by name, so normalizing it could
+drop the argument's domain. -/
 def Term.betaPartial : Term → Option PartialExpr
   | .var name => some (.var name)
   | .constant q => some (.constant q)
   | .add a b => do return .binary .add (← a.betaPartial) (← b.betaPartial)
   | .mul a b => do return .binary .mul (← a.betaPartial) (← b.betaPartial)
   | .neg a => do return .unary .neg (← a.betaPartial)
-  | .apply x body arg => do return (← body.betaPartial).subst x (← arg.betaPartial)
+  | .apply x body arg =>
+      if arg.partials = 0 then do return (← body.betaPartial).subst x (← arg.betaPartial)
+      else none
   | .unary op a => do return .unary op (← a.betaPartial)
   | .binary op a b => do return .binary op (← a.betaPartial) (← b.betaPartial)
   | .derivative _ _ | .integral _ _ => none
@@ -219,10 +238,12 @@ theorem Term.betaPartial_correct (t : Term) (e : PartialExpr) (h : t.betaPartial
       simp only [PartialExpr.eval, Term.eval, ha _ hA env rates atoms]
       cases a.eval env rates atoms <;> simp
   | apply x body arg hbody harg =>
-      cases hB : body.betaPartial <;> cases hA : arg.betaPartial <;>
-        simp [betaPartial, hB, hA] at h
-      subst h
-      rw [PartialExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA env rates atoms]
+      by_cases hp : arg.partials = 0
+      · cases hB : body.betaPartial <;> cases hA : arg.betaPartial <;>
+          simp [betaPartial, hp, hB, hA] at h
+        subst h
+        rw [PartialExpr.subst_eval, Term.eval, hbody _ hB, harg _ hA env rates atoms]
+      · simp [betaPartial, hp] at h
   | unary op a ha =>
       cases hA : a.betaPartial <;> simp [betaPartial, hA] at h
       subst h
@@ -668,6 +689,13 @@ def SourceBody.lowerAtomic (sb : SourceBody) (c : Context) (declares : sb.Declar
     match d.lhs.checkScope names, d.rhs.checkScope names with
     | .error name, _ | _, .error name => throw ⟨.unknownReference, d.output.id, name⟩
     | .ok (), .ok () => pure ()
+  -- An argument is passed by name: an unused atomic argument would drop its domain.
+  for a in sb.assignments do
+    if a.rhs.partialArgument then
+      throw ⟨.unsupportedAtomic, a.output.id, "real atomic in a lambda argument"⟩
+  for d in sb.equations do
+    if d.lhs.partialArgument || d.rhs.partialArgument then
+      throw ⟨.unsupportedAtomic, d.output.id, "real atomic in a lambda argument"⟩
   match hi : sb.integrals with
   | d :: _ =>
       throw ⟨.unsupportedIntegral, d.output.id, "integral declaration in an atomic declaration"⟩
@@ -1082,6 +1110,9 @@ def compileAtomicContinuous (sb : SourceBody) (e : Evolution) :
   match hv : (Declaration.continuous sb.interface e).validate with
   | .error error => .error error
   | .ok () => do
+    -- `SourceBody.Solves` reads no observation and no theorem here relates one.
+    if let some o := sb.observations.head? then
+      throw ⟨.unsupportedRole, "observations", o.port.id⟩
     let lowered ← sb.lowerAtomic (sb.context e) (sb.declares_context e)
     let resolved ← resolveAtomic sb lowered.assignments e.stateIds
     match hr : Dynamics.resolveTable (fun i => sb.value resolved.env (e.derivativeIds i)) with
