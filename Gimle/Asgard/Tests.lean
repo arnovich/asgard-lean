@@ -5,6 +5,7 @@ import Gimle.Asgard.Tests.ExportFixtures
 import Gimle.Asgard.Tests.Feedback
 import Gimle.Asgard.Tests.Linear
 import Gimle.Asgard.Tests.Algebraic
+import Gimle.Asgard.Tests.AlgebraicDeclarations
 import Gimle.Asgard.Tests.Stochastic
 import Gimle.Asgard.Tests.Normalization
 import Gimle.Asgard.Tests.RealAtomics

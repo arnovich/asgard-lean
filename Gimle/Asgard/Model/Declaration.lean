@@ -98,6 +98,11 @@ inductive ErrorCode where
   -- Like the codes above, it names an unsupported form, never an unsatisfiable
   -- model.
   | unestablishedCompose
+  -- Algebraic declarations (`Algebraic.Declaration`): a supplied inverse of
+  -- `1 - M` whose left or right product is not the identity. A singular loop has
+  -- no inverse, so every supplied one is refused. Like the codes above, it names
+  -- an unsupported form, never an unsatisfiable model: `z = z` has many solutions.
+  | invalidInverse
   -- Stream source isolation (`Streams.Isolation`): a lambda application in a
   -- stream source term, which has no stream reading. It names an unsupported
   -- form, never an unsatisfiable model.
@@ -106,7 +111,8 @@ inductive ErrorCode where
 
 /-- `site` identifies the declaration being checked; `reference` identifies the
 bad name or ID, or for `unsupportedIntegral` the reason (`axis`, `integrand`,
-`no inverse rewrite`). Validation reports the first error in declaration order. -/
+`no inverse rewrite`), or for `invalidInverse` the product that fails (`left`,
+`right`). Validation reports the first error in declaration order. -/
 structure Diagnostic where
   code : ErrorCode
   site : String
