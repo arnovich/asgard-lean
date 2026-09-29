@@ -11,6 +11,7 @@ import Gimle.Asgard.Examples.Feedback
 import Gimle.Asgard.Examples.LinearOscillator
 import Gimle.Asgard.Examples.LinearDiagram
 import Gimle.Asgard.Examples.AlgebraicFeedback
+import Gimle.Asgard.Examples.DeclaredAlgebraic
 import Gimle.Asgard.Examples.StochasticJump
 import Gimle.Asgard.Examples.VariableIsolation
 import Gimle.Asgard.Examples.DifferentialIsolation
@@ -25,6 +26,7 @@ import Gimle.Asgard.Examples.PartialFeedback
 import Gimle.Asgard.Examples.AtomicSource
 import Gimle.Asgard.Examples.FormalHeat
 import Gimle.Asgard.Examples.DeclaredHeat
+import Gimle.Asgard.Examples.HeatIsolation
 import Gimle.Asgard.Examples.PolynomialHeat
 import Gimle.Asgard.Examples.GeometricTail
 import Gimle.Asgard.Examples.ExpHeat

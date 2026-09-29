@@ -5,6 +5,7 @@ import Gimle.Asgard.Tests.ExportFixtures
 import Gimle.Asgard.Tests.Feedback
 import Gimle.Asgard.Tests.Linear
 import Gimle.Asgard.Tests.Algebraic
+import Gimle.Asgard.Tests.AlgebraicDeclarations
 import Gimle.Asgard.Tests.Stochastic
 import Gimle.Asgard.Tests.Normalization
 import Gimle.Asgard.Tests.RealAtomics
@@ -13,6 +14,7 @@ import Gimle.Asgard.Tests.AtomicSource
 import Gimle.Asgard.Tests.Streams
 import Gimle.Asgard.Tests.StreamLowering
 import Gimle.Asgard.Tests.StreamDeclarations
+import Gimle.Asgard.Tests.StreamIsolation
 import Gimle.Asgard.Tests.StreamRealization
 import Gimle.Asgard.Tests.StreamTail
 import Gimle.Asgard.Tests.AnalyticHeat

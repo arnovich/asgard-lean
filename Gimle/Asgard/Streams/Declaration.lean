@@ -36,7 +36,18 @@ A series substitution is accepted only where its `CanCompose` side condition is
 `NamedExpr.established_defined`); anywhere else, including a branch whose value
 is discarded or multiplied by zero, the declaration is refused with
 `unestablishedCompose`. Every accepted right-hand side is therefore defined on
-every input (`StreamModel.rhs_defined`). -/
+every input (`StreamModel.rhs_defined`).
+
+An equation is explicit: its right-hand side may not contain a derivative of its
+own unknown along its own axis (`NamedExpr.selfDerivative`), such as the
+`D_t u` of `D_t u = D_t u + 1` or a mixed `D_x(D_t u)`; such a declaration is
+refused with a diagnostic naming the form. The check reaches inside every
+operand, so a derivative of an integral of the unknown, such as
+`D_t(I_t(u, u0))`, is refused too, although it means `u`. It concerns only the
+equation's own unknown: another unknown's derivative on the same axis is
+allowed, so a system such as `D_t u = D_t v`, `D_t v = D_t u + 1` is accepted
+and may be implicit or have no solution; nothing here claims existence.
+Isolating a scaled derivative from a source equation is `Streams.Isolation`. -/
 namespace Gimle.Asgard.Streams
 
 /-! ## Constant coefficients -/
@@ -281,6 +292,36 @@ def NamedExpr.axisRefs : NamedExpr → List String
       | .add | .product => []
       | .integral id | .seriesCompose id => [id]) ++ a.axisRefs ++ b.axisRefs
 
+/-- A derivative chain `D_a(D_b(… input))` as its axes, outermost first, and the
+input it differentiates; a bare input is the empty chain. -/
+def NamedExpr.chain : NamedExpr → Option (List String × String)
+  | .input id => some ([], id)
+  | .unary (.derivative axis) a => a.chain.map fun (axes, id) => (axis :: axes, id)
+  | _ => none
+
+/-- The first derivative along `along` of an operand that reads `unknown`,
+outermost and leftmost first, classified: `D_along(unknown)` itself competes with
+the equation's own derivative (`competingDerivative`), a chain of `along`
+derivatives of `unknown` is `higherOrderDerivative`, a chain through another
+axis, or any such derivative under a derivative on another axis, is
+`mixedDerivative`, and a derivative of any other operand reading `unknown` is
+`unsupportedDerivative`. `none` when the expression reads `unknown` along
+`along` only through the value of `unknown`, not its derivative. -/
+def NamedExpr.selfDerivative (along unknown : String) : NamedExpr → Option Model.ErrorCode
+  | .input _ | .constant _ | .axisVariable _ => none
+  | .unary (.derivative axis) a =>
+    if axis = along ∧ a.inputRefs.contains unknown then
+      some (match a.chain with
+        | some ([], _) => .competingDerivative
+        | some (axes, _) =>
+          if axes.all (· == along) then .higherOrderDerivative else .mixedDerivative
+        | none => .unsupportedDerivative)
+    else (a.selfDerivative along unknown).map fun _ => .mixedDerivative
+  | .binary _ a b =>
+    match a.selfDerivative along unknown with
+    | some code => some code
+    | none => b.selfDerivative along unknown
+
 private def require (condition : Bool) (code : Model.ErrorCode) (site reference : String) :
     Except Model.Diagnostic Unit :=
   if condition then .ok () else .error ⟨code, site, reference⟩
@@ -301,8 +342,9 @@ private def checkInput (s : Declaration) (site id : String) (role : Polynomial.P
 /-- Checks the declaration's shape and reports the first error in declaration
 order: empty or repeated axis and input IDs and names, input roles, each
 equation's unknown (a `.state` input), axis and boundary (a `.boundary` input),
-the names its right-hand side reads, unestablished series substitutions, and
-that unknowns and boundaries are each bound by exactly one equation. -/
+the names its right-hand side reads, unestablished series substitutions, a
+derivative of the unknown along its own axis on the right-hand side
+(`NamedExpr.selfDerivative`), and that unknowns and boundaries are each bound by exactly one equation. -/
 def Declaration.validate (s : Declaration) : Except Model.Diagnostic Unit := do
   for a in s.axes do
     require (!a.id.isEmpty) .emptyId "axes" a.name
@@ -325,6 +367,9 @@ def Declaration.validate (s : Declaration) : Except Model.Diagnostic Unit := do
       require (s.axes.any (·.id == id)) .unknownReference eq.unknown id
     match eq.rhs.unestablished with
     | some axis => throw ⟨.unestablishedCompose, eq.unknown, axis⟩
+    | none => pure ()
+    match eq.rhs.selfDerivative eq.along eq.unknown with
+    | some code => throw ⟨code, eq.unknown, eq.along⟩
     | none => pure ()
   checkUnique (s.equations.map Equation.unknown) .duplicateBinding "equations"
   checkUnique (s.equations.map Equation.boundary) .duplicateBinding "boundaries"

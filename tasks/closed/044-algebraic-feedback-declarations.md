@@ -1,11 +1,8 @@
 ---
 title: Declare affine algebraic loops with checked inverses
-state: ongoing
+state: closed
 priority: low
 labels: [compiler, algebraic, declaration]
-claimed_by: claude-044
-claimed_at: 2026-09-29T11:02:14Z
-branch: feat/algebraic_declarations
 ---
 
 ## Context

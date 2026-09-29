@@ -39,8 +39,15 @@ condition, although a right-hand side may read them.
 `Declaration.validate` reports the first error as a `Diagnostic`: empty or
 repeated axis and input IDs or names, input roles, an unknown that is not a
 `.state` input, a boundary that is not a `.boundary` input, an unknown axis or
-name in an equation, an unestablished substitution (`unestablishedCompose`),
-and unknowns or boundaries bound by no equation or by two. `compile` returns a
+name in an equation, an unestablished substitution (`unestablishedCompose`), a
+derivative of the unknown along its own axis on the right-hand side
+(`NamedExpr.selfDerivative`: `competingDerivative` for `D_t u = D_t u + 1`,
+`higherOrderDerivative`, `mixedDerivative` for `D_x(D_t u)` or `D_t(D_x u)`),
+and unknowns or boundaries bound by no equation or by two. The derivative check
+also refuses `D_t(I_t(u, u0))` on the right-hand side, although it means `u`, and
+concerns only an equation's own unknown: a system such as `D_t u = D_t v`,
+`D_t v = D_t u + 1` is accepted and may be implicit or have no solution; nothing
+here claims existence. `compile` returns a
 `StreamModel`: the equations resolved in declared order, with the evidence.
 Every refusal names an unsupported form, never an unsatisfiable model:
 `unestablishedCompose` refuses a substitution whose inner argument is not
@@ -52,8 +59,8 @@ but, like every `seriesCompose`, is not lowered to a coefficient window.
 `Model.Declaration`, whose `body` is a polynomial `Body` that stream equations do
 not have; the model-family contract's "declaration case" is met by this type.
 There are no Python parity fixtures here: the pinned Python compiler has no
-stream-declaration counterpart, and the heat fixture's parity belongs to the
-isolation of 029.
+stream-declaration counterpart; the heat fixture's parity is recorded under
+*Isolating a scaled derivative* below.
 
 | Theorem | Statement |
 | --- | --- |
@@ -83,6 +90,67 @@ does, and refuse `0 · u(t ↦ 1)` and a repeated axis ID with diagnostics.
 
 ```sh
 lake build Gimle.Asgard.Tests.StreamDeclarations
+```
+
+## Isolating a scaled derivative
+
+[`Streams.Isolation`](../Gimle/Asgard/Streams/Isolation.lean) states a stream
+equation in source terms and isolates it to a declared `Equation`. A
+`SourceEquation` names the unknown, the axis `along` and the boundary input, and
+two sides written in the `term%` notation; `sourceEquation% (u, t, u0) 2 *
+diff(u, t) = diff(diff(u, x), x)` is one. A `SourceDeclaration` has the basis,
+ordered axes and inputs of a `Declaration` and a list of source equations.
+
+- **Meaning.** Each side is read as a `NamedExpr` (`NamedExpr.ofTerm`: a name is
+  an input, `*` the stream product, `-a` the product with `-1`, `diff(a, i)` the
+  formal derivative on axis `i`, `/ n` the product with `1/n`) and through
+  `Context.meaning`. `SourceEquation.Solves`: both sides are defined and equal,
+  and the unknown equals the boundary input on the whole zero slice along
+  `along`, exactly the boundary of `Equation.Solves`.
+- **Isolation.** One side is read as `q * D_along(u) + r` with an exact nonzero
+  literal product `q` and a remainder `r`; the other side `o` and `r` hold no
+  derivative of `u` along `along`, while derivatives on other axes may appear in
+  both. The result is `⟨u, along, boundary, (o - r)/q⟩`, written without a unit
+  factor, with every term kept: the residual form gives
+  `1/2 · (0 + -1 · (-1 · D_x² u))`, not a simplified `1/2 · D_x² u`.
+- **Rejected**, each with a diagnostic naming an unsupported form, never an
+  unsatisfiable model: no such derivative (`missingDerivative`), one on each side
+  (`competingDerivative`), two on one side (`repeatedDerivative`),
+  `D_t(D_t u)` (`higherOrderDerivative`), `D_x(D_t u)` and `D_t(D_x u)`
+  anywhere (`mixedDerivative`), `D_t` of another operand reading `u` or a scale
+  around a sum (`unsupportedDerivative`), a non-literal factor
+  (`nonlinearDerivative`), a zero scale (`zeroScale`), and integrals
+  (`unsupportedIntegral`) and lambda applications (`unsupportedApplication`),
+  which have no stream reading here. A name is always an input; axis variables
+  are not written in this form.
+
+| Theorem | Statement |
+| --- | --- |
+| `NamedExpr.affine_means` | a recognized side means `q · D_along(u) + r` in every environment |
+| `SourceEquation.Isolated.solves_iff` | a point solves the source equation ↔ it solves the isolated `Equation` (both directions) |
+| `SourceEquation.Isolated.keeps` | the isolated equation has the source's unknown, axis and boundary input |
+| `SourceEquation.Isolated.explicit_rhs` | the isolated right-hand side has no derivative of `u` along `along` |
+| `SourceDeclaration.solves_iff` | a point solves the source declaration ↔ it solves the isolated `Declaration` |
+
+`Equation.solves_iff_integral` then gives the solution set `u = I((o - r)/q, b)`.
+`SourceDeclaration.compile` isolates, then validates and resolves the isolated
+declaration.
+
+[HeatIsolation.lean](../Gimle/Asgard/Examples/HeatIsolation.lean) obtains the
+declared heat of `DeclaredHeat` from `diff(u, time) = diff(diff(u, space), space)`,
+in either axis order. It restates the pinned Python fixture
+`test_affine_heat_preserves_half_diffusivity` (gimle-asgard `fba931e`): the four
+forms `2 * diff(u,t) = diff(diff(u,x),x)`, reversed, with the spatial term as a
+residual `… - diff(diff(u,x),x) = 0`, and both, in the EGF basis with the
+boundary `x²` (`[0, 0, 2, 0]`). Each isolates, the first two to exactly
+`D_t u = 1/2 · D_x(D_x(u))`, and each has the single solution `x² + t`
+(`fixture_solutions`), the field the Python test observes: **same**. Python
+`2 * diff(diff(f,x),t) = f`, `2 * diff(f,t) = diff(f,t) + f` and
+`2 * diff(diff(u,t),t) = diff(diff(u,x),x)` stay rejected, as mixed, competing
+and higher-order.
+
+```sh
+lake build Gimle.Asgard.Tests.StreamIsolation
 ```
 
 ## Substitution and truncation
