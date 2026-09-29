@@ -1,10 +1,13 @@
 ---
 title: Carry declared drivers in the Lean Euler simulation request
-state: open
+state: ongoing
 priority: medium
 labels: [simulation, drivers, execution]
 depends_on: ["031"]
 related: ["gimle-asgard/259", "gimle-forseti/170"]
+claimed_by: claude-041
+claimed_at: 2026-09-29T08:22:57Z
+branch: feat/driven_euler_request
 ---
 
 ## Context
