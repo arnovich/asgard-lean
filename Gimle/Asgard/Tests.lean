@@ -11,6 +11,7 @@ import Gimle.Asgard.Tests.RealAtomics
 import Gimle.Asgard.Tests.PartialFeedback
 import Gimle.Asgard.Tests.Streams
 import Gimle.Asgard.Tests.StreamLowering
+import Gimle.Asgard.Tests.StreamDeclarations
 import Gimle.Asgard.Tests.StreamRealization
 import Gimle.Asgard.Tests.StreamTail
 import Gimle.Asgard.Tests.AnalyticHeat

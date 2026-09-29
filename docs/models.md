@@ -437,7 +437,9 @@ Not yet in the source grammar (open tasks):
   as Python's `diff(f,t) = diff(diff(int(int(f,t),t),t),t)` (040);
 - a declared integral matched up to the meaning of its integrand, such as `int(1 * f, t)`
   against a declared `int(f, t)` (038);
-- multi-axis equations such as heat (029);
+- multi-axis equations such as heat (029). Stream equations already in isolated
+  form `D_t u = F(u)` can be [declared](formal-streams.md#declared-stream-equations);
+  isolating a scaled time derivative is 029;
 - real atomics, division by expressions, literal products or negative numerals, and
   decimal literals (030). An atomic that feeds a continuous model's field may now be
   admitted through [partial-field feedback](#guarantees-and-limits), which keeps its
@@ -468,7 +470,8 @@ multiplied by zero. Inside an ODE this holds at every time of the forward domain
 the partial-field relation carries `Defined` itself, so a trajectory that leaves the
 domain once, or a fixed point of the totalized `value` only, has no relation output.
 Trace hides internal signals; it does not guarantee a solution.
-Formal streams use a [separate coefficient interpretation](formal-streams.md).
+Formal streams use a [separate coefficient interpretation](formal-streams.md), with
+[their own declarations](formal-streams.md#declared-stream-equations).
 
 ## Three-state example
 
