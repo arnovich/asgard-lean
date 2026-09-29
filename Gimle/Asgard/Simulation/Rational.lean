@@ -40,7 +40,7 @@ def numericalValue (q : ℚ) : Except String Float := do
       (q != 0 && result == 0) then throw "unsupported numerical rational conversion"
   return result
 
-private def admitTree : Interchange.RawCircuit → Nat → Nat → Except String (Nat × Nat × Nat)
+def admitTree : Interchange.RawCircuit → Nat → Nat → Except String (Nat × Nat × Nat)
   | _, 0, _ => throw "circuit depth limit"
   | _, _, 0 => throw "circuit node limit"
   | tree, depth + 1, fuel + 1 => do
@@ -101,7 +101,7 @@ def Request.numericalSettings {n m : Nat} (r : Request n m) :
     return .euler (← initial.values.mapM numericalValue) (← numericalValue initial.start) step steps
   | _, _ => throw "initialization/method mismatch"
 
-private def label (value : String) : Except String Unit := do
+def label (value : String) : Except String Unit := do
   if value.isEmpty || value.utf8ByteSize > 128 then throw "invalid label"
 
 /-- V2 accepts cross-direction display names while retaining distinct port IDs.

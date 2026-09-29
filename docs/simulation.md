@@ -1,7 +1,7 @@
 # Optional Python simulation
 
 Requires Linux or macOS and a separately supplied Python Asgard wheel containing
-`gimle.asgard.lean_worker` with v1/v2 support. The worker is **not bundled here**.
+`gimle.asgard.lean_worker` with v1/v2 support (driven v1 for driven requests). The worker is **not bundled here**.
 Core proofs and diagrams do not need it.
 
 ## Install and run
@@ -24,14 +24,20 @@ request/response limits, deadlines, and process-group cleanup; it is not a sandb
 | --- | --- | --- |
 | v1 | Integer coefficients with magnitude at most `2^53` | Point evaluation or simultaneous Euler steps |
 | v2 | Canonical rational coefficients; exact initial state/start for Euler | Converts to binary64; unsupported or nonfinite conversions fail |
+| driven v1 | v2 data, plus at least one declared driver port (each derivative port tagged with its driver) and one exact rational sample row per Euler interval | Holds sample row `i` on `[t_i, t_{i+1})`; converts to binary64 as v2 |
 
 - Responses must match the original request, shapes, finite values, and time grid.
 - Euler returns the initial row plus one row per step; observations preserve declared order.
 - Structural codec proofs do not certify JSON parsing, Python/JAX execution, or Euler accuracy.
 - Samples are observations, not error certificates or trajectory proofs.
+- A driven run's held samples are the runtime's driver, not the declared one: a
+  held sequence is not continuous, and a held derivative-port sample is not the
+  derivative of a held driver sample, so it is never an admitted signal of
+  `Model.Driven` and a run says nothing about the driven relation.
 
 See [RationalExecution.lean](../Gimle/Asgard/Examples/RationalExecution.lean) for model
-adapters; [`Simulation/`](../Gimle/Asgard/Simulation/) contains the protocol and client.
+adapters and `DrivenModel.eulerRequest` in [Execution.lean](../Gimle/Asgard/Model/Execution.lean)
+for driven models; [`Simulation/`](../Gimle/Asgard/Simulation/) contains the protocol and client.
 
 ## Three-state output
 
