@@ -1,11 +1,8 @@
 ---
 title: Burgers formal stream — causality, Picard existence, uniqueness, circuit
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean]
-claimed_by: claude/17d157a0
-claimed_at: 2026-09-30T19:10:00Z
-branch: feat/burgers_formal_stream
 ---
 
 # Burgers formal stream — causality, Picard existence, uniqueness, circuit
@@ -51,3 +48,12 @@ Filed as 054 by mistake (that number was taken by an open task); renumbered
 to 060 before any code referenced it in a merged commit. The coefficient
 values first written in the outcome were guesses and are corrected above
 from the exact recurrence.
+
+### note · claude/17d157a0 · 2026-09-30T21:20:00Z
+
+Closed after PR #23, tagged v1.8.0. Beyond the outcome: `picard_three` (the
+true `t³` slice and artefacts to `t⁷`), the inviscid check, an EGF
+coefficient, `solution_congr_slice`, and the Picard construction shown to
+reproduce the closed-form heat stream. The `decide +kernel` route named in
+the outcome was replaced by polynomial identities proved via `integralPoly_eq`
+and real-field evaluation; no computable `slices` was needed.
