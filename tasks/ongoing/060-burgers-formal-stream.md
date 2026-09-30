@@ -36,8 +36,18 @@ diverges (Gevrey 1/3 in t); certified truncation is a later task via Cole–Hopf
   `circuit_rel_iff`, `reconstructs_iff`, `circuit_solution`,
   `candidate_stream`; a computable `slices ν p n : ℕ → ℚ` for a polynomial
   profile with `slices_eq_stream`
-- `Gimle/Asgard/Examples/BurgersSquare.lean`: `u₀ = x²`, ν = 1/10, low
-  coefficients by `decide +kernel` (`c₁,₀ = 0`, `c₁,₂ = −2`, `c₂,₁ = …`),
-  affine data `u₀ = x` with `u = x/(1+t)` as a second regression
-- `Gimle/Asgard/Tests/Burgers.lean` with `#print axioms` audits; a section in
+- `Gimle/Asgard/Examples/BurgersSquare.lean`: `u₀ = x²`, ν = 1/10, the first
+  Picard iterates as polynomial identities and the low coefficients read off
+  them (`[t] = 1/5`, `[t x³] = −2`, `[t² x] = −4/5`, `[t² x⁴] = 5`), affine
+  data `u₀ = x` with first iterate `x − t x`
+- `Gimle/Asgard/Tests/Burgers.lean` with `#guard_msgs` axiom audits; a section in
   `docs/formal-streams.md`; a README table row; tagged v1.8.0
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-09-30T20:30:00Z
+
+Filed as 054 by mistake (that number was taken by an open task); renumbered
+to 060 before any code referenced it in a merged commit. The coefficient
+values first written in the outcome were guesses and are corrected above
+from the exact recurrence.
