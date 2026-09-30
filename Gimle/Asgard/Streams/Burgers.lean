@@ -11,7 +11,8 @@ right-hand side reconstructs exactly that solution.
 
 Nothing here is about convergence. For a polynomial profile of degree at
 least two the series is expected to diverge when `ν ≠ 0` (a classical
-Cole–Hopf argument, checked numerically, proved nowhere in this library); the
+Cole–Hopf argument, checked numerically, proved nowhere in this library; the
+convergent Cole–Hopf quotient is `Streams.ColeHopf`); the
 coefficients are exact and unique regardless, and that is all this module
 claims. `rhs` is the right-hand side as a function on streams and `rhsExpr`
 the same expression for the compiler. -/
