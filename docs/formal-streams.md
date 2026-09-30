@@ -458,11 +458,65 @@ exactly as `Causal` says; `picard_three` gives the true `t³` slice
 as the first iterate of `x/(1 + t)`. The tests also show that the heat stream
 from `x²` is not the Burgers stream and that the circuit refuses it.
 
-Scope: no convergence, no real-field PDE, no shocks, no certified truncation
-(Cole–Hopf and a majorant calculus are a separate task).
+Scope: no convergence, no real-field PDE, no shocks; the certified truncation
+of a *convergent* Burgers stream, the Cole–Hopf quotient, is the next section.
 
 ```sh
 lake build Gimle.Asgard.Tests.Burgers
+```
+
+## Cole–Hopf: a certified Burgers truncation
+
+[`Streams/Majorant.lean`](../Gimle/Asgard/Streams/Majorant.lean) gives the
+geometric majorant of *Certified analytic truncation* a calculus, in the OGF
+reading: `majorizes_mono` (smaller radii, larger bound), `majorizes_C_mul`
+(scaling), `majorizes_mul` (a Cauchy product: bounds multiply, radii halve,
+since the antidiagonal of `α` has `∏ (α_i + 1) ≤ 2^|α|` terms) and
+`majorizes_inv` (the inverse of a stream with constant term `c` and the rest
+majorized by `M` at radii `R`: bound `1/|c|` at any radii `r < R` with
+`(M/|c|)·(∏ (1 − r_i/R_i)⁻¹ − 1) ≤ 1`, by well-founded induction on the index
+through `MvPowerSeries.coeff_inv`). It also gives the ordinary derivative its
+algebra — `ogfD_add`, `ogfD_mul` (Leibniz, proved by cancelling `X_i`), `ogfD_comm`,
+`ogfD_inv` — so identities between quotients close by `ring`.
+
+[`Streams/ColeHopf.lean`](../Gimle/Asgard/Streams/ColeHopf.lean) applies it.
+`heatSeries ν g` is the heat stream `D_t φ = ν D_x² φ` of a profile with raw
+EGF coefficients `g` (`ν^n g_(k+2n)/(n! k!)`, majorant radii `[ρ²/ν, ρ]` for `ν > 0`);
+`quotient ν φ = −2ν · D_x φ · φ⁻¹`, and `quotient_pde` proves that it solves
+`Burgers.rhs` whenever `φ` solves the heat equation and is invertible — after
+the derivation rules the identity is polynomial in `D_x φ`, `D_x² φ`, `D_x³ φ`
+and `φ⁻¹`. For an exponential-sum profile `Σ cᵢ e^(aᵢ x)`:
+
+| Theorem | Statement |
+| --- | --- |
+| `ogfD_expSumHeat` | `D_x φ` is the heat stream of `Σ cᵢ aᵢ e^(aᵢ x)` |
+| `rest_heatSeries`, `profileBoundFrom_expSum` | away from the constant term only the `aᵢ ≠ 0` terms count: the inverse's `M` is `Σ_{aᵢ≠0} \|cᵢ\|` |
+| `majorizes_front` | for `r` inside `[ρ²/ν, ρ]` with `smallEnough`, `front ν terms = quotient ν φ` is majorized by `\|2ν\|·(Σ \|cᵢ aᵢ\|)/\|Σ cᵢ\|` at radii `r/2` |
+| `candidate_quotient` | the Burgers circuit reconstructs the front from its `t = 0` slice and nothing else (060's `candidate_stream`) |
+| `constantCoeff_front`, `circuit_front`, `certificate` | the front's value at the origin `−2ν (Σ cᵢaᵢ)/(Σ cᵢ)`; the circuit relates the front to its own slice; its named `TailCertificate` |
+| `front_truncation` | with `Σ cᵢ ≠ 0`, a box inside `r/2` and `tailBound ≤ ε`, every reconstruction satisfies `TruncationBound .ogf a box N ε`; every side condition (`expSumFits`, `Σ cᵢ ≠ 0`, the radii, `smallEnough`, the box, `tailBound ≤ ε`) is decidable |
+
+[BurgersFront.lean](../Gimle/Asgard/Examples/BurgersFront.lean) takes
+`φ(0, x) = 1 + e^(−x)`, `ν = 1/2` — the front `u = 1/(1 + e^(x − t/2))` — with
+`ρ = 1`, `r = (2/3, 1/2)` (so `(1/2)·(3 − 1) = 1`, the inverse's condition is
+tight), majorant bound `1/2` at radii `(1/3, 1/4)`, and on `|t| ≤ 1/6`,
+`|x| ≤ 1/8` at window `16 × 16`:
+
+```text
+ε = 1/2 · (2 · (1/2)^16) · 2 · 2 = 1/16384        (error_eq, decide +kernel)
+```
+
+The bound is loose on purpose: factorials are dropped in the heat majorant,
+the inverse costs the ratio tail, the product halves the radii. The true error
+on that box is many orders smaller; the certificate is a proof, not a
+measurement.
+
+Scope: nothing identifies the analytic field with `1/(1 + e^(x − t/2))` or with
+a solution of the real equation; the formal stream from a polynomial profile
+stays divergent and uncertified; no majorant discovery.
+
+```sh
+lake build Gimle.Asgard.Tests.ColeHopf
 ```
 
 ## Example
