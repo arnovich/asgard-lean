@@ -36,3 +36,4 @@ import Gimle.Asgard.Examples.EquationModels
 import Gimle.Asgard.Examples.RationalExecution
 import Gimle.Asgard.Examples.ThreeState
 import Gimle.Asgard.Examples.ThreeStateExecution
+import Gimle.Asgard.Examples.BurgersSquare
