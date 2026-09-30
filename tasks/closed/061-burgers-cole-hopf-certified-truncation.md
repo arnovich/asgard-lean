@@ -1,12 +1,9 @@
 ---
 title: Burgers certified truncation via Cole–Hopf and a majorant calculus
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean]
 depends_on: ["060"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-09-30T23:45:00Z
-branch: feat/burgers_cole_hopf
 ---
 
 # Burgers certified truncation via Cole–Hopf and a majorant calculus
@@ -42,3 +39,16 @@ Burgers stream of 060 as `u = −2ν · D_x φ · φ⁻¹` with `φ` the heat st
 - The docs say why the bound is loose (factorials dropped twice, the inverse
   step, the product halving) and that the true error on that box is far
   smaller; nothing about the real PDE beyond the analytic field of this series
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-01T01:30:00Z
+
+Closed after PR #24, tagged v1.9.0. Names shipped differ from the outcome as
+written: `majorizes_C_mul`/`majorizes_mul` (they are `C q *` and `*` on
+`MvPowerSeries`), `majorizes_front` and `front_truncation` (the quotient of
+an exponential-sum heat stream is `front`), plus `constantCoeff_front`,
+`certificate` and `circuit_front` that the review asked for. The derivative
+algebra is under `ogfD`. `Streams/Grid.lean` was split out of `Lowering`
+so the majorant calculus does not import the lowering pass. Everything else
+as stated; the certified error of the worked front is exactly 1/16384.
