@@ -395,6 +395,76 @@ convergence), and no finite-radius profiles.
 lake build Gimle.Asgard.Tests.AnalyticHeat
 ```
 
+## Causal equations and the formal Burgers stream
+
+[`Streams.Causal`](../Gimle/Asgard/Streams/Causal.lean) is the formal
+Cauchy–Kowalevski lemma. A right-hand side `F` is *causal* along an axis
+(`IsCausal axis F`) when `F a` and `F b` agree up to degree `k` on that axis
+whenever `a` and `b` do (`AgreeBelow axis k`). Derivatives along other axes,
+sums and Cauchy products are causal (`derivative_causal`, `add_causal`,
+`product_causal`), so every polynomial right-hand side in the unknown and its
+spatial derivatives is. Integration along the axis raises the degree it reads
+by one and reads the boundary only on the zero slice (`integral_agree`).
+
+| Theorem | Statement |
+| --- | --- |
+| `solution basis axis F boundary` | Picard iteration: `approx (n+1) = I_axis (F (approx n)) boundary`; coefficient `m` is read from the iterate of its own degree |
+| `solution_reconstructs`, `solution_pde`, `solution_slice` | `I_axis (F u) b = u`, hence `D_axis u = F u`, and `u = b` on the zero slice |
+| `formal_unique` | two formal solutions with the same zero slice are equal: strong induction on the degree with `integral_agree` |
+| `reconstructs_iff` | reconstruction by integration is exactly the equation plus the slice, for any causal or non-causal `F` |
+
+Nothing is said about convergence: the constructed series may diverge, and
+often does.
+
+[`Streams.Burgers`](../Gimle/Asgard/Streams/Burgers.lean), axes `[t, x]`,
+instantiates it for `D_t u = −u·D_x u + ν·D_x² u` with a rational viscosity
+`ν` (`rhs basis ν`, causal by `rhs_causal`). `stream basis ν boundary` is the
+formal solution from any boundary stream; `formal_unique`, `eq_stream`,
+`stream_pde` and `stream_slice` are the instances. The circuit
+`circuit basis ν : Circuit basis 2 3 2` compiles the same right-hand side and
+its `t`-integral on inputs `[u, boundary, unused]`:
+
+| Object | Proved |
+| --- | --- |
+| Constructed `stream basis ν b` | `circuit_solution`: the circuit returns `[rhs u, u]` on `[u, b, _]`, any `b`, both bases |
+| Supplied stream `a` | `candidate_stream`: if the circuit reconstructs `a` from `b`, then `a = stream basis ν b` |
+| Polynomial boundary `ofPoly basis b` | `approx_ofPoly`: every Picard iterate is `ofPoly` of `picard ν b n`, with `picard (n+1) = integralPoly 0 (rhsPoly ν (picard n)) b`; `stream_ogf_coeff`: the OGF coefficient at `t`-degree `n` is a coefficient of `picard ν b n` |
+| `integralPoly` | `integralPoly_eq`: a polynomial with the right `t`-derivative and zero slice is the integral, so iterates are evaluated by exhibiting them |
+| Convergence, the real-field PDE, shocks | nothing |
+
+The stream from a polynomial profile is not polynomial: the `x`-degree grows
+by `deg − 1` per `t`-degree. For a profile of degree at least two with `ν ≠ 0`
+the `t`-series is expected to diverge (the classical Cole–Hopf argument, with
+the coefficient growth checked numerically); that is proved nowhere here.
+Only the boundary's `t = 0` slice enters the stream (`stream_congr_slice`),
+and the Picard construction reproduces the closed-form heat stream
+(`Tests/Burgers.lean`).
+
+[BurgersSquare.lean](../Gimle/Asgard/Examples/BurgersSquare.lean) takes
+`ν = 1/10` from `u(0, x) = x²`. The first two iterates are
+
+```text
+picard 1 = x² + t (1/5 − 2x³)
+picard 2 = x² + t (1/5 − 2x³) + t² (−4x/5 + 5x⁴) + t³ (2x²/5 − 4x⁵)
+```
+
+and the stream's coefficients `[t] = 1/5` (the viscous term alone),
+`[t x³] = −2` (the nonlinearity alone), `[t² x] = −4/5` and `[t² x⁴] = 5`
+follow (`coeff_t`, `coeff_t_x3`, `coeff_t2_x`, `coeff_t2_x4`). The `t³` term
+of `picard 2` is an artefact of the iteration, not the stream's coefficient,
+exactly as `Causal` says; `picard_three` gives the true `t³` slice
+`16x²/5 − 14x⁵` and artefacts up to `t⁷`. Without viscosity the
+`t`-coefficient is `0` (`coeff_t_inviscid`). Affine data `x` gives `x − t x`
+as the first iterate of `x/(1 + t)`. The tests also show that the heat stream
+from `x²` is not the Burgers stream and that the circuit refuses it.
+
+Scope: no convergence, no real-field PDE, no shocks, no certified truncation
+(Cole–Hopf and a majorant calculus are a separate task).
+
+```sh
+lake build Gimle.Asgard.Tests.Burgers
+```
+
 ## Example
 
 [FormalHeat.lean](../Gimle/Asgard/Examples/FormalHeat.lean) checks `u=x²+2t`,

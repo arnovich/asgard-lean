@@ -70,10 +70,6 @@ private theorem single_eq_iff (i : Fin 2) (k : ℕ) (n : Index 2) :
   rw [Finsupp.ext_iff, Fin.forall_fin_two]
   exact ⟨fun ⟨a, b⟩ => ⟨a.symm, b.symm⟩, fun ⟨a, b⟩ => ⟨a.symm, b.symm⟩⟩
 
-private theorem coeff_ofNat_mul (k : ℕ) [k.AtLeastTwo] (n : Index 2) (p : Poly 2) :
-    MvPolynomial.coeff n ((ofNat(k) : Poly 2) * p) = ofNat(k) * MvPolynomial.coeff n p := by
-  rw [← map_ofNat MvPolynomial.C k, MvPolynomial.coeff_C_mul]
-
 /-- The general heat circuit at OGF is literally the original fixture circuit. -/
 theorem original_circuit : FormalHeat.circuit = Heat.circuit .ogf := rfl
 

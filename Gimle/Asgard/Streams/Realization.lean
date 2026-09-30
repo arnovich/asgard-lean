@@ -176,6 +176,20 @@ theorem field_eq_sum {d : Nat} (basis : Basis) (p : Poly d) (x : Fin d → ℝ) 
     field (p - q) x = field p x - field q x := by
   simp [field]
 
+@[simp] theorem field_neg {d : Nat} (p : Poly d) (x : Fin d → ℝ) :
+    field (-p) x = -field p x := by
+  simp [field]
+
+/-- Numerals are constants for every partial derivative. -/
+@[simp] theorem pderiv_ofNat {d : Nat} (i : Fin d) (k : ℕ) [k.AtLeastTwo] :
+    MvPolynomial.pderiv i (ofNat(k) : Poly d) = 0 := by
+  rw [← map_ofNat (MvPolynomial.C (σ := Fin d) (R := ℚ)) k, MvPolynomial.pderiv_C]
+
+/-- A numeral factor scales every coefficient. -/
+@[simp] theorem coeff_ofNat_mul {d : Nat} (k : ℕ) [k.AtLeastTwo] (n : Index d) (p : Poly d) :
+    MvPolynomial.coeff n ((ofNat(k) : Poly d) * p) = ofNat(k) * MvPolynomial.coeff n p := by
+  rw [← map_ofNat (MvPolynomial.C (σ := Fin d) (R := ℚ)) k, MvPolynomial.coeff_C_mul]
+
 /-- Polynomial fields over ℝ determine the rational polynomial. -/
 theorem field_injective {d : Nat} {p q : Poly d} (h : ∀ x, field p x = field q x) : p = q := by
   apply MvPolynomial.map_injective (algebraMap ℚ ℝ) (algebraMap ℚ ℝ).injective

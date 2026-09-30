@@ -33,3 +33,4 @@ import Gimle.Asgard.Tests.RationalInterchange
 import Gimle.Asgard.Tests.RationalSimulation
 import Gimle.Asgard.Tests.DrivenSimulation
 import Gimle.Asgard.Tests.Visualization
+import Gimle.Asgard.Tests.Burgers
