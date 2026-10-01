@@ -12,9 +12,11 @@ where both factors are majorized:
   a box strictly inside both majorants — Mathlib's Cauchy product over
   `Finsupp.antidiagonal`, from absolute convergence;
 * `analyticField_C_mul`, `analyticField_one`;
-* `analyticField_inv`: the field of `φ⁻¹` is the inverse of the field of `φ`,
-  the corollary of `φ⁻¹ * φ = 1`, given majorants of both; in particular the
-  field of `φ` does not vanish there.
+* `analyticField_inv`: for a stream with nonzero constant term, the field of
+  `φ⁻¹` is the inverse of the field of `φ`, the corollary of `φ⁻¹ * φ = 1`,
+  given majorants of both; in particular the field of `φ` does not vanish
+  there. (With constant term `0`, Mathlib's `φ⁻¹` is `0`, trivially
+  majorized, and the identity fails.)
 
 Everything is about the OGF reading: the decoded coefficient of an OGF stream
 is the coefficient itself (`decode .ogf a = a`, definitionally). -/
@@ -74,9 +76,9 @@ theorem analyticField_one (x : Fin d → ℝ) : analyticField .ogf (1 : Stream d
     rw [seriesTerm_ogf, coeff_one, if_neg hn]
     simp
 
-/-- **The field of an inverse is the inverse of the field**, wherever both the
-stream and its inverse are majorized; the field of the stream is then nonzero.
--/
+/-- **The field of an inverse is the inverse of the field**, for a stream with
+nonzero constant term, wherever both the stream and its inverse are majorized;
+the field of the stream is then nonzero. -/
 theorem analyticField_inv {φ : Stream d} {m m' : Majorant d} {box : Box d}
     (hc : constantCoeff φ ≠ 0) (hφ : Majorizes .ogf φ m) (hinv : Majorizes .ogf φ⁻¹ m')
     (i : ∀ i, box.radius i < m.radius i) (i' : ∀ i, box.radius i < m'.radius i)

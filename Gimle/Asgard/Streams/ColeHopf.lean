@@ -436,8 +436,8 @@ theorem analyticField_heatSeries_expSum (ν : ℚ) (terms : List (ℚ × ℚ)) (
 
 /-- **The front's analytic field is the Cole–Hopf quotient of classical
 fields**, `−2ν (Σ cᵢ aᵢ e^(ν aᵢ² t + aᵢ x)) / (Σ cᵢ e^(ν aᵢ² t + aᵢ x))`, on a box
-strictly inside the radii `r/2` of its majorant, where the denominator does
-not vanish. The premises are those of `front_truncation`. -/
+strictly inside the radii `r/2` of its majorant; the denominator does not
+vanish there. The premises are those of `front_truncation`. -/
 theorem analyticField_front {ν ρ : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms : List (ℚ × ℚ))
     (c0 : constantTerm terms ≠ 0) (fits : expSumFits terms ρ = true) {r : Fin 2 → ℚ}
     (hr : ∀ i, 0 < r i) (inside : ∀ i, r i < heatRadii ν ρ i) (small : smallEnough ν ρ terms r)

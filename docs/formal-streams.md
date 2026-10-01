@@ -518,9 +518,9 @@ says what the field of a product and an inverse *is* where both factors are
 majorized: `analyticField_mul` (Mathlib's Cauchy product over
 `Finsupp.antidiagonal`, from the absolute convergence `Tail.lean` proves on a
 box strictly inside both majorants), `analyticField_C_mul`,
-`analyticField_one`, and `analyticField_inv` — the field of `φ⁻¹` is the
-inverse of the field of `φ`, which is therefore nonzero there — as the
-corollary of `φ⁻¹ * φ = 1`. In `ColeHopf.lean`,
+`analyticField_one`, and `analyticField_inv` — for a stream with nonzero
+constant term, the field of `φ⁻¹` is the inverse of the field of `φ`, which is
+therefore nonzero there — as the corollary of `φ⁻¹ * φ = 1`. In `ColeHopf.lean`,
 `analyticField_heatSeries_expSum` sums the heat stream of `Σ cᵢ e^(aᵢ x)` to
 `expSumField ν terms = Σ cᵢ e^(ν aᵢ² t + aᵢ x)` at every real point (one
 exponential is a product of two one-axis exponential series, `hasSum_index_prod`),
@@ -532,7 +532,7 @@ For the worked front this is `front_field_eq`: on `|t| ≤ 1/6`, `|x| ≤ 1/8` t
 analytic field is `1/(1 + e^(x − t/2))`. From `s + 1 ≤ e^s` alone, `band`
 proves `2/5 ≤ u ≤ 3/5` there for every stream the circuit reconstructs from
 the front's slice, and `not_below` refutes `u ≤ 27/50` at the corner
-`(1/6, −1/8)`, where `u = 1/(1 + e^(−5/24)) > 29/53`.
+`(1/6, −1/8)`, where `u = 1/(1 + e^(−5/24)) ≥ 29/53 > 27/50`.
 
 Scope: the identification is of the formal stream's analytic field with a
 closed form on the box; nothing is claimed about the real Burgers equation or
