@@ -1,12 +1,9 @@
 ---
 title: Field bands on analytic streams from a checked window
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean]
 depends_on: ["062"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-01T22:00:00Z
-branch: feat/window_band
 ---
 
 # Field bands on analytic streams from a checked window
@@ -35,3 +32,9 @@ ten seconds.
 - `Examples/BurgersFront.lean`: the band `2/5 ≤ u ≤ 3/5` and the refuted
   `u ≤ 27/50` proved again from the window alone, every side condition
   `decide +kernel`; tests with audits; docs; released as v1.11.0
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-01T22:40:00Z
+
+Closed with PR #27, released as v1.11.0. Every new theorem is audited to the three standard axioms; the example's window file takes about 50 s of kernel time.
