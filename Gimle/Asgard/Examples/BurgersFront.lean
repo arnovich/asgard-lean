@@ -71,7 +71,7 @@ theorem bound :
         TruncationBound .ogf a box N (1 / 16384) :=
   front_truncation hν hρ terms c0 fits hr inside small box boxInside N (le_of_eq error_eq)
 
-/-! ## The analytic field is the classical front -/
+/-! ## The analytic field is the closed form `1/(1 + e^(x − t/2))` -/
 
 /-- On the certified box the front's analytic field is `1/(1 + e^(x − t/2))`:
 the Cole–Hopf quotient of the classical heat fields, `−2ν · (−e^(t/2 − x)) /
