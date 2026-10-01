@@ -1,12 +1,9 @@
 ---
 title: The analytic field of a product, an inverse and the Cole–Hopf front
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean]
 depends_on: ["061"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-01T16:10:00Z
-branch: feat/front_analytic_field
 ---
 
 # The analytic field of a product, an inverse and the Cole–Hopf front
@@ -37,3 +34,9 @@ no field bound on the front is provable.
   the front's slice, and `u ≤ 27/50` refuted at the corner `(1/6, −1/8)`, all
   from `Real.add_one_le_exp`; the "nothing identifies" caveat removed
 - Tests with axiom audits; docs; released as v1.10.0
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-01T17:30:00Z
+
+Closed with PR #25, released as v1.10.0 (`beb851eb`). Every new theorem is audited to the three standard axioms.
