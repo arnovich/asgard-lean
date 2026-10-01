@@ -1,5 +1,5 @@
 name = "asgard"
-version = "0.13.0"
+version = "0.14.0"
 defaultTargets = ["Gimle.Asgard", "Gimle.Asgard.Examples", "Gimle.Asgard.Tests",
   "Gimle.Asgard.Examples.CircuitGallery", "diagram_demo"]
 

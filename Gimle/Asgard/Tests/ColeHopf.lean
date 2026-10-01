@@ -9,8 +9,10 @@ not fit `ρ` is refused; a box on the halved radii is refused; the certified
 error of the front and its majorant bound; the front's value at the origin,
 the one boundary coefficient read off the opaque slice; a zero constant term
 makes `smallEnough` trivially true, which is why `c0` is a separate
-hypothesis; and a transitive standard-axiom audit of the root theorems and
-every example claim. -/
+hypothesis; the analytic field of the front on the box is the classical front
+and the band holds there while a tighter bound fails at a corner (task 062);
+and a transitive standard-axiom audit of the root theorems and every example
+claim. -/
 
 namespace Gimle.Asgard.Tests.ColeHopf
 
@@ -67,7 +69,83 @@ example : ¬ tailBound (frontMajorant ν terms r hr) box N ≤ 1 / 20000 := by d
 /-- A finer window certifies a smaller error. -/
 example : tailBound (frontMajorant ν terms r hr) box ![20, 20] = 1 / 262144 := by decide +kernel
 
+/-! ### The analytic field (062) -/
+
+/-- The field of the unit stream, of a scaled stream, and the product rule's shape. -/
+example (x : Fin 2 → ℝ) : analyticField .ogf (1 : Stream 2) x = 1 := analyticField_one x
+
+example (q : ℚ) (a : Stream 2) (x : Fin 2 → ℝ) :
+    analyticField .ogf (MvPowerSeries.C q * a) x = q * analyticField .ogf a x :=
+  analyticField_C_mul q a x
+
+/-- The heat stream of `1 + e^(−x)` at `ν = 1/2` sums to `1 + e^(t/2 − x)` everywhere. -/
+example (x : Fin 2 → ℝ) :
+    analyticField .ogf (expSumHeat ν terms) x = expSumField ν terms x :=
+  analyticField_heatSeries_expSum ν terms x
+
+/-- On the box the front is the classical front. -/
+example {x : Fin 2 → ℝ} (hx : box.Mem x) :
+    analyticField .ogf (front ν terms) x = 1 / (1 + Real.exp (x 1 - x 0 / 2)) :=
+  front_field_eq hx
+
+/-- The band's two numbers are not sharp: the corner value is above `27/50`. -/
+example : 27 / 50 < analyticField .ogf (front ν terms) ![1 / 6, -1 / 8] := front_corner_gt
+
+/-- A point just outside the box is not covered by the identification. -/
+example : ¬ box.Mem ![1 / 6, 1 / 4] := by
+  intro h
+  have := h 1
+  norm_num [box] at this
+
+/-- `band` is stated over every reconstruction, `not_below` is its refutation
+at a tighter bound: the two are about the same root hypothesis. -/
+example : ∀ a unused v : Stream 2,
+    (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+      ∀ x : Fin 2 → ℝ, box.Mem x → 2 / 5 ≤ analyticField .ogf a x ∧ analyticField .ogf a x ≤ 3 / 5 :=
+  band
+
+example : ¬ ∀ a unused v : Stream 2,
+    (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+      ∀ x : Fin 2 → ℝ, box.Mem x → analyticField .ogf a x ≤ 27 / 50 :=
+  not_below
+
 /-! ### Axioms -/
+
+/--
+info: 'Gimle.Asgard.Streams.analyticField_mul'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.analyticField_mul
+/--
+info: 'Gimle.Asgard.Streams.analyticField_inv'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.analyticField_inv
+/--
+info: 'Gimle.Asgard.Streams.ColeHopf.analyticField_heatSeries_expSum'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.analyticField_heatSeries_expSum
+/--
+info: 'Gimle.Asgard.Streams.ColeHopf.analyticField_front'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.analyticField_front
+/--
+info: 'Gimle.Asgard.Examples.BurgersFront.front_field_eq'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Examples.BurgersFront.front_field_eq
+/--
+info: 'Gimle.Asgard.Examples.BurgersFront.band'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Examples.BurgersFront.band
+/--
+info: 'Gimle.Asgard.Examples.BurgersFront.not_below'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Examples.BurgersFront.not_below
 
 /--
 info: 'Gimle.Asgard.Streams.ogfD_mul'

@@ -511,9 +511,33 @@ the inverse costs the ratio tail, the product halves the radii. The true error
 on that box is many orders smaller; the certificate is a proof, not a
 measurement.
 
-Scope: nothing identifies the analytic field with `1/(1 + e^(x − t/2))` or with
-a solution of the real equation; the formal stream from a polynomial profile
-stays divergent and uncertified; no majorant discovery.
+### The analytic field of the front
+
+[`Streams/AnalyticField.lean`](../Gimle/Asgard/Streams/AnalyticField.lean)
+says what the field of a product and an inverse *is* where both factors are
+majorized: `analyticField_mul` (Mathlib's Cauchy product over
+`Finsupp.antidiagonal`, from the absolute convergence `Tail.lean` proves on a
+box strictly inside both majorants), `analyticField_C_mul`,
+`analyticField_one`, and `analyticField_inv` — the field of `φ⁻¹` is the
+inverse of the field of `φ`, which is therefore nonzero there — as the
+corollary of `φ⁻¹ * φ = 1`. In `ColeHopf.lean`,
+`analyticField_heatSeries_expSum` sums the heat stream of `Σ cᵢ e^(aᵢ x)` to
+`expSumField ν terms = Σ cᵢ e^(ν aᵢ² t + aᵢ x)` at every real point (one
+exponential is a product of two one-axis exponential series, `hasSum_index_prod`),
+and `analyticField_front` combines them: under `front_truncation`'s premises,
+on a box strictly inside `r/2`, the front's field is
+`−2ν (Σ cᵢ aᵢ e^(…)) / (Σ cᵢ e^(…))` and the denominator does not vanish.
+
+For the worked front this is `front_field_eq`: on `|t| ≤ 1/6`, `|x| ≤ 1/8` the
+analytic field is `1/(1 + e^(x − t/2))`. From `s + 1 ≤ e^s` alone, `band`
+proves `2/5 ≤ u ≤ 3/5` there for every stream the circuit reconstructs from
+the front's slice, and `not_below` refutes `u ≤ 27/50` at the corner
+`(1/6, −1/8)`, where `u = 1/(1 + e^(−5/24)) > 29/53`.
+
+Scope: the identification is of the formal stream's analytic field with a
+closed form on the box; nothing is claimed about the real Burgers equation or
+its classical solutions. The formal stream from a polynomial profile stays
+divergent and uncertified; no majorant discovery.
 
 ```sh
 lake build Gimle.Asgard.Tests.ColeHopf

@@ -40,7 +40,7 @@ Open an example in VS Code with the Lean 4 extension:
 | [Geometric tail](Gimle/Asgard/Examples/GeometricTail.lean) | A proved coefficient majorant certifies convergence and a uniform truncation error |
 | [Exponential heat](Gimle/Asgard/Examples/ExpHeat.lean) | The analytic profile `e^x` evolves to `e^(x+t)`, with a kernel-computed certified truncation bound |
 | [Burgers from `x²`](Gimle/Asgard/Examples/BurgersSquare.lean) | Formal Burgers stream `D_t u = −u·D_x u + ν·D_x² u` from any profile, unique by Picard iteration in the `t`-degree, with the first coefficients read off polynomial iterates |
-| [Burgers front](Gimle/Asgard/Examples/BurgersFront.lean) | The formal Burgers stream of the Cole–Hopf front `−2ν φ_x/φ`, `φ(0, x) = 1 + e^(−x)`, with a kernel-computed certified truncation error `1/16384` on a box |
+| [Burgers front](Gimle/Asgard/Examples/BurgersFront.lean) | The formal Burgers stream of the Cole–Hopf front `−2ν φ_x/φ`, `φ(0, x) = 1 + e^(−x)`, with a kernel-computed certified truncation error `1/16384` on a box; its analytic field there is `1/(1 + e^(x − t/2))`, with the band `2/5 ≤ u ≤ 3/5` proved and `u ≤ 27/50` refuted at a corner |
 | [Circuit gallery](Gimle/Asgard/Examples/CircuitGallery.lean) | Interactive diagrams in Lean Infoview |
 
 Check an individual example with `lake env lean Gimle/Asgard/Examples/EnergyDemo.lean`.
