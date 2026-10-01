@@ -175,9 +175,94 @@ theorem not_below :
   have := h (front ν terms) 0 _ (circuit_front ν terms c0 0) _ corner_mem
   linarith [front_corner_gt]
 
+/-! ## The same band from a checked window, with no closed form
+
+What a decider can do: the window of `φ⁻¹` below `16 × 16` is a table of
+rationals computed outside Lean and checked here by `WindowIdentity`
+(`decide +kernel`); the front's window follows, its spread over the box is a
+rational sum, and `front_band_of_window` turns the certified truncation error
+into a band on the analytic field — without `front_field_eq`, for any stream
+with a certificate. The band it proves is a little wider than the truth
+(`[0.4477, 0.5523]` against `[0.448, 0.552]`), which is the price of a bound
+the kernel computes; `[2/5, 3/5]` is well inside it, and the corner
+`(1/6, −1/8)` still refutes `27/50`. -/
+
+open Gimle.Asgard.Streams.Lowering
+
+def inverseTable : List (List ℚ) := [
+  [1 / 2, 1 / 4, 0, -1 / 48, 0, 1 / 480, 0, -17 / 80640, 0, 31 / 1451520, 0, -691 / 319334400, 0, 5461 / 24908083200, 0, -929569 / 41845579776000],
+  [-1 / 8, 0, 1 / 32, 0, -1 / 192, 0, 17 / 23040, 0, -31 / 322560, 0, 691 / 58060800, 0, -5461 / 3832012800, 0, 929569 / 5579410636800, 0],
+  [0, -1 / 64, 0, 1 / 192, 0, -17 / 15360, 0, 31 / 161280, 0, -691 / 23224320, 0, 5461 / 1277337600, 0, -929569 / 1594117324800, 0, 3202291 / 41845579776000],
+  [1 / 384, 0, -1 / 384, 0, 17 / 18432, 0, -31 / 138240, 0, 691 / 15482880, 0, -5461 / 696729600, 0, 929569 / 735746457600, 0, -3202291 / 16738231910400, 0],
+  [0, 1 / 1536, 0, -17 / 36864, 0, 31 / 184320, 0, -691 / 15482880, 0, 5461 / 557383680, 0, -929569 / 490497638400, 0, 3202291 / 9564703948800, 0, -221930581 / 4017175658496000],
+  [-1 / 15360, 0, 17 / 122880, 0, -31 / 368640, 0, 691 / 22118400, 0, -5461 / 619315200, 0, 929569 / 445906944000, 0, -3202291 / 7357464576000, 0, 221930581 / 2678117105664000, 0],
+  [0, -17 / 737280, 0, 31 / 1105920, 0, -691 / 44236800, 0, 5461 / 928972800, 0, -929569 / 535088332800, 0, 3202291 / 7357464576000, 0, -221930581 / 2295528947712000, 0, 4722116521 / 241030539509760000],
+  [17 / 10321920, 0, -31 / 5160960, 0, 691 / 123863040, 0, -5461 / 1857945600, 0, 929569 / 832359628800, 0, -3202291 / 9364045824000, 0, 221930581 / 2472108097536000, 0, -4722116521 / 224961836875776000, 0],
+  [0, 31 / 41287680, 0, -691 / 495452160, 0, 5461 / 4954521600, 0, -929569 / 1664719257600, 0, 3202291 / 14982473318400, 0, -221930581 / 3296144130048000, 0, 4722116521 / 257099242143744000, 0, -968383680827 / 215963363400744960000],
+  [-31 / 743178240, 0, 691 / 2972712960, 0, -5461 / 17836277760, 0, 929569 / 4280706662400, 0, -3202291 / 29964946636800, 0, 221930581 / 5393690394624000, 0, -4722116521 / 355983566045184000, 0, 968383680827 / 259156036080893952000, 0],
+  [0, -691 / 29727129600, 0, 5461 / 89181388800, 0, -929569 / 14269022208000, 0, 3202291 / 74912366592000, 0, -221930581 / 10787380789248000, 0, 4722116521 / 593305943408640000, 0, -968383680827 / 370222908686991360000, 0, 14717667114151 / 19436702706067046400000],
+  [691 / 653996851200, 0, -5461 / 653996851200, 0, 929569 / 62783697715200, 0, -3202291 / 235438866432000, 0, 221930581 / 26369153040384000, 0, -4722116521 / 1186611886817280000, 0, 968383680827 / 626531076239523840000, 0, -14717667114151 / 28507163968898334720000, 0],
+  [0, 5461 / 7847962214400, 0, -929569 / 376702186291200, 0, 3202291 / 941755465728000, 0, -221930581 / 79107459121152000, 0, 4722116521 / 2847868528361472000, 0, -968383680827 / 1253062152479047680000, 0, 14717667114151 / 48869423946682859520000, 0, -2093660879252671 / 20525158057606800998400000],
+  [-5461 / 204047017574400, 0, 929569 / 3264752281190400, 0, -3202291 / 4897128421785600, 0, 221930581 / 293827705307136000, 0, -4722116521 / 8227175748599808000, 0, 968383680827 / 2961783269495930880000, 0, -14717667114151 / 97738847893365719040000, 0, 2093660879252671 / 35576940633185121730560000, 0],
+  [0, -929569 / 45706531936665600, 0, 3202291 / 34279898952499200, 0, -221930581 / 1371195958099968000, 0, 4722116521 / 28795115120099328000, 0, -968383680827 / 8292993154588606464000, 0, 14717667114151 / 228057311751186677760000, 0, -2093660879252671 / 71153881266370243461120000, 0, 86125672563201181 / 7471157532968875563417600000],
+  [929569 / 1371195958099968000, 0, -3202291 / 342798989524992000, 0, 221930581 / 8227175748599808000, 0, -4722116521 / 123407636228997120000, 0, 968383680827 / 27643310515295354880000, 0, -14717667114151 / 621974486594145484800000, 0, 2093660879252671 / 164201264460854407987200000, 0, -86125672563201181 / 14942315065937751126835200000, 0]]
+
+/-- The window of `φ⁻¹` as a function of degree vectors. -/
+def Q (k : Degrees 2) : ℚ := (inverseTable.getD (k 0) []).getD (k 1) 0
+
+theorem windowIdentity : WindowIdentity ν terms N Q := by decide +kernel
+
+theorem positiveWindow : ∀ i, 0 < N i := by decide +kernel
+
+/-- The band the window gives: its constant term, spread and the error. -/
+theorem band_window_low :
+    (2 / 5 : ℚ) ≤ frontWindow ν terms Q 0 - windowSpread ν terms Q box N - 1 / 16384 := by
+  decide +kernel
+
+theorem band_window_high :
+    frontWindow ν terms Q 0 + windowSpread ν terms Q box N + 1 / 16384 ≤ 3 / 5 := by
+  decide +kernel
+
+/-- **The band, from the window alone.** -/
+theorem band_of_window :
+    ∀ a unused v : Stream 2,
+      (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+        ∀ x : Fin 2 → ℝ, box.Mem x →
+          2 / 5 ≤ analyticField .ogf a x ∧ analyticField .ogf a x ≤ 3 / 5 := by
+  intro a unused v rel x hx
+  have h := front_band_of_window hν hρ terms c0 fits hr inside small box boxInside N
+    positiveWindow (le_of_eq error_eq) windowIdentity band_window_low band_window_high
+    a unused v rel x hx
+  push_cast at h
+  exact h
+
+/-- The corner lies in the box, as rationals. -/
+theorem corner_in_box : ∀ i, |(![1 / 6, -1 / 8] : Fin 2 → ℚ) i| ≤ box.radius i := by
+  decide +kernel
+
+/-- The window at the corner exceeds `27/50` by more than the error. -/
+theorem corner_window_above :
+    (27 / 50 : ℚ) < frontValue ν terms Q N ![1 / 6, -1 / 8] - 1 / 16384 := by
+  decide +kernel
+
+/-- **The refutation, from the window alone.** -/
+theorem not_below_of_window :
+    ¬ ∀ a unused v : Stream 2,
+      (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+        ∀ x : Fin 2 → ℝ, box.Mem x → analyticField .ogf a x ≤ 27 / 50 := by
+  intro h
+  refine front_above_of_window hν hρ terms c0 fits hr inside small box boxInside N
+    positiveWindow (le_of_eq error_eq) windowIdentity ![1 / 6, -1 / 8] corner_in_box
+    corner_window_above fun a unused v rel x hx => ?_
+  have := h a unused v rel x hx
+  push_cast
+  exact this
+
 #print axioms constantCoeff_front_eq
 #print axioms bound
 #print axioms front_field_eq
 #print axioms band
 #print axioms not_below
+#print axioms band_of_window
+#print axioms not_below_of_window
 end Gimle.Asgard.Examples.BurgersFront

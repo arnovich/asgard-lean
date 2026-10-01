@@ -11,12 +11,15 @@ the one boundary coefficient read off the opaque slice; a zero constant term
 makes `smallEnough` trivially true, which is why `c0` is a separate
 hypothesis; the analytic field of the front on the box is the classical front
 and the band holds there while a tighter bound fails at a corner (task 062);
-and a transitive standard-axiom audit of the root theorems and every example
+the same band and refutation follow from a checked window table with no
+closed form, and a wrong table is refused by the identity (task 063); and a
+transitive standard-axiom audit of the root theorems and every example
 claim. -/
 
 namespace Gimle.Asgard.Tests.ColeHopf
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.ColeHopf Gimle.Asgard.Examples.BurgersFront
+open Gimle.Asgard.Streams.Lowering
 open MvPowerSeries (constantCoeff)
 open Gimle.Asgard.Streams.AnalyticHeat (expSumFits)
 /-! ### The derivative as a derivation -/
@@ -109,7 +112,69 @@ example : ¬ ∀ a unused v : Stream 2,
       ∀ x : Fin 2 → ℝ, box.Mem x → analyticField .ogf a x ≤ 27 / 50 :=
   not_below
 
+/-! ### The window route (063) -/
+
+/-- The checked table's first entries: `1/2` at the origin, and the table is
+refused when one entry is wrong. -/
+example : Q 0 = 1 / 2 := by decide +kernel
+
+example : ¬ WindowIdentity ν terms N (fun k => if k = 0 then 1 / 3 else Q k) := by
+  decide +kernel
+
+/-- The front's window agrees with the hand-computed constant coefficient. -/
+example : frontWindow ν terms Q 0 = 1 / 2 := by decide +kernel
+
+/-- The spread of the window over the box and the window at the corner. -/
+example : windowSpread ν terms Q box N < 6 / 100 := by decide +kernel
+example : (55 / 100 : ℚ) < frontValue ν terms Q N ![1 / 6, -1 / 8] := by decide +kernel
+
+/-- A narrower band than the spread admits is not reached by this route. -/
+example : ¬ (45 / 100 : ℚ) ≤ frontWindow ν terms Q 0 - windowSpread ν terms Q box N - 1 / 16384 := by
+  decide +kernel
+
+/-- The window route and the closed-form route prove the same statements. -/
+example : ∀ a unused v : Stream 2,
+    (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+      ∀ x : Fin 2 → ℝ, box.Mem x → 2 / 5 ≤ analyticField .ogf a x ∧ analyticField .ogf a x ≤ 3 / 5 :=
+  band_of_window
+
+example : ¬ ∀ a unused v : Stream 2,
+    (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+      ∀ x : Fin 2 → ℝ, box.Mem x → analyticField .ogf a x ≤ 27 / 50 :=
+  not_below_of_window
+
 /-! ### Axioms -/
+
+/--
+info: 'Gimle.Asgard.Streams.coeff_inv_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.coeff_inv_window
+/--
+info: 'Gimle.Asgard.Streams.abs_windowField_sub_le'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.abs_windowField_sub_le
+/--
+info: 'Gimle.Asgard.Streams.ColeHopf.front_band_of_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.front_band_of_window
+/--
+info: 'Gimle.Asgard.Streams.ColeHopf.front_above_of_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.front_above_of_window
+/--
+info: 'Gimle.Asgard.Examples.BurgersFront.band_of_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Examples.BurgersFront.band_of_window
+/--
+info: 'Gimle.Asgard.Examples.BurgersFront.not_below_of_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Examples.BurgersFront.not_below_of_window
 
 /--
 info: 'Gimle.Asgard.Streams.analyticField_mul'

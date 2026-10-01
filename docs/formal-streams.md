@@ -534,6 +534,31 @@ proves `2/5 ≤ u ≤ 3/5` there for every stream the circuit reconstructs from
 the front's slice, and `not_below` refutes `u ≤ 27/50` at the corner
 `(1/6, −1/8)`, where `u = 1/(1 + e^(−5/24)) ≥ 29/53 > 27/50`.
 
+### Field bands from a checked window
+
+[`Streams/Window.lean`](../Gimle/Asgard/Streams/Window.lean) is what a
+decider needs to bound the field *without* a closed form. `coeff_inv_window`:
+the coefficients of `φ⁻¹` below `N` are the unique solution of the finite
+triangular identity `(φ · Q)_α = [α = 0]` for `α < N` (well-founded induction
+through Mathlib's `coeff_inv`), so a table `Q` computed outside Lean is
+checked coefficient by coefficient. `sum_window_eq_grid` writes a sum over
+the window as a list sum over the grid of degree vectors, which computes;
+`abs_windowField_sub_le` bounds the window field on the box by
+`Σ_{0 ≠ α < N} |a_α| ∏ rᵢ^αᵢ`; `windowField_rat` evaluates it at a rational
+point as a rational. In `ColeHopf.lean`, `WindowIdentity ν terms N Q` is the
+decidable identity on the grid, `frontWindow` the front's window from `Q`,
+`windowSpread` and `frontValue` the two rationals, and the roots
+`front_band_of_window` (with the premises of `front_truncation`:
+`lo ≤ W₀ − spread − ε` and `W₀ + spread + ε ≤ hi` give `lo ≤ u ≤ hi` on the
+box for every reconstruction) and `front_above_of_window` (a rational point
+of the box with `hi < W(p) − ε` refutes `u ≤ hi`).
+
+[BurgersFront.lean](../Gimle/Asgard/Examples/BurgersFront.lean) proves its
+band and refutation a second time this way (`band_of_window`,
+`not_below_of_window`), from a 256-entry table and `decide +kernel`, in under
+a minute of kernel time. The band the window gives is `[0.4477, 0.5523]`
+against the true `[0.448, 0.552]`.
+
 Scope: the identification is of the formal stream's analytic field with a
 closed form on the box; nothing is claimed about the real Burgers equation or
 its classical solutions. The formal stream from a polynomial profile stays

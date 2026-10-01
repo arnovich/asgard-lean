@@ -1,5 +1,6 @@
 import Gimle.Asgard.Streams.Majorant
 import Gimle.Asgard.Streams.AnalyticField
+import Gimle.Asgard.Streams.Window
 import Gimle.Asgard.Streams.Burgers
 import Gimle.Asgard.Streams.AnalyticHeat
 import Mathlib.Analysis.SpecialFunctions.Exponential
@@ -476,8 +477,228 @@ theorem analyticField_front {ν ρ : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms :
   push_cast
   ring
 
+/-! ## Windows: the front's coefficients from a checked inverse table
+
+A field bound on the front needs its window coefficients as rationals the
+kernel can compute. `φ` and `D_x φ` have closed-form coefficients; the window
+of `φ⁻¹` is a table `Q` computed outside Lean and *checked* here by the
+finite identity `(φ · Q)_k = [k = 0]` on the grid (`coeff_inv_window`). The
+front's window is then `−2ν · (D_x φ · Q)` on the grid, and
+`abs_windowField_sub_le` bounds the window field by a rational sum. -/
+
+open Lowering in
+/-- The heat stream's coefficient at a degree vector, as the kernel computes it. -/
+def heatCoeff (ν : ℚ) (terms : List (ℚ × ℚ)) (k : Degrees 2) : ℚ :=
+  ν ^ k 0 * expSum terms (k 1 + 2 * k 0) / (((k 0).factorial : ℚ) * ((k 1).factorial : ℚ))
+
+open Lowering in
+theorem coeff_toIndex_expSumHeat (ν : ℚ) (terms : List (ℚ × ℚ)) (k : Degrees 2) :
+    coeff k.toIndex (expSumHeat ν terms) = heatCoeff ν terms k := by
+  rw [expSumHeat, coeff_heatSeries, factorial_two]
+  simp only [heatCoeff, Degrees.toIndex_apply]
+
+open Lowering in
+/-- The checked identity: `Q` is the window of `φ⁻¹` below `N`. An `abbrev`,
+so `decide +kernel` sees the bounded quantifier and the rational equalities. -/
+abbrev WindowIdentity (ν : ℚ) (terms : List (ℚ × ℚ)) (N : Fin 2 → ℕ) (Q : Degrees 2 → ℚ) : Prop :=
+  ∀ k ∈ grid 2 (fun i => N i - 1),
+    ((grid 2 k).map fun a => heatCoeff ν terms a * Q (k - a)).sum = if k = 0 then 1 else 0
+
+open Lowering in
+theorem coe_toIndex (k : Degrees 2) : ⇑(k.toIndex) = k := funext (Degrees.toIndex_apply k)
+
+open Lowering in
+theorem toIndex_zero : (0 : Degrees 2).toIndex = 0 := by
+  ext i
+  rfl
+
+open Lowering in
+theorem toIndex_eq_zero (k : Degrees 2) : k.toIndex = 0 ↔ k = 0 := by
+  constructor
+  · intro h
+    exact Degrees.toIndex_injective (h.trans toIndex_zero.symm)
+  · rintro rfl
+    exact toIndex_zero
+
+open Lowering in
+theorem mem_grid_of_le {N : Fin 2 → ℕ} {k : Degrees 2}
+    (hk : k ∈ grid 2 (fun i => N i - 1)) (a : Degrees 2) :
+    k - a ∈ grid 2 (fun i => N i - 1) := by
+  rw [mem_grid] at hk ⊢
+  intro i
+  have := hk i
+  simp only [Pi.sub_apply]
+  omega
+
+open Lowering in
+/-- The inverse's window is the checked table. -/
+theorem coeff_inv_expSumHeat_window {ν : ℚ} {terms : List (ℚ × ℚ)} (c0 : constantTerm terms ≠ 0)
+    {N : Fin 2 → ℕ} (hN : ∀ i, 0 < N i) {Q : Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) :
+    ∀ k ∈ grid 2 (fun i => N i - 1), coeff k.toIndex (expSumHeat ν terms)⁻¹ = Q k := by
+  intro k hk
+  have hc : constantCoeff (expSumHeat ν terms) ≠ 0 := by
+    rw [constantCoeff_expSumHeat]; exact c0
+  have below : Below N k.toIndex := by
+    intro i
+    have := (mem_grid _ k).mp hk i
+    have := hN i
+    simp only [Degrees.toIndex_apply]
+    omega
+  refine coeff_inv_window (expSumHeat ν terms) hc N (fun β => Q ⇑β) ?_ k.toIndex below
+  intro α hα
+  have h := identity ⇑α (by
+    rw [mem_grid]
+    intro i
+    have := hα i
+    have := hN i
+    omega)
+  rw [← toIndex_coe α, sum_antidiagonal (⇑α) (fun p q => coeff p (expSumHeat ν terms) * Q ⇑q)]
+  simp only [toIndex_eq_zero]
+  rw [← h]
+  congr 1
+  refine List.map_congr_left fun a _ => ?_
+  rw [coeff_toIndex_expSumHeat, coe_toIndex]
+
+open Lowering in
+/-- The front's window coefficient from the checked table: `−2ν (D_x φ · Q)_k`. -/
+def frontWindow (ν : ℚ) (terms : List (ℚ × ℚ)) (Q : Degrees 2 → ℚ) (k : Degrees 2) : ℚ :=
+  -2 * ν * ((grid 2 k).map fun a => heatCoeff ν (shifted terms) a * Q (k - a)).sum
+
+open Lowering in
+theorem coeff_toIndex_front {ν : ℚ} {terms : List (ℚ × ℚ)} (c0 : constantTerm terms ≠ 0)
+    {N : Fin 2 → ℕ} (hN : ∀ i, 0 < N i) {Q : Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) :
+    ∀ k ∈ grid 2 (fun i => N i - 1), coeff k.toIndex (front ν terms) = frontWindow ν terms Q k := by
+  intro k hk
+  simp only [front, quotient]
+  rw [coeff_C_mul, coeff_mul,
+    sum_antidiagonal k (fun p q => coeff p (ogfD 1 (expSumHeat ν terms)) * coeff q (expSumHeat ν terms)⁻¹)]
+  unfold frontWindow
+  congr 1
+  congr 1
+  refine List.map_congr_left fun a _ => ?_
+  rw [ogfD_expSumHeat, show heatSeries ν (expSum (shifted terms)) = expSumHeat ν (shifted terms)
+    from rfl, coeff_toIndex_expSumHeat,
+    coeff_inv_expSumHeat_window c0 hN identity (k - a) (mem_grid_of_le hk a)]
+
+open Lowering in
+/-- `Σ_{0 ≠ k < N} |W_k| ∏ rᵢ^kᵢ`, the window's spread over the box. -/
+def windowSpread (ν : ℚ) (terms : List (ℚ × ℚ)) (Q : Degrees 2 → ℚ) (b : Box 2) (N : Fin 2 → ℕ) : ℚ :=
+  ((grid 2 fun i => N i - 1).map fun k =>
+    if k = 0 then 0 else |frontWindow ν terms Q k| * ∏ i, b.radius i ^ k i).sum
+
+open Lowering in
+/-- The window polynomial at a rational point. -/
+def frontValue (ν : ℚ) (terms : List (ℚ × ℚ)) (Q : Degrees 2 → ℚ) (N : Fin 2 → ℕ)
+    (p : Fin 2 → ℚ) : ℚ :=
+  ((grid 2 fun i => N i - 1).map fun k => frontWindow ν terms Q k * ∏ i, p i ^ k i).sum
+
+open Lowering in
+theorem windowSpread_eq {ν : ℚ} {terms : List (ℚ × ℚ)} (c0 : constantTerm terms ≠ 0)
+    {N : Fin 2 → ℕ} (hN : ∀ i, 0 < N i) {Q : Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) (b : Box 2) :
+    (∑ α ∈ window N, (if α = 0 then (0 : ℝ) else
+      |((coeff α (front ν terms) : ℚ) : ℝ)| * ∏ i, ((b.radius i : ℚ) : ℝ) ^ α i)) =
+      ((windowSpread ν terms Q b N : ℚ) : ℝ) := by
+  rw [sum_window_eq_grid N hN]
+  unfold windowSpread
+  rw [Rat.cast_list_sum, List.map_map]
+  congr 1
+  refine List.map_congr_left fun k hk => ?_
+  simp only [Function.comp, coeff_toIndex_front c0 hN identity k hk, toIndex_eq_zero,
+    Degrees.toIndex_apply]
+  split_ifs <;> push_cast <;> rfl
+
+open Lowering in
+theorem frontValue_eq {ν : ℚ} {terms : List (ℚ × ℚ)} (c0 : constantTerm terms ≠ 0)
+    {N : Fin 2 → ℕ} (hN : ∀ i, 0 < N i) {Q : Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) (p : Fin 2 → ℚ) :
+    windowField .ogf N (front ν terms) (fun i => (p i : ℝ)) =
+      ((frontValue ν terms Q N p : ℚ) : ℝ) := by
+  rw [windowField_rat, sum_window_eq_grid N hN]
+  unfold frontValue
+  congr 2
+  refine List.map_congr_left fun k hk => ?_
+  rw [coeff_toIndex_front c0 hN identity k hk]
+  simp only [Degrees.toIndex_apply]
+
+open Lowering in
+theorem frontWindow_zero_eq {ν : ℚ} {terms : List (ℚ × ℚ)} (c0 : constantTerm terms ≠ 0)
+    {N : Fin 2 → ℕ} (hN : ∀ i, 0 < N i) {Q : Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) :
+    coeff 0 (front ν terms) = frontWindow ν terms Q 0 := by
+  rw [← toIndex_zero]
+  exact coeff_toIndex_front c0 hN identity 0 ((mem_grid _ 0).mpr fun i => Nat.zero_le _)
+
+/-- **A band on the front from a checked window.** With the premises of
+`front_truncation` and a table `Q` passing `WindowIdentity`, if
+`lo ≤ W₀ − B − ε` and `W₀ + B + ε ≤ hi` (all rationals the kernel computes)
+then every stream the circuit reconstructs from the front's slice has its
+analytic field in `[lo, hi]` everywhere on the box. -/
+theorem front_band_of_window {ν ρ ε : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms : List (ℚ × ℚ))
+    (c0 : constantTerm terms ≠ 0) (fits : expSumFits terms ρ = true) {r : Fin 2 → ℚ}
+    (hr : ∀ i, 0 < r i) (inside : ∀ i, r i < heatRadii ν ρ i) (small : smallEnough ν ρ terms r)
+    (box : Box 2) (boxInside : ∀ i, box.radius i < r i / 2) (N : Fin 2 → ℕ) (hN : ∀ i, 0 < N i)
+    (le : tailBound (frontMajorant ν terms r hr) box N ≤ ε) {Q : Lowering.Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) {lo hi : ℚ}
+    (low : lo ≤ frontWindow ν terms Q 0 - windowSpread ν terms Q box N - ε)
+    (high : frontWindow ν terms Q 0 + windowSpread ν terms Q box N + ε ≤ hi) :
+    ∀ a unused v : Stream 2,
+      (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+        ∀ x : Fin 2 → ℝ, box.Mem x →
+          lo ≤ analyticField .ogf a x ∧ analyticField .ogf a x ≤ hi := by
+  intro a unused v rel x hx
+  have trunc : ∀ y, box.Mem y →
+      |analyticField .ogf a y - windowField .ogf N a y| ≤ ε :=
+    front_truncation hν hρ terms c0 fits hr inside small box boxInside N le a unused v rel
+  have hc : constantCoeff (expSumHeat ν terms) ≠ 0 := by
+    rw [constantCoeff_expSumHeat]; exact c0
+  have eq : a = front ν terms := by
+    simp only [front] at rel
+    exact candidate_quotient ν _ hc (heatSeries_pde ν _) a unused v rel
+  subst eq
+  have win := abs_windowField_sub_le N hN (front ν terms) box hx
+  rw [windowSpread_eq c0 hN identity box, frontWindow_zero_eq c0 hN identity] at win
+  have t := abs_le.mp (trunc x hx)
+  have w := abs_le.mp win
+  have low' : (lo : ℝ) ≤ frontWindow ν terms Q 0 - windowSpread ν terms Q box N - ε := by
+    exact_mod_cast low
+  have high' : (frontWindow ν terms Q 0 + windowSpread ν terms Q box N + ε : ℝ) ≤ hi := by
+    exact_mod_cast high
+  constructor <;> linarith [t.1, t.2, w.1, w.2]
+
+/-- **A point above the band refutes it.** A rational point of the box where
+the window exceeds `hi` by more than `ε` shows that `u ≤ hi` fails on the
+box, for the front itself, which the circuit does reconstruct. -/
+theorem front_above_of_window {ν ρ ε : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms : List (ℚ × ℚ))
+    (c0 : constantTerm terms ≠ 0) (fits : expSumFits terms ρ = true) {r : Fin 2 → ℚ}
+    (hr : ∀ i, 0 < r i) (inside : ∀ i, r i < heatRadii ν ρ i) (small : smallEnough ν ρ terms r)
+    (box : Box 2) (boxInside : ∀ i, box.radius i < r i / 2) (N : Fin 2 → ℕ) (hN : ∀ i, 0 < N i)
+    (le : tailBound (frontMajorant ν terms r hr) box N ≤ ε) {Q : Lowering.Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) (p : Fin 2 → ℚ) (hp : ∀ i, |p i| ≤ box.radius i)
+    {hi : ℚ} (gt : hi < frontValue ν terms Q N p - ε) :
+    ¬ ∀ a unused v : Stream 2,
+      (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+        ∀ x : Fin 2 → ℝ, box.Mem x → analyticField .ogf a x ≤ hi := by
+  intro h
+  have hx : box.Mem (fun i => (p i : ℝ)) := fun i => by
+    show |(p i : ℝ)| ≤ ((box.radius i : ℚ) : ℝ)
+    exact_mod_cast hp i
+  have above := h (front ν terms) 0 _ (circuit_front ν terms c0 0) _ hx
+  have trunc : |analyticField .ogf (front ν terms) (fun i => (p i : ℝ)) -
+      windowField .ogf N (front ν terms) (fun i => (p i : ℝ))| ≤ ε :=
+    front_truncation hν hρ terms c0 fits hr inside small box boxInside N le (front ν terms) 0 _
+      (circuit_front ν terms c0 0) _ hx
+  rw [frontValue_eq c0 hN identity p] at trunc
+  have t := abs_le.mp trunc
+  have gt' : (hi : ℝ) < frontValue ν terms Q N p - ε := by exact_mod_cast gt
+  linarith [t.1, t.2]
+
 #print axioms majorizes_front
 #print axioms circuit_front
 #print axioms front_truncation
 #print axioms analyticField_front
+#print axioms front_band_of_window
+#print axioms front_above_of_window
 end Gimle.Asgard.Streams.ColeHopf
