@@ -1,6 +1,8 @@
 import Gimle.Asgard.Streams.Majorant
+import Gimle.Asgard.Streams.AnalyticField
 import Gimle.Asgard.Streams.Burgers
 import Gimle.Asgard.Streams.AnalyticHeat
+import Mathlib.Analysis.SpecialFunctions.Exponential
 
 /-! # Cole–Hopf: a certified truncation of a Burgers stream
 
@@ -15,7 +17,11 @@ into a uniform truncation bound on a box. Everything is in the OGF reading.
 
 Nothing here is about the real Burgers equation: the analytic field is that
 of this series on this box, and the bound is deliberately loose (factorials
-are dropped, the inverse and the product each cost a factor of the radii). -/
+are dropped, the inverse and the product each cost a factor of the radii).
+The last section identifies that field: the heat stream of an exponential sum
+sums to `Σ cᵢ e^(ν aᵢ² t + aᵢ x)` everywhere, and on a box inside the front's
+radii the front's field is `−2ν (Σ cᵢ aᵢ e^(…)) / (Σ cᵢ e^(…))`
+(`analyticField_front`), by `AnalyticField.lean`'s product and inverse rules. -/
 namespace Gimle.Asgard.Streams.ColeHopf
 
 open MvPowerSeries
@@ -359,7 +365,119 @@ theorem front_truncation {ν ρ ε : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms :
   rw [candidate_quotient ν _ hc (heatSeries_pde ν _) a unused v rel]
   exact ((certificate hν hρ terms fits hr inside small box boxInside).truncationBound N).mono le
 
+/-! ## The analytic field of the heat stream and of the front -/
+
+/-- The classical field of the heat stream of the exponential sum:
+`Σᵢ cᵢ e^(ν aᵢ² t + aᵢ x)` at `(t, x)`. -/
+noncomputable def expSumField (ν : ℚ) (terms : List (ℚ × ℚ)) (x : Fin 2 → ℝ) : ℝ :=
+  (terms.map fun t => (t.1 : ℝ) * Real.exp (ν * t.2 ^ 2 * x 0 + t.2 * x 1)).sum
+
+private theorem hasSum_exp (r : ℝ) :
+    HasSum (fun k => r ^ k / (k.factorial : ℝ)) (Real.exp r) := by
+  rw [Real.exp_eq_exp_ℝ]
+  exact NormedSpace.expSeries_div_hasSum_exp r
+
+/-- One exponential: the heat stream of the profile `a^j` sums to
+`e^(ν a² t + a x)` at every real point. -/
+theorem hasSum_heatSeries_pow (ν a : ℚ) (x : Fin 2 → ℝ) :
+    HasSum (seriesTerm .ogf (heatSeries ν fun j => a ^ j) x)
+      (Real.exp (ν * a ^ 2 * x 0 + a * x 1)) := by
+  let y : Fin 2 → ℝ := ![(ν : ℝ) * a ^ 2 * x 0, (a : ℝ) * x 1]
+  have h := hasSum_index_prod (fun i k => y i ^ k / (k.factorial : ℝ)) (fun i => Real.exp (y i))
+    (fun i => by
+      simpa [norm_div, norm_pow, Real.norm_eq_abs] using Real.summable_pow_div_factorial |y i|)
+    (fun i => hasSum_exp (y i))
+  rw [Fin.prod_univ_two, ← Real.exp_add] at h
+  refine h.congr_fun fun α => ?_
+  rw [seriesTerm_ogf, coeff_heatSeries, Fin.prod_univ_two, Fin.prod_univ_two]
+  simp only [y, Matrix.cons_val_zero, Matrix.cons_val_one, factorial_two]
+  push_cast
+  have h0 : ((α 0).factorial : ℝ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero _
+  have h1 : ((α 1).factorial : ℝ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero _
+  field_simp
+  ring
+
+/-- The heat stream is linear in the profile: one more exponential term. -/
+theorem heatSeries_expSum_cons (ν : ℚ) (t : ℚ × ℚ) (ts : List (ℚ × ℚ)) :
+    heatSeries ν (expSum (t :: ts)) =
+      C t.1 * heatSeries ν (fun j => t.2 ^ j) + heatSeries ν (expSum ts) := by
+  ext α
+  rw [map_add, coeff_C_mul, coeff_heatSeries, coeff_heatSeries, coeff_heatSeries]
+  simp only [expSum, List.map_cons, List.sum_cons]
+  ring
+
+theorem heatSeries_expSum_nil (ν : ℚ) : heatSeries ν (expSum []) = 0 := by
+  ext α
+  simp [coeff_heatSeries, expSum]
+
+/-- **The heat stream of an exponential sum sums to its classical field** at
+every real point: no box is needed, the field is entire. -/
+theorem hasSum_heatSeries_expSum (ν : ℚ) (terms : List (ℚ × ℚ)) (x : Fin 2 → ℝ) :
+    HasSum (seriesTerm .ogf (heatSeries ν (expSum terms)) x) (expSumField ν terms x) := by
+  induction terms with
+  | nil =>
+      rw [heatSeries_expSum_nil]
+      simp only [expSumField, List.map_nil, List.sum_nil]
+      refine hasSum_zero.congr_fun fun α => ?_
+      rw [seriesTerm_ogf, map_zero]
+      simp
+  | cons t ts ih =>
+      rw [heatSeries_expSum_cons]
+      have h := ((hasSum_heatSeries_pow ν t.2 x).mul_left (t.1 : ℝ)).add ih
+      simp only [expSumField, List.map_cons, List.sum_cons] at h ⊢
+      refine h.congr_fun fun α => ?_
+      rw [seriesTerm_ogf, seriesTerm_ogf, seriesTerm_ogf, map_add, coeff_C_mul]
+      push_cast
+      ring
+
+theorem analyticField_heatSeries_expSum (ν : ℚ) (terms : List (ℚ × ℚ)) (x : Fin 2 → ℝ) :
+    analyticField .ogf (heatSeries ν (expSum terms)) x = expSumField ν terms x :=
+  (hasSum_heatSeries_expSum ν terms x).tsum_eq
+
+/-- **The front's analytic field is the Cole–Hopf quotient of classical
+fields**, `−2ν (Σ cᵢ aᵢ e^(ν aᵢ² t + aᵢ x)) / (Σ cᵢ e^(ν aᵢ² t + aᵢ x))`, on a box
+strictly inside the radii `r/2` of its majorant, where the denominator does
+not vanish. The premises are those of `front_truncation`. -/
+theorem analyticField_front {ν ρ : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms : List (ℚ × ℚ))
+    (c0 : constantTerm terms ≠ 0) (fits : expSumFits terms ρ = true) {r : Fin 2 → ℚ}
+    (hr : ∀ i, 0 < r i) (inside : ∀ i, r i < heatRadii ν ρ i) (small : smallEnough ν ρ terms r)
+    (box : Box 2) (boxInside : ∀ i, box.radius i < r i / 2) {x : Fin 2 → ℝ} (hx : box.Mem x) :
+    expSumField ν terms x ≠ 0 ∧
+      analyticField .ogf (front ν terms) x =
+        -2 * ν * expSumField ν (shifted terms) x / expSumField ν terms x := by
+  have hR := heatRadii_pos hν hρ
+  have hc : constantCoeff (expSumHeat ν terms) ≠ 0 := by rw [constantCoeff_expSumHeat]; exact c0
+  have inv : Majorizes .ogf (expSumHeat ν terms)⁻¹ ⟨|constantTerm terms|⁻¹, r, _, hr⟩ :=
+    majorizes_inv (expSumHeat ν terms) (constantCoeff_expSumHeat ν terms) (restWeight_nonneg terms)
+      hR hr inside (rest_heatSeries hν hρ (profileBoundFrom_expSum terms hρ fits)) small
+  have phi : Majorizes .ogf (expSumHeat ν terms)
+      ⟨expSumWeight terms, heatRadii ν ρ, AnalyticHeat.expSumWeight_nonneg _, hR⟩ :=
+    majorizes_heatSeries hν hρ (AnalyticHeat.expSumWeight_nonneg _) fun j _ =>
+      AnalyticHeat.profileBound_expSum terms hρ fits j
+  have der : Majorizes .ogf (ogfD 1 (expSumHeat ν terms))
+      ⟨expSumWeight (shifted terms), heatRadii ν ρ, AnalyticHeat.expSumWeight_nonneg _, hR⟩ := by
+    rw [ogfD_expSumHeat]
+    refine majorizes_heatSeries hν hρ (AnalyticHeat.expSumWeight_nonneg _) fun j _ => ?_
+    exact AnalyticHeat.profileBound_expSum (shifted terms) hρ
+      (by rw [expSumFits_shifted]; exact fits) j
+  have insideR : ∀ i, box.radius i < r i := fun i =>
+    lt_of_lt_of_le (boxInside i) (half_le_self (hr i).le)
+  have insideH : ∀ i, box.radius i < heatRadii ν ρ i := fun i => (insideR i).trans (inside i)
+  obtain ⟨finv, fne⟩ := analyticField_inv hc phi inv insideH insideR hx
+  have fφ : analyticField .ogf (expSumHeat ν terms) x = expSumField ν terms x :=
+    analyticField_heatSeries_expSum ν terms x
+  have fD : analyticField .ogf (ogfD 1 (expSumHeat ν terms)) x = expSumField ν (shifted terms) x := by
+    rw [ogfD_expSumHeat]
+    exact analyticField_heatSeries_expSum ν (shifted terms) x
+  refine ⟨fφ ▸ fne, ?_⟩
+  simp only [front, quotient]
+  rw [analyticField_C_mul, analyticField_mul der inv insideH insideR hx, finv, fD, fφ,
+    div_eq_mul_inv]
+  push_cast
+  ring
+
 #print axioms majorizes_front
 #print axioms circuit_front
 #print axioms front_truncation
+#print axioms analyticField_front
 end Gimle.Asgard.Streams.ColeHopf
