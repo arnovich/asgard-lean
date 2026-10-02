@@ -1,9 +1,6 @@
 ---
 title: The lower-side refutation of a field band from the checked window
-state: ongoing
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-02T09:50:00Z
-branch: feat/front_below_of_window
+state: closed
 priority: low
 labels: [streams, lean]
 related: ["063"]
@@ -27,3 +24,9 @@ audited lemma each (gimle-forseti task 192).
   `lo ≤ u` fails on the box for every reconstruction; audited to the three
   standard axioms in `Tests/ColeHopf.lean`; one line in `docs/formal-streams.md`
 - released as v1.12.0
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-02T10:40:00Z
+
+Closed with PR #28, released as v1.12.0.
