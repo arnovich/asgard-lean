@@ -550,8 +550,9 @@ decidable identity on the grid, `frontWindow` the front's window from `Q`,
 `windowSpread` and `frontValue` the two rationals, and the roots
 `front_band_of_window` (with the premises of `front_truncation`:
 `lo ≤ W₀ − spread − ε` and `W₀ + spread + ε ≤ hi` give `lo ≤ u ≤ hi` on the
-box for every reconstruction) and `front_above_of_window` (a rational point
-of the box with `hi < W(p) − ε` refutes `u ≤ hi`).
+box for every reconstruction), `front_above_of_window` (a rational point
+of the box with `hi < W(p) − ε` refutes `u ≤ hi`) and its mirror
+`front_below_of_window` (`W(p) + ε < lo` refutes `lo ≤ u`).
 
 [BurgersFront.lean](../Gimle/Asgard/Examples/BurgersFront.lean) proves its
 band and refutation a second time this way (`band_of_window`,

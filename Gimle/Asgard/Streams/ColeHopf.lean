@@ -695,10 +695,39 @@ theorem front_above_of_window {ν ρ ε : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (te
   have gt' : (hi : ℝ) < frontValue ν terms Q N p - ε := by exact_mod_cast gt
   linarith [t.1, t.2]
 
+/-- **A band's lower bound is refuted at a rational point of the box** where the
+window's value is more than `ε` below it: the front is one reconstruction, and its
+field at the point is within `ε` of the window there. The mirror of
+`front_above_of_window`. -/
+theorem front_below_of_window {ν ρ ε : ℚ} (hν : 0 < ν) (hρ : 0 < ρ) (terms : List (ℚ × ℚ))
+    (c0 : constantTerm terms ≠ 0) (fits : expSumFits terms ρ = true) {r : Fin 2 → ℚ}
+    (hr : ∀ i, 0 < r i) (inside : ∀ i, r i < heatRadii ν ρ i) (small : smallEnough ν ρ terms r)
+    (box : Box 2) (boxInside : ∀ i, box.radius i < r i / 2) (N : Fin 2 → ℕ) (hN : ∀ i, 0 < N i)
+    (le : tailBound (frontMajorant ν terms r hr) box N ≤ ε) {Q : Lowering.Degrees 2 → ℚ}
+    (identity : WindowIdentity ν terms N Q) (p : Fin 2 → ℚ) (hp : ∀ i, |p i| ≤ box.radius i)
+    {lo : ℚ} (lt : frontValue ν terms Q N p + ε < lo) :
+    ¬ ∀ a unused v : Stream 2,
+      (Burgers.circuit .ogf ν).Rel ![a, zeroSlice (front ν terms), unused] ![v, a] →
+        ∀ x : Fin 2 → ℝ, box.Mem x → lo ≤ analyticField .ogf a x := by
+  intro h
+  have hx : box.Mem (fun i => (p i : ℝ)) := fun i => by
+    show |(p i : ℝ)| ≤ ((box.radius i : ℚ) : ℝ)
+    exact_mod_cast hp i
+  have below := h (front ν terms) 0 _ (circuit_front ν terms c0 0) _ hx
+  have trunc : |analyticField .ogf (front ν terms) (fun i => (p i : ℝ)) -
+      windowField .ogf N (front ν terms) (fun i => (p i : ℝ))| ≤ ε :=
+    front_truncation hν hρ terms c0 fits hr inside small box boxInside N le (front ν terms) 0 _
+      (circuit_front ν terms c0 0) _ hx
+  rw [frontValue_eq c0 hN identity p] at trunc
+  have t := abs_le.mp trunc
+  have lt' : ((frontValue ν terms Q N p : ℚ) : ℝ) + ε < lo := by exact_mod_cast lt
+  linarith [t.1, t.2]
+
 #print axioms majorizes_front
 #print axioms circuit_front
 #print axioms front_truncation
 #print axioms analyticField_front
 #print axioms front_band_of_window
 #print axioms front_above_of_window
+#print axioms front_below_of_window
 end Gimle.Asgard.Streams.ColeHopf

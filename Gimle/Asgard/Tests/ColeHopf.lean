@@ -166,6 +166,11 @@ info: 'Gimle.Asgard.Streams.ColeHopf.front_above_of_window'
 -/
 #guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.front_above_of_window
 /--
+info: 'Gimle.Asgard.Streams.ColeHopf.front_below_of_window'
+  depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Streams.ColeHopf.front_below_of_window
+/--
 info: 'Gimle.Asgard.Examples.BurgersFront.band_of_window'
   depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
