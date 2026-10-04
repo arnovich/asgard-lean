@@ -1,5 +1,6 @@
 import Gimle.Asgard.Streams.EulerRadius
 import Gimle.Asgard.Streams.Gevrey
+import Gimle.Asgard.Streams.EulerSolution
 import Gimle.Asgard.Examples.EulerThreeMode
 
 /-! # A certified radius, truncation and band for the three-mode Euler stream
@@ -17,10 +18,11 @@ of the initial vorticity, `cos x + cos(x + y) + cos(2x + y)` (`band`): the two
 coefficients the window needs beyond `ω₀` have ℓ¹ norms `8/5` and `223/260`,
 read off the kernel-computed tables.
 
-Two things are said on paper, not in Lean: that the analytic field of the
-formal stream is the solution of the Euler equation (the Cauchy–Kowalevski
-identification), and that `field` is the exponential-reading function (true
-for even data, which every coefficient here is by `coeff_isEven`). The radius
+The analytic field is a classical solution of the vorticity equation on
+`|t| < 1/648` (`classical`, from `NS.euler_classical`): `ΔΨ = ω`, `u = ∇⊥Ψ`,
+`∂_t ω + u·∇ω = 0` pointwise. What stays on paper is that `field` is the
+exponential-reading function (true for even data, which every coefficient here
+is by `coeff_isEven`), so that this `u·∇ω` is the physical one. The radius
 is small — the constants of the induction are not sharp, and the device is
 pessimistic by nature; evidence about the true radius belongs to the notebook
 that shows the computed norms, not here. For the viscous stream (`ν = 1/10`)
@@ -120,4 +122,30 @@ theorem viscous_gevrey (n : ℕ) :
 #print axioms l1_two
 #print axioms band
 #print axioms viscous_gevrey
+/-! ## The field is a classical solution
+
+On `|t| < 1/648` the analytic field of the three-mode Euler stream is a classical
+solution of the vorticity equation (`NS.euler_classical`): its stream function
+`Ψ` has `ΔΨ = ω`, the velocity `∇⊥Ψ` is divergence-free, and `∂_t ω + u·∇ω = 0`
+pointwise, every derivative the sum of the termwise derivatives. -/
+
+/-- `∂_t ω + u·∇ω = 0` for the three-mode start, on `|t| < 1/648`. -/
+theorem classical {t : ℝ} (ht : |t| < 1 / 648) (x : ℝ × ℝ) :
+    HasDerivAt (fun s => analyticField (stream .ogf 0 start) s x)
+      (seriesDt (stream .ogf 0 start) t x) t ∧
+    seriesDt (stream .ogf 0 start) t x +
+      (-seriesD₂ (psi (stream .ogf 0 start)) t x * seriesD₁ (stream .ogf 0 start) t x +
+        seriesD₁ (psi (stream .ogf 0 start)) t x * seriesD₂ (stream .ogf 0 start) t x) = 0 := by
+  have h := euler_classical start ω₀_meanZero ω₀_isEven start_sizeLE geometric (by norm_num) ht x
+  exact ⟨h.1, h.2.2.2.2.2.2.2.2.2.2.2⟩
+
+/-- `ΔΨ = ω` for the three-mode start, on `|t| < 1/648`. -/
+theorem laplacian_streamFunction {t : ℝ} (ht : |t| < 1 / 648) (x : ℝ × ℝ) :
+    seriesD₁₁ (psi (stream .ogf 0 start)) t x + seriesD₂₂ (psi (stream .ogf 0 start)) t x =
+      analyticField (stream .ogf 0 start) t x :=
+  seriesD₁₁_psi_add_seriesD₂₂_psi start ω₀_meanZero start_sizeLE geometric (by norm_num) ht x
+
+#print axioms classical
+#print axioms laplacian_streamFunction
+
 end Gimle.Asgard.Examples.EulerBand

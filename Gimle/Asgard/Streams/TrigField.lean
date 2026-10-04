@@ -6,8 +6,10 @@ import Gimle.Asgard.Streams.TrigStream
 `field P x = Σ_k P_k cos(k·x)` is the real function an even trigonometric
 polynomial describes in the exponential reading: for even `P` the sine parts
 of `Σ P_k e^{ik·x}` cancel in pairs, and for a non-even `P` this is its real
-part. That identification is on paper (no complex exponential is formed
-here); what Lean proves about `field` holds for every `P`. It is bounded by
+part. That reading is on paper (no complex exponential is formed here); what
+Lean proves about `field` holds for every `P`, and `EulerSolution` proves its
+partial derivatives and the Jacobian identity that ties `transport` to
+`u·∇q` as real functions. It is bounded by
 the ℓ¹ norm (`abs_field_le_l1`, from `|cos| ≤ 1`). A stream `ω` with a
 geometric bound on its ℓ¹ norms, `l1 ω_n ≤ M ρⁿ` (`GeometricBound`), has an
 analytic field `Σ_n field ω_n (x) tⁿ` on `|t| < 1/ρ`, and on `|t| ≤ r` with
@@ -17,9 +19,9 @@ analytic field `Σ_n field ω_n (x) tⁿ` on `|t| < 1/ρ`, and on `|t| ≤ r` wi
 follows from the window's ℓ¹ spread plus that error
 (`abs_analyticField_sub_field_le`, `abs_analyticField_le`), with no inverse
 table and no closed form. Which streams have a geometric bound is the business
-of `EulerRadius`; that the analytic field of the Euler stream is the solution
-of the Euler equation is a Cauchy–Kowalevski identification made on paper, not
-a statement of this library. -/
+of `EulerRadius`; that the analytic field of the Euler stream is a classical
+solution of the vorticity equation on `|t| < 1/ρ` is `EulerSolution`'s
+`NS.euler_classical`. -/
 namespace Gimle.Asgard.Streams.Torus
 
 open Real

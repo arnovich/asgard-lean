@@ -696,7 +696,7 @@ pessimistic by nature: the radius it certifies is small, and honest.
 [`Streams.TrigField`](../Gimle/Asgard/Streams/TrigField.lean) is the one-axis
 tail. `field P x = Σ_k P_k cos(k·x)` is, for an even polynomial, the real
 function it describes in the exponential reading (for a non-even one its real
-part; the identification is on paper, no complex exponential is formed), with
+part; that reading is on paper, no complex exponential is formed), with
 `field_cosine` and the bound `abs_field_le_l1` from `|cos| ≤ 1`. For a stream
 with a `GeometricBound M ρ` on its ℓ¹ norms,
 `analyticField ω t x = Σ_n field ω_n (x) tⁿ` converges on `|t| < 1/ρ`
@@ -710,8 +710,52 @@ with a `GeometricBound M ρ` on its ℓ¹ norms,
 | `Table.l1_le_absSum`, `Table.sizeLE_toTrig` (in `VorticityTable`) | the sum of a table's absolute entries bounds the ℓ¹ norm of its polynomial, and the table's modes bound its sizes, so the spread is a rational the kernel evaluates; each Picard table is now normalised, which makes the bound the norm itself |
 
 No inverse table and no closed form enter. That the analytic field of the
-Euler stream is the solution of the Euler equation is the Cauchy–Kowalevski
-identification, made on paper; nothing here is a statement about the PDE.
+Euler stream is a classical solution of the vorticity equation is the next
+section's theorem.
+
+### The analytic field is a classical solution
+
+[`Streams.EulerSolution`](../Gimle/Asgard/Streams/EulerSolution.lean) says
+what the sum of the series is. A trigonometric polynomial's field has the
+partial derivatives `∂ᵢ field P x = −Σ_k kᵢ P_k sin(k·x)` (`fieldD₁`,
+`fieldD₂`, `hasDerivAt_field_fst`, `hasDerivAt_field_snd`), second
+derivatives likewise, and `field (laplacian P) = Δ (field P)`
+(`field_laplacian`). The **Jacobian identity** is the tie between the formal
+`transport` and the real functions:
+
+```text
+field (transport P Q) x = ∂₁ψ ∂₂q − ∂₂ψ ∂₁q,   ψ = field (Δ⁻¹P), q = field Q,  Q even
+                                                                  (field_transport)
+```
+
+— expanding `sin a sin b = (cos(a − b) − cos(a + b))/2` and folding the
+`a − b` terms by `q ↦ −q` gives `Σ_{p,q} (p×q)/|p|² P_p Q_q cos((p+q)·x)`,
+which is `transport_apply`. The series are differentiated termwise under the
+geometric bound: in `x` because the modes of `ω_n` have size at most `(n+1)K`
+(`sizeLE_stream`), so the derivative coefficients are bounded by
+`(n+1) K M ρⁿ` and the second ones by `((n+1)K)² M ρⁿ`
+(`hasDerivAt_analyticField_fst`, `hasDerivAt_seriesD₁_fst`, …), and in `t` on
+the open disc (`hasDerivAt_analyticField_t`, by
+`hasDerivAt_tsum_of_isPreconnected`). The Euler recursion `euler_succ` turns
+`∂_t` of the series into minus the Cauchy product of the series of `ψ` and
+`ω` (`seriesDt_eq`, through `tsum_mul_tsum_eq_tsum_sum_antidiagonal`). With
+`Ψ = analyticField (psi ω)` the stream function, `psi ω n = Δ⁻¹ ω_n`:
+
+| Theorem | Statement, on `|t| < 1/ρ` for an even, mean-zero start of modes of size `≤ K` with `l1 ω_n ≤ M ρⁿ` |
+| --- | --- |
+| `euler_classical` | the field `F` and `Ψ` have the named partial derivatives; `ΔΨ = F`; `u = ∇⊥Ψ = (−∂₂Ψ, ∂₁Ψ)` is divergence-free; `∂_t F + u·∇F = 0` |
+| `seriesD₁₁_psi_add_seriesD₂₂_psi` | `ΔΨ = F` from `laplacian_laplacianInv` termwise |
+| `analyticField_zero` | `F(0, x) = field ω₀ x` |
+
+Every derivative is the sum of the termwise derivatives, and every constant is
+the geometric bound's. What stays on paper is only the reading of `field` as
+the real exponential sum, true for even data; the equation Lean proves is the
+vorticity form `∂_t ω + ∂₁Ψ ∂₂ω − ∂₂Ψ ∂₁ω = 0`, which is `u·∇ω` for
+`u = ∇⊥Ψ` by definition.
+
+```sh
+lake build Gimle.Asgard.Tests.EulerSolution
+```
 
 [EulerBand.lean](../Gimle/Asgard/Examples/EulerBand.lean) applies all of it to
 the three-mode start `cos x + cos(x + y) + cos(2x + y)` (`K = 3`, `L = 3`):
@@ -721,15 +765,19 @@ l1 ω_n ≤ 9 · 648ⁿ                                          (euler_l1)
 the t-series of the field converges for |t| < 1/648         (hasSum_field)
 |F(t, x) − Σ_{n<3} field ω_n (x) tⁿ| ≤ 1/100  on |t| ≤ 1/6480  (truncation)
 |F(t, x) − (cos x + cos(x+y) + cos(2x+y))| ≤ 1/50  on |t| ≤ 1/6480  (band)
+∂_t F + u·∇F = 0,  ΔΨ = F,  u = ∇⊥Ψ  on |t| < 1/648                (classical)
 ```
 
-where `F` is the analytic field of the stream. The band reads `l1 ω₁ ≤ 8/5`
-and `l1 ω₂ ≤ 223/260` off the tables. Evidence about the true radius (the
+where `F` is the analytic field of the stream and `Ψ` its stream function,
+`analyticField (psi (stream .ogf 0 start))`. The band reads `l1 ω₁ ≤ 8/5`
+and `l1 ω₂ ≤ 223/260` off the tables; `classical` is `NS.euler_classical` at
+the example's constants, every derivative the sum of the termwise ones. Evidence about the true radius (the
 computed norms and their ratios) belongs to a notebook, not to this library.
 
-Scope: no sharp constants; no radius for `ν > 0`; no statement about the
-Euler equation as a PDE or its classical solutions; `field` is the
-exponential-reading function only for even data, which the stream preserves.
+Scope: no sharp constants; no radius for `ν > 0`; the classical solution is
+the one on `|t| < 1/648`, nothing is said beyond the certified radius or about
+uniqueness among classical solutions; `field` is the exponential-reading
+function only for even data, which the stream preserves.
 
 ### Viscosity: Gevrey-1 in `t`, and no radius
 
