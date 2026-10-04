@@ -82,16 +82,25 @@ example :
   simp only [coupling, cross, lam]
   norm_num [show (π : ℝ) / 2 + π / 2 = π by ring, cos_pi]
 
-/-- …and the Jacobian side agrees there, through `field_transport`. -/
+/-- …and the Jacobian side, computed directly from `ψ = −cos x` and `q = cos y`, is
+`sin(π/2) · (−sin(π/2)) − 0 = −1` too; a sign error in `laplacianInv` or in a
+derivative field would show here. -/
 example :
     fieldD₁ (laplacianInv (Finsupp.single ((1, 0) : Wave) 1)) (π / 2, π / 2) *
         fieldD₂ (cosine (0, 1)) (π / 2, π / 2) -
       fieldD₂ (laplacianInv (Finsupp.single ((1, 0) : Wave) 1)) (π / 2, π / 2) *
         fieldD₁ (cosine (0, 1)) (π / 2, π / 2) = -1 := by
-  rw [← field_transport _ (isEven_cosine _), cosine, transport_add_right, transport_single_single,
-    transport_single_single, field_add, field_single, field_single]
-  simp only [coupling, cross, lam]
-  norm_num [show (π : ℝ) / 2 + π / 2 = π by ring, cos_pi]
+  have hψ : laplacianInv (Finsupp.single ((1, 0) : Wave) 1) =
+      Finsupp.single ((1, 0) : Wave) (-1) := by
+    ext k
+    rw [laplacianInv_apply]
+    by_cases hk : k = (1, 0)
+    · subst hk; simp [lam]
+    · simp [Finsupp.single_apply, Ne.symm hk, hk]
+  rw [hψ, cosine, fieldD₁, fieldD₂, fieldD₁, fieldD₂]
+  simp only [Finset.sum_singleton, Finsupp.single_apply, phase]
+  norm_num [Finsupp.support_add_eq, Finsupp.support_single, Finsupp.single_apply,
+    sin_pi_div_two, cos_pi_div_two]
 
 /-- The identity holds for the three-mode start against itself. -/
 example (x : ℝ × ℝ) :
@@ -181,6 +190,35 @@ example (x : ℝ × ℝ) :
   rw [show -(1 : ℝ) * x.2 = -x.2 by ring, cos_neg]
   push_cast
   ring
+
+/-- Its derivative fields vanish too (the derivatives of the zero function), so the
+Jacobian side is `0` for every `P`… -/
+example (x : ℝ × ℝ) :
+    fieldD₁ (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1) x = 0 ∧
+    fieldD₂ (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1) x = 0 := by
+  have h0 : ∀ y : ℝ × ℝ,
+      field (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1) y = 0 := by
+    intro y
+    rw [sub_eq_add_neg, ← Finsupp.single_neg, field_add, field_single, field_single]
+    simp only [Int.cast_zero, Int.cast_one, Int.cast_neg, zero_mul, one_mul, zero_add]
+    rw [show -(1 : ℝ) * y.2 = -y.2 by ring, cos_neg]
+    push_cast
+    ring
+  have h1 := hasDerivAt_field_fst
+    (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1) x
+  have h2 := hasDerivAt_field_snd
+    (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1) x
+  simp only [h0] at h1 h2
+  exact ⟨h1.unique (hasDerivAt_const _ _), h2.unique (hasDerivAt_const _ _)⟩
+
+/-- …while at the origin the transport side is `2`: the identity fails for odd `Q`. -/
+example :
+    field (transport (Finsupp.single ((1, 0) : Wave) 1)
+      (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1)) (0, 0) = 2 := by
+  rw [sub_eq_add_neg, ← Finsupp.single_neg, transport_add_right, transport_single_single,
+    transport_single_single, field_add, field_single, field_single]
+  simp only [coupling, cross, lam, Prod.fst_add, Prod.snd_add]
+  norm_num
 example (x : ℝ × ℝ) :
     field (transport (Finsupp.single ((1, 0) : Wave) 1)
       (Finsupp.single ((0, 1) : Wave) 1 - Finsupp.single ((0, -1) : Wave) 1)) x =

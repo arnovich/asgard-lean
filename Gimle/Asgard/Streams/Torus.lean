@@ -24,7 +24,7 @@ The coupling is the Fourier symbol of `u·∇Q` for the velocity `u = ∇⊥ψ`,
 rational. That derivation is on paper — a single derivative multiplies by
 `i k₁` and cannot be formed in this carrier — and `transport_eq_jacobian`
 records the coefficient-level tie: the coupling is `−(p × q)` against
-`laplacianInv P`. The tie to real functions is `EulerSolution.field_transport`:
+`laplacianInv P`. The tie to real functions is `field_transport` (in `EulerSolution`):
 `field (transport P Q) = ∂₁ψ ∂₂q − ∂₂ψ ∂₁q` for `ψ = field (laplacianInv P)`
 and even `Q`, which is `u·∇q` for `u = ∇⊥ψ`. All three operators preserve the two
 subspaces (`transport` is mean zero outright, since `p × (−p) = 0`).

@@ -119,9 +119,9 @@ theorem viscous_gevrey (n : ℕ) :
 
 On `|t| < 1/648` the analytic field of the three-mode Euler stream is a classical
 solution of the vorticity equation (`NS.euler_classical`): its stream function
-`Ψ` has `ΔΨ = ω`, the velocity `∇⊥Ψ` is divergence-free, and `∂_t ω + u·∇ω = 0`
-pointwise, every derivative the sum of the termwise derivatives and continuous
-in `(t, x)`. -/
+`Ψ` has `ΔΨ = ω`, the velocity `∇⊥Ψ` is divergence-free (`div_eq_zero`, from the
+two mixed derivatives of `Ψ`), and `∂_t ω + u·∇ω = 0` pointwise, every derivative
+the sum of the termwise derivatives and continuous in `(t, x)`. -/
 
 /-- The three-mode field is a classical solution at every `(t, x)` with `|t| < 1/648`. -/
 theorem classical {t : ℝ} (ht : |t| < 1 / 648) (x : ℝ × ℝ) :

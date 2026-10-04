@@ -907,9 +907,9 @@ theorem analyticField_zero (x : ℝ × ℝ) : analyticField ω 0 x = field (b 0)
 with field `F = analyticField ω` and stream function `Ψ = analyticField (psi ω)`:
 every partial derivative named here exists (`HasDerivAt`, each the sum of the termwise
 derivatives) and is continuous in `(t, x)`, `ΔΨ = F`, and `∂_t F + u·∇F = 0` for the
-velocity `u = ∇⊥Ψ = (−∂₂Ψ, ∂₁Ψ)`. The velocity is divergence-free because
-`∂₁u₁ = −∂₁∂₂Ψ` and `∂₂u₂ = ∂₂∂₁Ψ` both exist and are the same series `seriesD₁₂ (psi ω)`
-(`psi_derivX₂X₁`, `psi_derivX₁X₂`). -/
+velocity `u = ∇⊥Ψ = (−∂₂Ψ, ∂₁Ψ)`. The velocity is divergence-free because `∂₁(∂₂Ψ)` and
+`∂₂(∂₁Ψ)` both exist and are the one series `seriesD₁₂ (psi ω)` (`psi_derivX₂X₁`,
+`psi_derivX₁X₂`), so `∂₁u₁ + ∂₂u₂ = −seriesD₁₂ + seriesD₁₂ = 0` (`div_eq_zero`). -/
 structure IsClassicalSolution (a : TrigStream) (t : ℝ) (x : ℝ × ℝ) : Prop where
   /-- `∂_t F = seriesDt ω`. -/
   derivT : HasDerivAt (fun s => analyticField a s x) (seriesDt a t x) t
@@ -963,6 +963,15 @@ structure IsClassicalSolution (a : TrigStream) (t : ℝ) (x : ℝ × ℝ) : Prop
   /-- `∂_t F + u·∇F = 0` with `u = (−∂₂Ψ, ∂₁Ψ)`. -/
   equation : seriesDt a t x +
     (-seriesD₂ (psi a) t x * seriesD₁ a t x + seriesD₁ (psi a) t x * seriesD₂ a t x) = 0
+
+/-- `div u = 0`: `u₁ = −∂₂Ψ` has `∂₁u₁ = −seriesD₁₂ (psi a)`, `u₂ = ∂₁Ψ` has
+`∂₂u₂ = seriesD₁₂ (psi a)`, and they cancel. -/
+theorem IsClassicalSolution.div_eq_zero {a : TrigStream} {t : ℝ} {x : ℝ × ℝ}
+    (h : IsClassicalSolution a t x) :
+    HasDerivAt (fun s => -seriesD₂ (psi a) t (s, x.2)) (-seriesD₁₂ (psi a) t x) x.1 ∧
+    HasDerivAt (fun s => seriesD₁ (psi a) t (x.1, s)) (seriesD₁₂ (psi a) t x) x.2 ∧
+    -seriesD₁₂ (psi a) t x + seriesD₁₂ (psi a) t x = 0 :=
+  ⟨h.psi_derivX₂X₁.neg, h.psi_derivX₁X₂, by ring⟩
 
 /-- **The analytic field of the Euler stream is a classical solution.** For an even,
 mean-zero start with modes of size at most `K` and a geometric bound `l1 ω_n ≤ M ρⁿ`,

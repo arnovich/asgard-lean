@@ -19,9 +19,9 @@ analytic field `Σ_n field ω_n (x) tⁿ` on `|t| < 1/ρ`, and on `|t| ≤ r` wi
 follows from the window's ℓ¹ spread plus that error
 (`abs_analyticField_sub_field_le`, `abs_analyticField_le`), with no inverse
 table and no closed form. Which streams have a geometric bound is the business
-of `EulerRadius`; that the analytic field of the Euler stream is a classical
-solution of the vorticity equation on `|t| < 1/ρ` is `EulerSolution`'s
-`NS.euler_classical`. -/
+of `EulerRadius`; that the analytic field of the Euler stream from an even,
+mean-zero start is a classical solution of the vorticity equation on
+`|t| < 1/ρ` is `EulerSolution`'s `NS.euler_classical`. -/
 namespace Gimle.Asgard.Streams.Torus
 
 open Real
