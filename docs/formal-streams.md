@@ -593,7 +593,7 @@ represented, and a non-even element stands for a complex-valued field.
 | Operator | Statement |
 | --- | --- |
 | `laplacian` | multiplication by `−|k|²`; `laplacianInv` divides by it off the zero mode and is its two-sided inverse on mean-zero polynomials (`laplacian_laplacianInv`, `laplacianInv_laplacian`) |
-| `transport P Q` | bilinear (a `LinearMap` in each argument), `transport (e_p) (e_q) = (p × q)/|p|² · e_{p+q}` (`transport_single_single`), coefficient `Σ_{p+q=k} (p × q)/|p|² P_p Q_q` (`transport_apply`). The coupling is the Fourier symbol of `u·∇Q` for `u = ∇⊥ψ = (−∂_y ψ, ∂_x ψ)`, `Δψ = P`, derived on paper (a single derivative multiplies by `i k₁` and cannot be formed here); what Lean ties is `transport_eq_jacobian`, the coupling as `−(p × q)` against `laplacianInv P`. At `p = 0` the coupling is `0` by convention; the equation lives on `MeanZero` |
+| `transport P Q` | bilinear (a `LinearMap` in each argument), `transport (e_p) (e_q) = (p × q)/|p|² · e_{p+q}` (`transport_single_single`), coefficient `Σ_{p+q=k} (p × q)/|p|² P_p Q_q` (`transport_apply`). The coupling is the Fourier symbol of `u·∇Q` for `u = ∇⊥ψ = (−∂_y ψ, ∂_x ψ)`, `Δψ = P`, derived on paper (a single derivative multiplies by `i k₁` and cannot be formed here); what Lean ties is `transport_eq_jacobian`, the coupling as `−(p × q)` against `laplacianInv P`, and, as real functions, `EulerSolution.field_transport`: `field (transport P Q) = ∂₁ψ ∂₂q − ∂₂ψ ∂₁q` for even `Q`. At `p = 0` the coupling is `0` by convention; the equation lives on `MeanZero` |
 | invariants | `meanZero_transport` with no hypothesis (`p × (−p) = 0`), `isEven_transport` for even factors, and the same for `laplacian` |
 | `cosineCoupling p q k` | `(p × q)/(2|p|²) · ([p − q = ±k] − [p + q = ±k])`, a restatement over `ℚ` of forseti-lean's `GalerkinNS.Family.coefficient` (identified by inspection of the two sources; the cast identity is one line in forseti-lean, which imports this repository, not a statement here). `transport_eq_cosine`: for even `P, Q` supported on `±H`, `H` free of `0` and of `±` pairs, `transport P Q k = −2 Σ_{p,q ∈ H} c(p, q, k) P_p Q_q` at every `k ≠ 0` — at the modes a Galerkin member keeps and at those it discards alike, up to the change to cosine amplitudes `a = 2P`. `NS.rhs_eq_family` is the corollary on the right-hand side: `2 (rhs ω)₀(k) = −ν|k|² a_k + Σ c(p, q, k) a_p a_q`, the family's unforced field |
 
@@ -719,7 +719,7 @@ section's theorem.
 what the sum of the series is. A trigonometric polynomial's field has the
 partial derivatives `∂ᵢ field P x = −Σ_k kᵢ P_k sin(k·x)` (`fieldD₁`,
 `fieldD₂`, `hasDerivAt_field_fst`, `hasDerivAt_field_snd`), second
-derivatives likewise, and `field (laplacian P) = Δ (field P)`
+derivatives likewise, all continuous, and `field (laplacian P) = Δ (field P)`
 (`field_laplacian`). The **Jacobian identity** is the tie between the formal
 `transport` and the real functions:
 
@@ -734,24 +734,33 @@ which is `transport_apply`. The series are differentiated termwise under the
 geometric bound: in `x` because the modes of `ω_n` have size at most `(n+1)K`
 (`sizeLE_stream`), so the derivative coefficients are bounded by
 `(n+1) K M ρⁿ` and the second ones by `((n+1)K)² M ρⁿ`
-(`hasDerivAt_analyticField_fst`, `hasDerivAt_seriesD₁_fst`, …), and in `t` on
-the open disc (`hasDerivAt_analyticField_t`, by
-`hasDerivAt_tsum_of_isPreconnected`). The Euler recursion `euler_succ` turns
-`∂_t` of the series into minus the Cauchy product of the series of `ψ` and
-`ω` (`seriesDt_eq`, through `tsum_mul_tsum_eq_tsum_sum_antidiagonal`). With
-`Ψ = analyticField (psi ω)` the stream function, `psi ω n = Δ⁻¹ ω_n`:
+(`hasDerivAt_analyticField_fst`, `hasDerivAt_seriesD₁_fst`, …), in `t` on the
+open disc (`hasDerivAt_analyticField_t`, by `hasDerivAt_tsum_of_isPreconnected`),
+and every series is continuous in `(t, x)` there, from the same bounds on
+each strip `|t| ≤ r < 1/ρ` (`continuousAt_analyticField`, `continuousAt_seriesDt`,
+`continuousAt_seriesD₁`, …, by `continuousOn_tsum`). The Euler recursion
+`euler_succ` turns `∂_t` of the series into minus the Cauchy product of the
+series of `ψ` and `ω` (`seriesDt_eq`, through
+`tsum_mul_tsum_eq_tsum_sum_antidiagonal_of_summable_norm`). With
+`Ψ = analyticField (psi ω)` the stream function, `psi ω n = Δ⁻¹ ω_n`, on
+`|t| < 1/ρ` for a start of modes of size `≤ K` with `l1 ω_n ≤ M ρⁿ`:
 
-| Theorem | Statement, on `|t| < 1/ρ` for an even, mean-zero start of modes of size `≤ K` with `l1 ω_n ≤ M ρⁿ` |
+| Theorem | Statement |
 | --- | --- |
-| `euler_classical` | the field `F` and `Ψ` have the named partial derivatives; `ΔΨ = F`; `u = ∇⊥Ψ = (−∂₂Ψ, ∂₁Ψ)` is divergence-free; `∂_t F + u·∇F = 0` |
-| `seriesD₁₁_psi_add_seriesD₂₂_psi` | `ΔΨ = F` from `laplacian_laplacianInv` termwise |
-| `analyticField_zero` | `F(0, x) = field ω₀ x` |
+| `euler_classical` (even, mean-zero start) | `IsClassicalSolution ω t x`: `F` has `∂_t F`, `∂₁F`, `∂₂F` and `Ψ` has `∂_t Ψ`, `∂ᵢΨ`, `∂ᵢ∂ⱼΨ` as `HasDerivAt`, each the sum of the termwise derivatives; `F`, `Ψ` and every one of those derivatives is continuous in `(t, x)`; `ΔΨ = F`; `∂_t F + u·∇F = 0` for `u = ∇⊥Ψ = (−∂₂Ψ, ∂₁Ψ)`; `div u = 0` because `∂₁(∂₂Ψ)` and `∂₂(∂₁Ψ)` both exist and are the one series `seriesD₁₂ (psi ω)` |
+| `seriesDt_eq` (even start) | `∂_t F = −(∂₁Ψ ∂₂F − ∂₂Ψ ∂₁F)` |
+| `seriesD₁₁_psi_add_seriesD₂₂_psi` (mean-zero start) | `ΔΨ = F`, from `laplacian_laplacianInv` termwise |
+| `analyticField_zero` (any start) | `F(0, x) = field ω₀ x` |
 
-Every derivative is the sum of the termwise derivatives, and every constant is
-the geometric bound's. What stays on paper is only the reading of `field` as
-the real exponential sum, true for even data; the equation Lean proves is the
-vorticity form `∂_t ω + ∂₁Ψ ∂₂ω − ∂₂Ψ ∂₁ω = 0`, which is `u·∇ω` for
-`u = ∇⊥Ψ` by definition.
+"Classical" here means exactly the fields of `IsClassicalSolution`: the
+partial derivatives that appear in the equation exist and are continuous, and
+the equation holds at every point. Not stated: a joint Fréchet derivative or
+higher regularity, the velocity form of the equation and its pressure, and
+uniqueness among classical solutions. Nothing about the real equation stays
+on paper: `F`, `Ψ` and `u` are real functions and the equation is proved for
+them. The reading of a `TrigPoly` as `Σ P_k e^{ik·x}`, whose real part `field`
+is, names the coefficients the tables and the Galerkin family use; it plays no
+part in this theorem.
 
 ```sh
 lake build Gimle.Asgard.Tests.EulerSolution
@@ -765,19 +774,23 @@ l1 ω_n ≤ 9 · 648ⁿ                                          (euler_l1)
 the t-series of the field converges for |t| < 1/648         (hasSum_field)
 |F(t, x) − Σ_{n<3} field ω_n (x) tⁿ| ≤ 1/100  on |t| ≤ 1/6480  (truncation)
 |F(t, x) − (cos x + cos(x+y) + cos(2x+y))| ≤ 1/50  on |t| ≤ 1/6480  (band)
-∂_t F + u·∇F = 0,  ΔΨ = F,  u = ∇⊥Ψ  on |t| < 1/648                (classical)
+F is a classical solution on |t| < 1/648                            (classical)
+∂_t F + u·∇F = 0,  u = ∇⊥Ψ             (vorticity_equation)   ΔΨ = F  (laplacian_streamFunction)
+F(0, x) = cos x + cos(x+y) + cos(2x+y)                                 (initial)
 ```
 
 where `F` is the analytic field of the stream and `Ψ` its stream function,
 `analyticField (psi (stream .ogf 0 start))`. The band reads `l1 ω₁ ≤ 8/5`
 and `l1 ω₂ ≤ 223/260` off the tables; `classical` is `NS.euler_classical` at
-the example's constants, every derivative the sum of the termwise ones. Evidence about the true radius (the
+the example's constants, an `IsClassicalSolution` whose named fields the two
+equations project. Evidence about the true radius (the
 computed norms and their ratios) belongs to a notebook, not to this library.
 
 Scope: no sharp constants; no radius for `ν > 0`; the classical solution is
-the one on `|t| < 1/648`, nothing is said beyond the certified radius or about
-uniqueness among classical solutions; `field` is the exponential-reading
-function only for even data, which the stream preserves.
+the one on `|t| < 1/648`, in the sense of `IsClassicalSolution` (continuous
+partial derivatives and the equation at every point), with nothing said
+beyond the certified radius, about higher regularity, the velocity form or
+uniqueness among classical solutions.
 
 ### Viscosity: Gevrey-1 in `t`, and no radius
 

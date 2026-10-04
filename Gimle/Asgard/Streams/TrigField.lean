@@ -6,10 +6,10 @@ import Gimle.Asgard.Streams.TrigStream
 `field P x = Σ_k P_k cos(k·x)` is the real function an even trigonometric
 polynomial describes in the exponential reading: for even `P` the sine parts
 of `Σ P_k e^{ik·x}` cancel in pairs, and for a non-even `P` this is its real
-part. That reading is on paper (no complex exponential is formed here); what
-Lean proves about `field` holds for every `P`, and `EulerSolution` proves its
-partial derivatives and the Jacobian identity that ties `transport` to
-`u·∇q` as real functions. It is bounded by
+part. That reading names the coefficients (no complex exponential is formed
+here); what Lean proves about `field` holds for every `P`, and `EulerSolution`
+proves its partial derivatives and the Jacobian identity that ties `transport`
+to `u·∇q` as real functions. It is bounded by
 the ℓ¹ norm (`abs_field_le_l1`, from `|cos| ≤ 1`). A stream `ω` with a
 geometric bound on its ℓ¹ norms, `l1 ω_n ≤ M ρⁿ` (`GeometricBound`), has an
 analytic field `Σ_n field ω_n (x) tⁿ` on `|t| < 1/ρ`, and on `|t| ≤ r` with
