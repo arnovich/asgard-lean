@@ -1,13 +1,10 @@
 ---
 title: The analytic field of the Euler stream is a classical solution — termwise derivatives, the Jacobian identity and the equation on |t| < 1/ρ
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["065", "066"]
 depends_on: ["066"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-04T17:40:00Z
-branch: task/067_euler_classical_solution
 ---
 
 # The analytic field of the Euler stream is a classical solution — termwise derivatives, the Jacobian identity and the equation on |t| < 1/ρ
@@ -62,3 +59,25 @@ does for the heat stream).
   cosine field of an even polynomial is the real exponential sum, and that
   the formal transport is the physical `u·∇ω`) stated once, in `TrigField`
 - audited; a release
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-04T20:30:00Z
+
+Closed after PR #31, tagged v1.15.0. Delivered with these differences from
+the text above: the conclusion is a `structure NS.IsClassicalSolution` with
+named fields rather than a conjunction, and it carries more than planned —
+continuity in `(t, x)` of the field, the stream function and every derivative
+series on the open disc (the first review found "classical solution" with
+pointwise partials alone an overclaim), and the `t`-derivative of `Ψ`;
+"divergence-free" is the two mixed-derivative fields of `Ψ` being the one
+series `seriesD₁₂`, with `IsClassicalSolution.div_eq_zero` spelling the sum
+out; the Jacobian identity `field_transport` needs only `Q` even, nothing of
+`P` (the plan said mean-zero `P`); the initial condition is
+`NS.analyticField_zero`, with `EulerBand.initial` for the example, and the
+example's `classical` is the structure with `vorticity_equation` and
+`laplacian_streamFunction` projected from it. What stays on paper is not
+the exponential reading but higher regularity, the velocity form and
+uniqueness, said in the module header; the exponential reading names
+coefficients and plays no part in the theorem. gimle-forseti task 218 carries
+the sentence into the notebook and notes.
