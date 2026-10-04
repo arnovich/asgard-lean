@@ -21,10 +21,12 @@ for those too. The three operators the vorticity equation needs act exactly:
 The coupling is the Fourier symbol of `u·∇Q` for the velocity `u = ∇⊥ψ`,
 `Δψ = P`, with `∇⊥ = (−∂_y, ∂_x)` so that `curl u = Δψ`: `ψ̂_p = −P_p/|p|²`,
 `û_p = i p⊥ ψ̂_p`, `(∇Q)^_q = i q Q_q`, and `i² = −1` makes the product
-rational. That derivation is on paper, as it must be — a single derivative
-multiplies by `i k₁` and cannot be formed in this carrier — and
-`transport_eq_jacobian` records what Lean does tie together: the coupling is
-`−(p × q)` against `laplacianInv P`. All three operators preserve the two
+rational. That derivation is on paper — a single derivative multiplies by
+`i k₁` and cannot be formed in this carrier — and `transport_eq_jacobian`
+records the coefficient-level tie: the coupling is `−(p × q)` against
+`laplacianInv P`. The tie to real functions is `field_transport` (in `EulerSolution`):
+`field (transport P Q) = ∂₁ψ ∂₂q − ∂₂ψ ∂₁q` for `ψ = field (laplacianInv P)`
+and even `Q`, which is `u·∇q` for `u = ∇⊥ψ`. All three operators preserve the two
 subspaces (`transport` is mean zero outright, since `p × (−p) = 0`).
 
 `cosineCoupling` restates, over `ℚ`, the ordered-pair coupling
