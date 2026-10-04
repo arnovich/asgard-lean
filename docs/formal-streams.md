@@ -647,13 +647,117 @@ does depend on `ν`). The example stops at degree 3; degree 4 has 82 modes.
 `unique` is the uniqueness statement for this start; every coefficient is
 proved mean zero and even.
 
-Scope: the series is exact and unique; nothing is said about its radius.
-For `ν > 0` radius zero is the generic expectation (false for single-shell
-data, where the series is entire) and no certification is attempted; for
-`ν = 0` the Cauchy–Kowalevski radius is a separate task.
+Scope: the series is exact and unique; nothing is said here about its
+radius. The next section certifies one for `ν = 0` and proves Gevrey-1 growth
+for `ν > 0`.
 
 ```sh
 lake build Gimle.Asgard.Tests.Vorticity
+```
+
+## The Euler radius: a Cauchy–Kowalevski induction in a scale
+
+For `ν = 0` the vorticity stream is the Euler equation,
+`ω_{n+1} = −(n+1)⁻¹ Σ_{m ≤ n} transport ω_m ω_{n−m}` (`NS.stream_succ_ogf`,
+`euler_succ`), and a radius of convergence in `t` is provable. Each step costs
+a derivative, which no termwise geometric bound absorbs, so the induction runs
+in a scale of weighted norms and pays the derivative with a loss of radius —
+the classical device of Nirenberg and Nishida, here in its weighted form.
+
+[`Streams.Torus`](../Gimle/Asgard/Streams/Torus.lean) gains
+`size k = |k₁| + |k₂|` and `SizeLE K P` (every mode of size at most `K`), with
+closure under the operators (`sizeLE_transport`: sizes add).
+[`Streams.TrigNorm`](../Gimle/Asgard/Streams/TrigNorm.lean) holds the norms:
+the ℓ¹ norm `l1 P = Σ |P_k|` (a rational), the weighted norms
+`wnorm σ P = Σ |P_k| e^{σ|k|₁}` and `dnorm σ P = Σ |P_k| |k|₁ e^{σ|k|₁}`, and
+three estimates:
+
+| Estimate | Statement |
+| --- | --- |
+| `abs_coupling_le` | `|(p × q)/|p|²| ≤ |q|₁`, from Lagrange's identity `(p × q)² ≤ |p|²|q|²` (`cross_sq_le`): the transport costs at most one derivative |
+| `wnorm_transport_le` | `wnorm σ (transport P Q) ≤ wnorm σ P · dnorm σ Q` for `σ ≥ 0` |
+| `dnorm_le_wnorm_div` | Nagumo: `dnorm σ Q ≤ wnorm σ' Q / (2(σ' − σ))` for `σ < σ'`, from `2y ≤ e^y`; the sharp constant is `1/e`, and `1/2` keeps every constant rational |
+
+[`Streams.EulerRadius`](../Gimle/Asgard/Streams/EulerRadius.lean) proves the
+induction and its corollaries:
+
+| Theorem | Statement |
+| --- | --- |
+| `euler_wnorm_bound` | for `M ≥ wnorm σ₀ ω₀`, every `n` and every `0 ≤ σ < σ₀`: `wnorm σ ω_n ≤ M (24M/(σ₀ − σ))ⁿ / (n+1)²`. Intermediate radius `σ' = σ + (σ₀ − σ)/(n+2)`; the convolution sum `Σ_{m ≤ n} 1/((m+1)²(n−m+1)²) ≤ 8/(n+2)²` (`convolution_sum_le`, from `Σ 1/(m+1)² ≤ 2`); `((n+2)/(n+1))^{n−m} ≤ e ≤ 3` (`ratio_pow_le_three`) |
+| `euler_l1_bound` | at `σ = 0`: `l1 ω_n ≤ M (24M/σ₀)ⁿ`, a radius of at least `σ₀/(24M)` |
+| `euler_l1_geometric`, `euler_geometricBound` | with `σ₀ = 1/K` for a start whose modes have size at most `K ≥ 1` and ℓ¹ norm at most `L`: `l1 ω_n ≤ 3L (72 L K)ⁿ`, every constant rational, the radius at least `1/(72 L K)` |
+
+The constant `24` is tight for the ingredients chosen (`1/2` for `1/e`, `3`
+for `e`, `8` for the convolution sum, `2` for `(n+2)/(n+1)`); with the sharp
+ingredients the same scheme closes near `9M`, and the abstract
+Nirenberg–Nishida theorem gives a radius of the same order. The device is
+pessimistic by nature: the radius it certifies is small, and honest.
+
+[`Streams.TrigField`](../Gimle/Asgard/Streams/TrigField.lean) is the one-axis
+tail. `field P x = Σ_k P_k cos(k·x)` is, for an even polynomial, the real
+function it describes in the exponential reading (for a non-even one its real
+part; the identification is on paper, no complex exponential is formed), with
+`field_cosine` and the bound `abs_field_le_l1` from `|cos| ≤ 1`. For a stream
+with a `GeometricBound M ρ` on its ℓ¹ norms,
+`analyticField ω t x = Σ_n field ω_n (x) tⁿ` converges on `|t| < 1/ρ`
+(`hasSum_analyticField`), and on `|t| ≤ r` with `ρr < 1`:
+
+| Theorem | Statement |
+| --- | --- |
+| `abs_analyticField_sub_windowField_le`, `truncationBound` | the analytic field is within `M (ρr)^N / (1 − ρr)` of the finite sum through `t`-degree `N − 1`; `TruncationBound ω r N ε` names the statement and `truncationBound_rat` gives the error as the rational `tailBound M ρ r N` |
+| `abs_analyticField_sub_field_le` | a band around the initial profile: within `Σ_{1 ≤ n < N} l1 ω_n rⁿ` plus that error of `field ω₀`, for `N ≥ 1` |
+| `abs_analyticField_le` | a band on the field: `Σ_{n < N} l1 ω_n rⁿ` plus the error |
+| `Table.l1_le_absSum`, `Table.sizeLE_toTrig` (in `VorticityTable`) | the sum of a table's absolute entries bounds the ℓ¹ norm of its polynomial, and the table's modes bound its sizes, so the spread is a rational the kernel evaluates; each Picard table is now normalised, which makes the bound the norm itself |
+
+No inverse table and no closed form enter. That the analytic field of the
+Euler stream is the solution of the Euler equation is the Cauchy–Kowalevski
+identification, made on paper; nothing here is a statement about the PDE.
+
+[EulerBand.lean](../Gimle/Asgard/Examples/EulerBand.lean) applies all of it to
+the three-mode start `cos x + cos(x + y) + cos(2x + y)` (`K = 3`, `L = 3`):
+
+```text
+l1 ω_n ≤ 9 · 648ⁿ                                          (euler_l1)
+the t-series of the field converges for |t| < 1/648         (hasSum_field)
+|F(t, x) − Σ_{n<3} field ω_n (x) tⁿ| ≤ 1/100  on |t| ≤ 1/6480  (truncation)
+|F(t, x) − (cos x + cos(x+y) + cos(2x+y))| ≤ 1/50  on |t| ≤ 1/6480  (band)
+```
+
+where `F` is the analytic field of the stream. The band reads `l1 ω₁ ≤ 8/5`
+and `l1 ω₂ ≤ 223/260` off the tables. Evidence about the true radius (the
+computed norms and their ratios) belongs to a notebook, not to this library.
+
+Scope: no sharp constants; no radius for `ν > 0`; no statement about the
+Euler equation as a PDE or its classical solutions; `field` is the
+exponential-reading function only for even data, which the stream preserves.
+
+### Viscosity: Gevrey-1 in `t`, and no radius
+
+For `ν > 0` the viscous term costs two derivatives and the induction does not
+close. [`Streams.Gevrey`](../Gimle/Asgard/Streams/Gevrey.lean) proves what a
+short induction gives: the modes of `ω_n` have size at most `(n+1)K`
+(`sizeLE_stream`), `Δ` costs `((n+1)K)²` (`l1_laplacian_le`), each transport
+one factor (`l1_transport_le`), and with the crude `m!(n−m)! ≤ n!`
+(`factorial_mul_factorial_le`)
+
+```text
+l1 ω_n ≤ L Cⁿ n!,   C = νK² + K L                   (gevrey_one)
+```
+
+— Gevrey-1 for the formal series in `t`: a radius for its Borel transform, not
+for the series. For the three-mode start at `ν = 1/10`:
+`l1 ω_n ≤ 3 · (99/10)ⁿ · n!` (`viscous_gevrey`).
+
+Nothing certifies a radius for `ν > 0`, and none is expected for generic
+periodic data: for viscous Burgers from `sin x` the `t`-series has radius zero
+outright (Cole–Hopf writes `φ(t, 0)` as a positive Dirichlet series
+`Σ_j a_j e^{−νj²t}`, and Tonelli gives `Σ_n |t|ⁿ/n! Σ_j a_j (νj²)ⁿ = ∞` for
+every `t ≠ 0`), while initial vorticity on a single Laplacian shell is an
+exception with an entire series. That argument is proved nowhere here; it is
+set out in gimle-forseti's `docs/ns-stream-design.md`, which owns it.
+
+```sh
+lake build Gimle.Asgard.Tests.EulerRadius
 ```
 
 ## Example

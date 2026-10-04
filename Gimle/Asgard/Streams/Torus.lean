@@ -314,6 +314,71 @@ theorem isEven_transport {P Q : TrigPoly} (hP : IsEven P) (hQ : IsEven Q) :
     rw [← neg_add, neg_eq_iff_eq_neg, eq_comm]
   simp only [cond, coupling_neg_neg, hP p, hQ q]
 
+/-! ## Modes of bounded size -/
+
+/-- `|k₁| + |k₂|`, the ℓ¹ size of a wavevector. -/
+def size (k : Wave) : ℕ := k.1.natAbs + k.2.natAbs
+
+theorem size_add_le (p q : Wave) : size (p + q) ≤ size p + size q := by
+  simp only [size, Prod.fst_add, Prod.snd_add]
+  have h1 := Int.natAbs_add_le p.1 q.1
+  have h2 := Int.natAbs_add_le p.2 q.2
+  omega
+
+@[simp] theorem size_neg (k : Wave) : size (-k) = size k := by simp [size]
+
+/-- Every mode of `P` has size at most `K`. -/
+def SizeLE (K : ℕ) (P : TrigPoly) : Prop := ∀ k ∈ P.support, size k ≤ K
+
+theorem SizeLE.mono {K K' : ℕ} (h : K ≤ K') {P : TrigPoly} (hP : SizeLE K P) : SizeLE K' P :=
+  fun k hk => (hP k hk).trans h
+
+theorem sizeLE_zero (K : ℕ) : SizeLE K (0 : TrigPoly) := fun k hk => by simp at hk
+
+theorem sizeLE_add {K : ℕ} {P Q : TrigPoly} (hP : SizeLE K P) (hQ : SizeLE K Q) :
+    SizeLE K (P + Q) := fun k hk => by
+  rcases Finset.mem_union.mp (Finsupp.support_add hk) with h | h
+  · exact hP k h
+  · exact hQ k h
+
+theorem sizeLE_neg {K : ℕ} {P : TrigPoly} (hP : SizeLE K P) : SizeLE K (-P) := fun k hk =>
+  hP k (by simpa using hk)
+
+theorem sizeLE_sub {K : ℕ} {P Q : TrigPoly} (hP : SizeLE K P) (hQ : SizeLE K Q) :
+    SizeLE K (P - Q) := by
+  rw [sub_eq_add_neg]; exact sizeLE_add hP (sizeLE_neg hQ)
+
+theorem sizeLE_smul {K : ℕ} (c : ℚ) {P : TrigPoly} (hP : SizeLE K P) : SizeLE K (c • P) :=
+  fun k hk => hP k (Finsupp.support_smul hk)
+
+theorem sizeLE_sum {ι : Type*} {K : ℕ} (s : Finset ι) {f : ι → TrigPoly}
+    (h : ∀ i ∈ s, SizeLE K (f i)) : SizeLE K (∑ i ∈ s, f i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using sizeLE_zero K
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha]
+      exact sizeLE_add (h a (Finset.mem_insert_self a s))
+        (ih fun i hi => h i (Finset.mem_insert_of_mem hi))
+
+theorem sizeLE_laplacian {K : ℕ} {P : TrigPoly} (hP : SizeLE K P) : SizeLE K (laplacian P) :=
+  fun k hk => hP k (by
+    rw [Finsupp.mem_support_iff] at hk ⊢
+    rw [laplacian_apply] at hk
+    exact right_ne_zero_of_mul hk)
+
+/-- The modes of a transport are sums of modes of the factors. -/
+theorem sizeLE_transport {K K' : ℕ} {P Q : TrigPoly} (hP : SizeLE K P) (hQ : SizeLE K' Q) :
+    SizeLE (K + K') (transport P Q) := by
+  intro k hk
+  rw [Finsupp.mem_support_iff, transport_apply] at hk
+  obtain ⟨p, hp, hp'⟩ := Finset.exists_ne_zero_of_sum_ne_zero hk
+  obtain ⟨q, hq, hq'⟩ := Finset.exists_ne_zero_of_sum_ne_zero hp'
+  split_ifs at hq' with e
+  · subst e
+    exact (size_add_le p q).trans (add_le_add (hP p hp) (hQ q hq))
+  · exact absurd rfl hq'
+
 /-! ## The cosine-basis coupling of the Galerkin family -/
 
 /-- `[p − q = ±k] − [p + q = ±k]`: how `2 sin(p·x) sin(q·x) = cos((p − q)·x) − cos((p + q)·x)`
@@ -403,4 +468,5 @@ theorem transport_eq_cosine (H : Finset Wave) (hz : (0 : Wave) ∉ H)
 #print axioms meanZero_transport
 #print axioms isEven_transport
 #print axioms transport_eq_cosine
+#print axioms sizeLE_transport
 end Gimle.Asgard.Streams.Torus
