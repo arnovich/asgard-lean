@@ -1,10 +1,13 @@
 ---
 title: The Euler radius — a Cauchy–Kowalevski induction in a scale, certified truncation and a band for the vorticity stream
-state: open
+state: ongoing
 priority: medium
 labels: [streams, lean, research]
 related: ["061", "062", "065"]
 depends_on: ["065"]
+claimed_by: claude/17d157a0
+claimed_at: 2026-10-04T08:44:21Z
+branch: feat/euler_radius
 ---
 
 # The Euler radius — a Cauchy–Kowalevski induction in a scale, certified truncation and a band for the vorticity stream
