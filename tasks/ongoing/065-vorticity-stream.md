@@ -1,9 +1,12 @@
 ---
 title: The formal vorticity stream on the torus — trigonometric-polynomial coefficients and the causal lemma over a module
-state: open
+state: ongoing
 priority: medium
 labels: [streams, lean, research]
 related: ["060"]
+claimed_by: claude/17d157a0
+claimed_at: 2026-10-04T07:47:49Z
+branch: feat/vorticity_stream
 ---
 
 # The formal vorticity stream on the torus — trigonometric-polynomial coefficients and the causal lemma over a module
