@@ -38,3 +38,4 @@ import Gimle.Asgard.Examples.ThreeState
 import Gimle.Asgard.Examples.ThreeStateExecution
 import Gimle.Asgard.Examples.BurgersSquare
 import Gimle.Asgard.Examples.BurgersFront
+import Gimle.Asgard.Examples.EulerThreeMode
