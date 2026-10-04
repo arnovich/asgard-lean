@@ -92,6 +92,15 @@ theorem reconstructs_iff (basis : Basis) (ν : ℚ) (a b : TrigStream) :
 theorem stream_apply (basis : Basis) (ν : ℚ) (boundary : TrigStream) (n : ℕ) :
     stream basis ν boundary n = (trigAxis basis).approx (rhs basis ν) boundary n n := rfl
 
+/-- The OGF recursion: `ω_{n+1} = (n+1)⁻¹ (ν Δω_n − Σ_{m ≤ n} transport ω_m ω_{n−m})`. -/
+theorem stream_succ_ogf (ν : ℚ) (b : TrigStream) (n : ℕ) :
+    stream .ogf ν b (n + 1) = ((n : ℚ) + 1)⁻¹ • (ν • laplacian (stream .ogf ν b n) -
+      ∑ m ∈ Finset.range (n + 1), transport (stream .ogf ν b m) (stream .ogf ν b (n - m))) := by
+  have pde := congrFun (stream_pde .ogf ν b) n
+  simp only [TrigStream.derivative, rhs, convolve_ogf_apply] at pde
+  have ne : ((n : ℚ) + 1) ≠ 0 := by positivity
+  rw [← pde, smul_smul, inv_mul_cancel₀ ne, one_smul]
+
 /-! ## The invariant subspaces -/
 
 /-- Every coefficient of the right-hand side is mean zero: `Δ` kills the zero
@@ -207,6 +216,7 @@ theorem rhs_eq_family (ν : ℚ) (H : Finset Wave) (hz : (0 : Wave) ∉ H)
 #print axioms rhs_causal
 #print axioms rhs_eq_family
 #print axioms stream_pde
+#print axioms stream_succ_ogf
 #print axioms formal_unique
 #print axioms eq_stream
 #print axioms stream_congr_slice

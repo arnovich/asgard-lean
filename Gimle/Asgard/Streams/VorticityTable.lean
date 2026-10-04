@@ -1,3 +1,4 @@
+import Gimle.Asgard.Streams.TrigNorm
 import Gimle.Asgard.Streams.Vorticity
 
 /-! # Computing the vorticity stream's coefficients
@@ -7,8 +8,12 @@ list of `(mode, coefficient)` pairs standing for the sum of the singles it
 lists, with duplicates allowed and `normalize` merging them; on tables the
 Laplacian, scalar multiples and the transport compute, and `toTrig` carries
 each operation to the trigonometric polynomial it stands for (namespace
-`Torus.Table`). The Picard iteration of `NS.stream` in the OGF reading is then
-mirrored on finite sequences of tables (`NS.picard`), and `NS.stream_coeff` says that the exact
+`Torus.Table`). `Table.absSum`, the sum of the absolute entries, bounds the ℓ¹
+norm of the polynomial (`l1_le_absSum`, an inequality: duplicates may
+overcount), and `sizeLE_toTrig` bounds its modes. The Picard iteration of
+`NS.stream` in the OGF reading is then mirrored on finite sequences of tables
+(`NS.picard`), each right-hand side normalised so that the tables stay small
+and `absSum` of a Picard table is the ℓ¹ norm itself, and `NS.stream_coeff` says that the exact
 coefficient of the stream at `t`-degree `n` and mode `k` is the rational the
 kernel reads off the table, so a claimed value is checked by `decide +kernel`
 and a wrong one is refuted the same way. Nothing is trusted from outside: the
@@ -103,6 +108,31 @@ theorem toTrig_transport (l m : Table) :
   | cons e l ih => rw [List.flatMap_cons, toTrig_append, ih, toTrig_transport_single, toTrig_cons,
       Torus.transport_add_left]
 
+/-- The sum of the absolute entries: an upper bound for the ℓ¹ norm of the
+polynomial the table stands for, computable; exact when the modes are distinct. -/
+def absSum : Table → ℚ
+  | [] => 0
+  | e :: l => |e.2| + absSum l
+
+theorem l1_le_absSum (l : Table) : l1 (toTrig l) ≤ absSum l := by
+  induction l with
+  | nil => simp [toTrig, l1, absSum]
+  | cons e l ih =>
+      rw [toTrig_cons, absSum]
+      exact (l1_add_le _ _).trans (add_le_add (l1_single_le _ _) ih)
+
+/-- The modes of a table's polynomial are among the table's modes. -/
+theorem sizeLE_toTrig {K : ℕ} {l : Table} (h : ∀ e ∈ l, size e.1 ≤ K) : SizeLE K (toTrig l) := by
+  induction l with
+  | nil => simpa [toTrig] using sizeLE_zero K
+  | cons e l ih =>
+      rw [toTrig_cons]
+      refine sizeLE_add (fun k hk => ?_) (ih fun f hf => h f (List.mem_cons_of_mem e hf))
+      have := Finsupp.support_single_subset hk
+      rw [Finset.mem_singleton] at this
+      rw [this]
+      exact h e List.mem_cons_self
+
 end Table
 
 end Gimle.Asgard.Streams.Torus
@@ -124,9 +154,9 @@ def Seq.get (w : Seq) (n : ℕ) : Table := w.getD n []
 /-- The right-hand side `ν Δ ω_n − Σ_{m ≤ n} transport ω_m ω_{n−m}` at every
 degree of the sequence. -/
 def rhsSeq (ν : ℚ) (w : Seq) : Seq :=
-  (List.range w.length).map fun n =>
-    Table.smul ν (Table.laplacian (w.get n)) ++
-      Table.smul (-1) ((List.range (n + 1)).flatMap fun m => Table.transport (w.get m) (w.get (n - m)))
+  (List.range w.length).map fun n => Table.normalize
+    (Table.smul ν (Table.laplacian (w.get n)) ++
+      Table.smul (-1) ((List.range (n + 1)).flatMap fun m => Table.transport (w.get m) (w.get (n - m))))
 
 /-- OGF integration from the initial table: degree `n + 1` is `a_n / (n + 1)`. -/
 def integralSeq (a : Seq) (b₀ : Table) : Seq :=
@@ -153,8 +183,8 @@ theorem get_map_range {f : ℕ → Table} {L n : ℕ} (h : n < L) :
   simp [Seq.get, List.getD_eq_getElem?_getD, h]
 
 theorem rhsSeq_get (ν : ℚ) (w : Seq) {n : ℕ} (h : n < w.length) :
-    (rhsSeq ν w).get n = Table.smul ν (Table.laplacian (w.get n)) ++
-      Table.smul (-1) ((List.range (n + 1)).flatMap fun m => Table.transport (w.get m) (w.get (n - m))) := by
+    (rhsSeq ν w).get n = Table.normalize (Table.smul ν (Table.laplacian (w.get n)) ++
+      Table.smul (-1) ((List.range (n + 1)).flatMap fun m => Table.transport (w.get m) (w.get (n - m)))) := by
   rw [rhsSeq, get_map_range h]
 
 theorem integralSeq_get_zero (a : Seq) (b₀ : Table) : (integralSeq a b₀).get 0 = b₀ := rfl
@@ -197,7 +227,8 @@ theorem toTrig_picard (ν : ℚ) (b₀ : Table) (b : TrigStream) (hb : toTrig b�
           have lt : m < (rhsSeq ν (picard ν b₀ n)).length := by
             rw [rhsSeq_length, picard_length]; omega
           have lt' : m < (picard ν b₀ n).length := by rw [picard_length]; omega
-          rw [integralSeq_get_succ _ _ lt, toTrig_smul, rhsSeq_get _ _ lt', toTrig_append,
+          rw [integralSeq_get_succ _ _ lt, toTrig_smul, rhsSeq_get _ _ lt', Table.toTrig_normalize,
+            toTrig_append,
             toTrig_smul, toTrig_smul, toTrig_laplacian, ih m (by omega),
             toTrig_flatMap_transport _ _ _ fun j hj => ih j (by omega),
             TrigStream.integral_ogf_succ, rhs, TrigStream.convolve_ogf_apply]
@@ -216,6 +247,8 @@ theorem stream_coeff (ν : ℚ) (b₀ : Table) (b : TrigStream) (hb : toTrig b�
   rw [stream_eq_table ν b₀ b hb n, toTrig_apply]
 
 #print axioms toTrig_transport
+#print axioms Torus.Table.l1_le_absSum
+#print axioms Torus.Table.sizeLE_toTrig
 #print axioms stream_eq_table
 #print axioms stream_coeff
 end Gimle.Asgard.Streams.NS
