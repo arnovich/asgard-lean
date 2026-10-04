@@ -164,12 +164,12 @@ theorem approx_ofPoly (basis : Basis) (ν : ℚ) (b : Poly 2) (n : ℕ) :
     Causal.approx basis 0 (rhs basis ν) (ofPoly basis b) n = ofPoly basis (picard ν b n) := by
   induction n with
   | zero => rfl
-  | succ n ih => rw [Causal.approx, ih, rhs_ofPoly, integral_ofPoly, picard]
+  | succ n ih => rw [Causal.approx_succ, ih, rhs_ofPoly, integral_ofPoly, picard]
 
 /-- **Coefficients.** At `t`-degree `n` the stream reads the `n`-th iterate. -/
 theorem stream_ofPoly_apply (basis : Basis) (ν : ℚ) (b : Poly 2) (m : Index 2) :
     stream basis ν (ofPoly basis b) m = ofPoly basis (picard ν b (m 0)) m := by
-  rw [stream, Causal.solution, approx_ofPoly]
+  rw [stream, Causal.solution_apply, approx_ofPoly]
 
 /-- The OGF coefficient at `t`-degree `n` is a coefficient of the `n`-th iterate. -/
 theorem stream_ogf_coeff (ν : ℚ) (b : Poly 2) (m : Index 2) :

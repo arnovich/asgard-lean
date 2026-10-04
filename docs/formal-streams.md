@@ -398,7 +398,17 @@ lake build Gimle.Asgard.Tests.AnalyticHeat
 ## Causal equations and the formal Burgers stream
 
 [`Streams.Causal`](../Gimle/Asgard/Streams/Causal.lean) is the formal
-Cauchy–Kowalevski lemma. A right-hand side `F` is *causal* along an axis
+Cauchy–Kowalevski lemma, stated once for an abstract `Causal.Axis S`: a
+graded agreement relation `Agree k a b`, a `derivative` and an `integral`
+along the axis with the shift laws, the integral reading its boundary only at
+degree zero, and a `glue` that assembles a coherent chain of approximants into
+one element (determined on chains, `Axis.glue_unique`). `Axis.solution`,
+`Axis.solution_pde`, `Axis.formal_unique`, `Axis.eq_solution` and
+`Axis.solution_congr_slice` are proved from those fields and use no axioms at
+all. `streamAxis basis axis` is every axis of `Stream d`, and the statements
+below are definitionally its instances with their original signatures;
+`TrigStream.trigAxis` (the vorticity section) is the second instance. On
+`Stream d`, a right-hand side `F` is *causal* along an axis
 (`IsCausal axis F`) when `F a` and `F b` agree up to degree `k` on that axis
 whenever `a` and `b` do (`AgreeBelow axis k`). Derivatives along other axes,
 sums and Cauchy products are causal (`derivative_causal`, `add_causal`,
@@ -567,6 +577,83 @@ divergent and uncertified; no majorant discovery.
 
 ```sh
 lake build Gimle.Asgard.Tests.ColeHopf
+```
+
+## The vorticity stream on the torus
+
+[`Streams.Torus`](../Gimle/Asgard/Streams/Torus.lean) is a second carrier for
+the causal lemma: `TrigPoly := (ℤ × ℤ) →₀ ℚ`, the coefficient of `e^{i k·x}`
+on the `2π`-periodic square. In the exponential reading a function is
+real-valued exactly when `c_{−k} = conj c_k`, so with rational coefficients
+the real-valued elements are the even ones (`IsEven`), the cosine subspace of
+forseti-lean's Galerkin members; sine modes need `∓i/2` and cannot be
+represented, and a non-even element stands for a complex-valued field.
+`MeanZero` is the absence of a zero mode. The operators are exact:
+
+| Operator | Statement |
+| --- | --- |
+| `laplacian` | multiplication by `−|k|²`; `laplacianInv` divides by it off the zero mode and is its two-sided inverse on mean-zero polynomials (`laplacian_laplacianInv`, `laplacianInv_laplacian`) |
+| `transport P Q` | bilinear (a `LinearMap` in each argument), `transport (e_p) (e_q) = (p × q)/|p|² · e_{p+q}` (`transport_single_single`), coefficient `Σ_{p+q=k} (p × q)/|p|² P_p Q_q` (`transport_apply`). The coupling is the Fourier symbol of `u·∇Q` for `u = ∇⊥ψ = (−∂_y ψ, ∂_x ψ)`, `Δψ = P`, derived on paper (a single derivative multiplies by `i k₁` and cannot be formed here); what Lean ties is `transport_eq_jacobian`, the coupling as `−(p × q)` against `laplacianInv P`. At `p = 0` the coupling is `0` by convention; the equation lives on `MeanZero` |
+| invariants | `meanZero_transport` with no hypothesis (`p × (−p) = 0`), `isEven_transport` for even factors, and the same for `laplacian` |
+| `cosineCoupling p q k` | `(p × q)/(2|p|²) · ([p − q = ±k] − [p + q = ±k])`, a restatement over `ℚ` of forseti-lean's `GalerkinNS.Family.coefficient` (identified by inspection of the two sources; the cast identity is one line in forseti-lean, which imports this repository, not a statement here). `transport_eq_cosine`: for even `P, Q` supported on `±H`, `H` free of `0` and of `±` pairs, `transport P Q k = −2 Σ_{p,q ∈ H} c(p, q, k) P_p Q_q` at every `k ≠ 0` — at the modes a Galerkin member keeps and at those it discards alike, up to the change to cosine amplitudes `a = 2P`. `NS.rhs_eq_family` is the corollary on the right-hand side: `2 (rhs ω)₀(k) = −ν|k|² a_k + Σ c(p, q, k) a_p a_q`, the family's unforced field |
+
+[`Streams.TrigStream`](../Gimle/Asgard/Streams/TrigStream.lean) is
+`ℕ → TrigPoly`, a `t`-series of trigonometric polynomials, with `derivative`
+and `integral` along `t` in OGF and EGF and `trigAxis basis : Causal.Axis
+TrigStream`. `convolve basis B a b` is the Cauchy product in `t` of a bilinear
+`B` on the coefficients, binomially weighted in EGF; it and every
+coefficientwise operator are causal (`convolve_causal`, `map_causal`).
+
+[`Streams.Vorticity`](../Gimle/Asgard/Streams/Vorticity.lean), namespace
+`NS`, is the two-dimensional vorticity equation `D_t ω = νΔω − u·∇ω` on the
+torus as such a stream: `rhs basis ν ω n = ν Δω_n − Σ_{m ≤ n} transport ω_m ω_{n−m}`
+(OGF), causal by `rhs_causal`, and `stream basis ν boundary` the formal
+solution from any start, with `stream_pde`, `stream_slice`, `formal_unique`,
+`eq_stream` and `stream_congr_slice` the instances. A mean-zero start gives a
+mean-zero series and an even start an even one (`stream_meanZero`,
+`stream_isEven`): cosine data stays cosine data. `ν = 0` is the Euler
+equation. Nothing is proved about Galerkin members being truncations of the
+stream; `rhs_eq_family` is the agreement of the right-hand sides at `t⁰`. There is no circuit tie: the stream circuit
+language has no Fourier multiplier, so the equation is stated over
+`derivative basis ω = rhs basis ν ω`.
+
+[`Streams.VorticityTable`](../Gimle/Asgard/Streams/VorticityTable.lean) makes
+the coefficients compute. A `Table` is a list of `(mode, coefficient)` pairs
+standing for the sum of its singles; `laplacian`, `smul` and `transport` on
+tables are plain list functions carried to `TrigPoly` by `toTrig`, and
+`NS.picard ν b₀ n` mirrors the `n`-th Picard iterate as `n + 1` tables.
+`NS.stream_coeff` says the exact OGF coefficient at `t`-degree `n` and mode `k`
+is the rational `Table.coeff k ((picard ν b₀ n).get n)`, which the kernel
+evaluates; nothing is trusted from outside the proof.
+
+[EulerThreeMode.lean](../Gimle/Asgard/Examples/EulerThreeMode.lean) starts
+from `ω₀ = cos x + cos(x + y) + cos(2x + y)`, the modes of forseti-lean's
+Galerkin member `T3` (unforced), and checks selected coefficients of the Euler and the viscous
+(`ν = 1/10`) stream by `decide +kernel`:
+
+```text
+Euler   [t · e^{ix}] = −3/40   [t · e^{iy}] = 1/8   [t · e^{i(2x+y)}] = −1/8
+        [t² · e^{i(2x+2y)}] = 11/130   [t³ · e^{ix}] = 27/32000
+viscous [t · e^{i(2x+y)}] = −3/8   [t² · e^{i(x+y)}] = −7/65
+```
+
+At `t¹` the stream already carries `cos y`, a mode the three-mode truncation
+discards, and the viscous coefficients are the Euler ones plus the decay
+`−ν|k|² ω₀_k` of each initial mode; from `t²` on they differ non-additively.
+The two created modes checked, `(0, 1)` at `t¹` and `(2, 2)` at `t²`, have
+the same coefficient for `ν = 0` and `ν = 1/10` for this start (a mode absent
+from `ω₀` has no decay term at `t¹`; in general a mode first created at `t²`
+does depend on `ν`). The example stops at degree 3; degree 4 has 82 modes.
+`unique` is the uniqueness statement for this start; every coefficient is
+proved mean zero and even.
+
+Scope: the series is exact and unique; nothing is said about its radius.
+For `ν > 0` radius zero is the generic expectation (false for single-shell
+data, where the series is entire) and no certification is attempted; for
+`ν = 0` the Cauchy–Kowalevski radius is a separate task.
+
+```sh
+lake build Gimle.Asgard.Tests.Vorticity
 ```
 
 ## Example

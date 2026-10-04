@@ -35,3 +35,4 @@ import Gimle.Asgard.Tests.DrivenSimulation
 import Gimle.Asgard.Tests.Visualization
 import Gimle.Asgard.Tests.Burgers
 import Gimle.Asgard.Tests.ColeHopf
+import Gimle.Asgard.Tests.Vorticity
