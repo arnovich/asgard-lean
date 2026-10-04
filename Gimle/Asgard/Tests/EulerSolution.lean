@@ -96,9 +96,9 @@ example :
     rw [laplacianInv_apply]
     by_cases hk : k = (1, 0)
     · subst hk; simp [lam]
-    · simp [Finsupp.single_apply, Ne.symm hk, hk]
+    · simp [hk]
   rw [hψ, cosine, fieldD₁, fieldD₂, fieldD₁, fieldD₂]
-  simp only [Finset.sum_singleton, Finsupp.single_apply, phase]
+  simp only [Finsupp.single_apply, phase]
   norm_num [Finsupp.support_add_eq, Finsupp.support_single, Finsupp.single_apply,
     sin_pi_div_two, cos_pi_div_two]
 
