@@ -1,13 +1,10 @@
 ---
 title: The Euler radius — a Cauchy–Kowalevski induction in a scale, certified truncation and a band for the vorticity stream
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["061", "062", "065"]
 depends_on: ["065"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-04T08:44:21Z
-branch: feat/euler_radius
 ---
 
 # The Euler radius — a Cauchy–Kowalevski induction in a scale, certified truncation and a band for the vorticity stream
@@ -46,3 +43,26 @@ never a majorant equation.
   with the Tonelli computation for Burgers, the single-shell exception and
   the growth ratios as evidence, as `Examples/BurgersSquare` does
 - audited; a release
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-04T15:30:00Z
+
+Closed after PR #30, tagged v1.14.0. Delivered with these differences from
+the text above: Nagumo is stated as `dnorm σ Q ≤ wnorm σ' Q/(2(σ' − σ))` for
+`σ < σ'` (the constant `1/2` for `1/e`, keeping every constant rational; the
+outcome's `σ, σ'` are the other way round); the intermediate radius is
+`σ + (σ₀ − σ)/(n+2)`, the convolution sum `≤ 8/(n+2)²`, and `C = 24M`; the
+ℓ¹ bound is taken at `σ = 0` (not `σ₀/2`), `l1 ω_n ≤ M (24M/σ₀)ⁿ`, and the
+rational radius is `1/(72 L K)` for modes of size at most `K` and ℓ¹ norm at
+most `L`; the one-axis tail is stated directly for `TrigStream`
+(`TruncationBound`, `tailBound`), not through `Tail.lean`'s `TruncationBound`,
+whose carrier differs, and the "window" is the finite sum through `t`-degree
+`N − 1`, not a polynomial object; the Gevrey constant is `νK² + KL` over the
+ℓ¹ size (the crude `m!(n−m)! ≤ n!` closes it); the docs give the Tonelli
+computation in one paragraph and point to gimle-forseti's design note as its
+owner, and show no growth ratios — evidence belongs to the notebook (task
+216). Every statement is about the analytic field of the formal stream; its
+identification with the Euler solution is paper work, said so in docs and
+docstrings. Example: `l1 ω_n ≤ 9·648ⁿ`, convergence for `|t| < 1/648`,
+truncation `1/100` and band `1/50` on `|t| ≤ 1/6480`.
