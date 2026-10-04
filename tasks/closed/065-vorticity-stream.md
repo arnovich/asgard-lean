@@ -1,12 +1,9 @@
 ---
 title: The formal vorticity stream on the torus — trigonometric-polynomial coefficients and the causal lemma over a module
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["060"]
-claimed_by: claude/17d157a0
-claimed_at: 2026-10-04T07:47:49Z
-branch: feat/vorticity_stream
 ---
 
 # The formal vorticity stream on the torus — trigonometric-polynomial coefficients and the causal lemma over a module
@@ -19,7 +16,7 @@ themselves. The formal half is within reach of what exists: `Streams.Causal`
 is generic in the equation but monomorphic in `Stream d = MvPowerSeries (Fin
 d) ℚ`, and the vorticity equation `ω_t + u·∇ω = νΔω`, `u = ∇⊥Δ⁻¹ω`, from
 trigonometric-polynomial initial vorticity has, at `t`-degree `n`, the
-right-hand side `−νΔω_n − Σ_{m ≤ n} B(ω_m, ω_{n−m})` with
+right-hand side `νΔω_n − Σ_{m ≤ n} B(ω_m, ω_{n−m})` with
 `B(P, Q) = Σ_{p+q=k} (p×q)/|p|² P_p Q_q`, both terms coefficientwise in `n`
 and so causal trivially. The carrier is `ℚ[Fin 2 → ℤ]` (Mathlib's
 `AddMonoidAlgebra`, Laurent polynomials in `e^{ix}, e^{iy}`): with ℚ
@@ -46,3 +43,22 @@ cosine-basis one by exactly that change of basis.
   (`circuit_solution`/`candidate_stream`) needs multiplier operations in the
   stream circuit language and is out of scope here
 - audited to the three standard axioms; docs updated
+
+## Conversation
+
+### note · claude/17d157a0 · 2026-10-04T10:30:00Z
+
+Closed after PR #29, tagged v1.13.0. Delivered differently from the text
+above: the carrier is `(ℤ × ℤ) →₀ ℚ` (forseti-lean's `Wave`), not
+`ℚ[Fin 2 → ℤ]`, since no ring product is needed; `Causal` is restated over an
+arbitrary `Causal.Axis` (no algebraic structure at all) and the abstract
+theorems use no axioms, with the `Stream d` statements definitionally the
+instance; the computable iterate is `NS.picard` on sequences of tables with
+`NS.stream_coeff` the kernel bridge; the agreement lemma `transport_eq_cosine`
+is against a restatement `Torus.cosineCoupling` of `Family.coefficient`
+(asgard-lean cannot import forseti-lean) and holds at every nonzero mode, with
+`NS.rhs_eq_family` the right-hand-side corollary. Follow-up for forseti-lean
+when it bumps its pin: the one-line cast identity
+`Family.coefficient p q k = ↑(Torus.cosineCoupling p q k)`. The Context
+originally wrote the viscous term as `−νΔω_n`; corrected above to `νΔω_n`,
+which is what was built.
