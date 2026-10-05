@@ -1,11 +1,8 @@
 ---
 title: Fourier stream circuits and the Euler feedback semantics
-state: ongoing
+state: closed
 priority: medium
 labels: [circuits, euler, formal-methods]
-claimed_by: codex/euler_circuit
-claimed_at: 2026-10-05T10:24:03Z
-branch: feat/euler_circuit
 ---
 
 ## Context
@@ -37,3 +34,9 @@ A three-role panel reviewed circuit architecture, mathematical proof boundaries,
 and integration/claims. All passed without blocking findings. Pairing and guarded
 feedback contract rules can be added in Forseti when another example needs them.
 The Python application's existing release pin is not changed by this work.
+
+## Conversation
+
+### note · codex/euler_circuit · 2026-10-05T10:43:08Z
+
+Merged https://github.com/arnovich/asgard-lean/pull/32. Full local builds and panel review passed. The notebook migration is a separate application update.
