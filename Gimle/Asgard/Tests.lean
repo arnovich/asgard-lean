@@ -38,3 +38,4 @@ import Gimle.Asgard.Tests.ColeHopf
 import Gimle.Asgard.Tests.Vorticity
 import Gimle.Asgard.Tests.EulerRadius
 import Gimle.Asgard.Tests.EulerSolution
+import Gimle.Asgard.Tests.FourierCircuit

@@ -613,9 +613,9 @@ solution from any start, with `stream_pde`, `stream_slice`, `formal_unique`,
 mean-zero series and an even start an even one (`stream_meanZero`,
 `stream_isEven`): cosine data stays cosine data. `ν = 0` is the Euler
 equation. Nothing is proved about Galerkin members being truncations of the
-stream; `rhs_eq_family` is the agreement of the right-hand sides at `t⁰`. There is no circuit tie: the stream circuit
-language has no Fourier multiplier, so the equation is stated over
-`derivative basis ω = rhs basis ν ω`.
+stream; `rhs_eq_family` is the agreement of the right-hand sides at `t⁰`. The equation is stated directly in this module;
+[`Streams.VorticityCircuit`](../Gimle/Asgard/Streams/VorticityCircuit.lean)
+connects it to a typed Fourier-stream circuit (see below).
 
 [`Streams.VorticityTable`](../Gimle/Asgard/Streams/VorticityTable.lean) makes
 the coefficients compute. A `Table` is a list of `(mode, coefficient)` pairs
@@ -835,3 +835,32 @@ lake build Gimle.Asgard.Tests.Streams
 
 Python lowering, JAX execution, mixed per-axis bases, stochastic shuffle algebra,
 and delayed feedback are outside this interpretation.
+
+### Fourier-stream circuits and Euler feedback
+
+[`Streams.FourierCircuit`](../Gimle/Asgard/Streams/FourierCircuit.lean) gives
+`TrigStream` its own typed circuit interpretation. Wires carry a whole formal
+series of Fourier polynomials. Rational scaling, the spatial Laplacian,
+addition, Fourier transport and boundary-preserving time integration combine
+through routing, pairing and composition. `Expr.compile_rel` proves that the
+feedforward expression compiler preserves their exact semantics. These are
+separate from pointwise `RealAtomics.sin` and `cos`.
+
+The generic trace is a relation with an existential feedback stream. It does
+not assume that a loop has a solution or a unique solution.
+[`NS.vorticityCircuit`](../Gimle/Asgard/Streams/VorticityCircuit.lean) closes
+one time-integrated feedback wire around the compiled expression
+`ν Δω − transport(ω, ω)`. Its sole external input is the boundary; its output
+is the solution, not a supplied candidate. In both OGF and EGF:
+
+- `vorticityCircuit_rel_iff_pde` identifies the relation with the formal
+  vorticity equation and the initial slice.
+- `vorticityCircuit_rel_iff` identifies **every** output with `NS.stream`.
+- `vorticityCircuit_solution` supplies a related output for every boundary.
+
+Only the boundary's degree-zero coefficient matters. Formal existence and
+uniqueness hold for every rational viscosity; analytic Euler realization still
+requires the existing mean-zero, evenness and convergence proofs. The circuit
+does not establish convergence for positive viscosity or classical uniqueness
+among arbitrary real fields. Forseti's `Examples.EulerContract` uses this
+relation to state a total contract for the three-mode Euler example.
