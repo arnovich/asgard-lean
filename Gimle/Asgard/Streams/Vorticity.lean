@@ -24,9 +24,9 @@ agreement with the Galerkin family's unforced field on cosine amplitudes.
 
 `ν = 0` is the Euler equation. Nothing here concerns convergence: the series
 is exact and unique whatever its radius, and that is all this module claims.
-There is no circuit tie: the stream circuit language has no Fourier
-multiplier, so the equation is stated over `derivative basis ω = rhs basis ν ω`
-directly. -/
+This module states the equation directly. `Streams.VorticityCircuit` assembles
+its Fourier operators and time integration into a typed feedback circuit, and
+proves that its relation has exactly this stream as output. -/
 namespace Gimle.Asgard.Streams.NS
 
 open Torus TrigStream Causal
