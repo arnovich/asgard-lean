@@ -1,10 +1,13 @@
 ---
 title: The mild sum is a classical solution — one-sided at the start, with the enstrophy and energy identities
-state: open
+state: ongoing
 priority: medium
 labels: [streams, lean, research]
 related: ["067", "069"]
 depends_on: ["069"]
+claimed_by: codex/fluid_contracts
+claimed_at: 2026-10-06T01:29:07Z
+branch: feat/mild_classical_dissipation
 ---
 
 # The mild sum is a classical solution — one-sided at the start, with the enstrophy and energy identities
@@ -52,3 +55,25 @@ rather than `field (ω n) x · tⁿ`; and nothing is certified for `t < 0`, so a
 Sized in the design note against task 067 (1479 lines over its commits, of
 which 1011 `EulerSolution.lean`, 313 tests): at least 1500 lines; 067's
 proofs carry over as method, not as code.
+
+
+## Plan
+
+Use the reviewed physical bounds and exact term equations to construct the
+classical field on the interior of the certified forward interval, with
+continuity and the initial field on the closed interval. Port the finite
+Fourier derivative/Jacobian lemmas to real evaluated coefficients, establish
+summable derivative majorants, and sum the exact PDE identities. Prove both
+finite transport cancellations and justify the infinite energy/enstrophy
+exchanges before deriving dissipation and nonincrease. Add boundary and
+three-mode regressions, standard axiom audits, full/optional builds, a
+three-role panel and CI. No arbitrary-classical uniqueness, continuation or
+inviscid limit is asserted.
+
+## Conversation
+
+The owner authorized the complete three-stage fluid flow with PRs and merges.
+Task069 is implemented, tested and panel-approved in dependent Asgard PR34;
+task068 PR33 passed CI. This work starts from the reviewed bounds commit.
+Development overlaps waiting CI, while publication remains ordered after
+the replay repair, generalized Euler consumer, circuit and bounds releases.
