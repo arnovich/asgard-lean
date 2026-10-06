@@ -100,3 +100,21 @@ The owner authorized all three fluid stages without further permission. Task
 dependent worktree starts from that reviewed commit while CI runs. Releases
 and merges remain ordered: replay repair, generalized Euler consumer, task068,
 then these bounds. No dependent release is published ahead of its prerequisite.
+
+
+## Progress
+
+Both bounds are implemented on physical evaluations of the actual Wild
+stream. The weighted real Fourier induction compiles for every nonnegative
+viscosity. Rational modewise majorants give the Catalan bound at positive
+viscosity, with explicit zero-mode handling in the heat absorption proof.
+The shared field layer proves absolute convergence, sharp shifted tails and
+bands; the three-mode constants and exact-zero/general-boundary regressions
+are implemented. The default build passed 7005 jobs, and all four optional
+executables passed (6811 jobs). New axiom reports contain only propext,
+Classical.choice and Quot.sound; no warnings or placeholder proofs remain.
+All three panel roles passed: mathematical correctness, circuit/output
+semantics, and integration/documentation. The future consumer must retain
+convergence in Certified when using the band predicate. PR33 passed CI; this
+bounds PR remains dependent on it and publication stays behind replay/Euler.
+No classical/PDE/dissipation claim is made in this task.

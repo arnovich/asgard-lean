@@ -925,8 +925,71 @@ already built took 20.45 seconds (Lean reported 19 seconds for the module) and
 about 5.25 GiB peak RSS. CI runs it in a separate step after the normal build.
 These are measured computation costs, not a mathematical bound.
 
-Nothing in these modules estimates the size of a physical field, proves
-convergence of the interaction expansion or constructs a classical viscous
-solution. Exponential-polynomial coefficients can cancel heavily; their
-absolute coefficient sums are not analytic majorants. The two convergence
-estimates and classical/dissipation contracts are subsequent layers.
+These circuit and table modules do not themselves prove convergence or a
+classical viscous solution. Exponential-polynomial coefficients can cancel
+heavily; their absolute coefficient sums are not analytic majorants. The
+following layer estimates physical values instead.
+
+
+### Two bounds for the physical mild series
+
+[`Streams.MildRadius`](../Gimle/Asgard/Streams/MildRadius.lean) proves both
+bounds for the same actual `wild` stream. Each theorem accepts a boundary
+whose zero slice is `embed P`; higher boundary slices remain unconstrained.
+No coefficient of a computed exponential-polynomial table is used in a norm.
+The norm is always that of the physically evaluated real Fourier polynomial.
+
+The first bound needs `ν > 0`, `T ≥ 0`, `r ≥ 0` and `T ≤ ν r²`.
+[`MildHeatBounds`](../Gimle/Asgard/Streams/MildHeatBounds.lean) proves
+`coupling(p,q)² ≤ lam(p+q)/lam(p)` and
+`|coupling(p,q)| min(T,1/(ν lam(p+q))) ≤ r`. Both zero-input and
+zero-output branches are handled before any positive-rate division.
+The exact Duhamel integral is bounded both by `t A` and by `A/(ν lam(k))`.
+[`MildMajorant`](../Gimle/Asgard/Streams/MildMajorant.lean) carries rational,
+finitely supported modewise witnesses on the whole closed interval `[0,T]`.
+The bilinear bound is `r L₁ L₂`.
+
+[`MildCatalan`](../Gimle/Asgard/Streams/MildCatalan.lean) then gives
+`a_n = L (rL)^n C_n`, where `L ≥ l1 P` and `C_n` is the Catalan number.
+Since `a_(n+1) ≤ θ a_n`, `θ = 4rL`, a strict `θ < 1` proves absolute
+convergence and the sharper window error `a_N/(1-θ)`. The band is the full
+finite prefix `Σ_(n<N) a_n` plus that tail. Degree zero is `L`.
+
+The second bound works for every `ν ≥ 0`, including zero:
+[`RealTrigNorm`](../Gimle/Asgard/Streams/RealTrigNorm.lean) proves the weighted
+transport and Nagumo estimates on real Fourier coefficients;
+[`MildNorm`](../Gimle/Asgard/Streams/MildNorm.lean) bounds the Duhamel norm by
+the time integral of the physical forcing norm.
+[`MildEulerRadius`](../Gimle/Asgard/Streams/MildEulerRadius.lean) performs the
+weighted induction with `∫₀ᵗ s^n ds`, yielding
+`l1(eval ν t (wild ν b n)) ≤ 3L (72LKt)^n` for `t ≥ 0`, when the initial
+support has size at most `K ≥ 1`. Thus `q = 72LKT < 1` gives the tail
+`3L q^N/(1-q)`. Its band uses `L` for degree zero and this geometric bound for
+positive degrees. An exact-zero start (`L=0`) permits every finite `T ≥ 0`.
+
+[`MildField`](../Gimle/Asgard/Streams/MildField.lean) evaluates each interaction
+term directly: unlike the OGF field there is no extra `t^n` factor. Its window
+is `Finset.range N`, so `N=4` includes degrees zero through three.
+`MildTruncationBound` includes absolute convergence as well as the uniform
+error at every spatial point and every `t ∈ [0,T]`. `MildBandBound` bounds
+the same field. These are properties of any output equal to the Wild stream;
+the regression suite explicitly obtains that equality from the circuit
+relation before applying a bound.
+
+[`Examples.MildBand`](../Gimle/Asgard/Examples/MildBand.lean) applies both
+bounds to the three-mode start (`L=3`, `K=3`). At `ν=1/10`, take `r=1/24`:
+`θ=1/2`, `T=1/5760`, the four-term tail is exactly `21/1024`, and the band
+is at most `3519/1000`. The Euler-scale bound converges for `0 ≤ t < 1/648`
+at every nonnegative viscosity, with four-term tail `9q^4/(1-q)`, `q=648T`.
+For this chosen ratio, the viscosity-dependent interval becomes longer when
+`ν > 8/9`. A longer interval need not give the smaller requested error; a
+consumer can try both certificates.
+
+```sh
+lake build Gimle.Asgard.Tests.MildRadius
+```
+
+These results certify the interaction series. They do not yet assert the
+viscous PDE, its integral equation, dissipation, uniqueness among classical
+fields, global existence, or continuation. Classical realization and the
+energy/enstrophy identities belong to task 070.
