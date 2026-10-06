@@ -1,9 +1,12 @@
 ---
 title: The mild vorticity stream — exponential-polynomial coefficients, the Duhamel map and Wild's expansion over the shift axis
-state: open
+state: ongoing
 priority: medium
 labels: [streams, lean, research]
 related: ["065", "066", "067"]
+claimed_by: codex/fluid_contracts
+claimed_at: 2026-10-06T00:18:50Z
+branch: feat/mild_vorticity_circuit
 ---
 
 # The mild vorticity stream — exponential-polynomial coefficients, the Duhamel map and Wild's expansion over the shift axis
@@ -75,3 +78,25 @@ factorial telescoping by `c·Q + Q' = p` for `Q = Σ_j (−1)ʲ p⁽ʲ⁾/cʲ⁺
 `ℕ`, so a bridging lemma is needed. `trigAxis .egf = shiftAxis TrigPoly` is
 propositional and needs an `ext` lemma on `Causal.Axis`; a remark, not a
 requirement.
+
+## Circuit integration
+
+The owner authorized the complete viscous arc as the third stage of the fluid
+circuit work. In addition to the original mathematical outcomes, this task
+builds a typed Mild circuit language, verified expression compilation, and a
+feedback circuit with boundary data as its only external input. Heat, transport,
+Duhamel and an interaction-degree shift are explicit primitives; no opaque
+solution primitive is allowed. Prove its relation equivalent to the unique
+Wild expansion. Later Forseti contracts state classical and quantitative
+properties of that actual output.
+
+## Plan
+
+Implement and test the exponential-polynomial carrier first, including rational
+resonance subtraction and both zero-resonance branches. Then the generic shift
+axis, MildPoly operations and causal Wild expansion, typed circuit/compiler and
+relation theorems, and computable tables. Preserve the original termwise PDE,
+zero-viscosity agreement, invariants and measured kernel-computation outcomes.
+Run full/optional builds and axiom audits, three-role panel review and CI before
+merge. Independent construction overlaps the earlier CI queue; release merges
+remain ordered after the repair and generalized Euler stages.
