@@ -1,13 +1,10 @@
 ---
 title: Two bounds for the mild vorticity stream — the Wiener-algebra contraction, the Euler scale at every viscosity, certified truncation and bands
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["066", "068"]
 depends_on: ["068"]
-claimed_by: codex/fluid_contracts
-claimed_at: 2026-10-06T01:07:56Z
-branch: feat/mild_vorticity_bounds
 ---
 
 # Two bounds for the mild vorticity stream — the Wiener-algebra contraction, the Euler scale at every viscosity, certified truncation and bands
@@ -118,3 +115,7 @@ semantics, and integration/documentation. The future consumer must retain
 convergence in Certified when using the band predicate. PR33 passed CI; this
 bounds PR remains dependent on it and publication stays behind replay/Euler.
 No classical/PDE/dissipation claim is made in this task.
+
+### note · codex/fluid_contracts · 2026-10-06T04:06:48Z
+
+Merged https://github.com/arnovich/asgard-lean/pull/34 at `71808f27bfd04b6489f43253bb11f3979823cac6`. Published v1.18.0 with both physical majorants, absolute convergence, truncation and band bounds. The full 7,005-job build, optional executables, separate degree-three regression, standard axiom reports, three-role review and refreshed exact-head CI pass.
