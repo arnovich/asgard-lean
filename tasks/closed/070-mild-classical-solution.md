@@ -1,13 +1,10 @@
 ---
 title: The mild sum is a classical solution — one-sided at the start, with the enstrophy and energy identities
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["067", "069"]
 depends_on: ["069"]
-claimed_by: codex/fluid_contracts
-claimed_at: 2026-10-06T01:29:07Z
-branch: feat/mild_classical_dissipation
 ---
 
 # The mild sum is a classical solution — one-sided at the start, with the enstrophy and energy identities
@@ -91,3 +88,7 @@ Classical.choice and Quot.sound; no placeholders or unchecked axioms remain.
 All three panel roles passed. The mathematical reviewer requested an explicit
 reconstruction bridge, now implemented and re-reviewed. CI, ordered merge,
 and release remain pending.
+
+### note · codex/fluid_contracts · 2026-10-06T04:27:59Z
+
+Merged https://github.com/arnovich/asgard-lean/pull/35 at `411dfdffc44c37320f12b977fc60da7a3117a679`. Released as v1.19.0 after green CI, full and optional builds, degree-three regression, standard axiom reports and three-role panel review. The merged source matches the reviewed candidate. The consuming Forseti pair rebuilt independently with 326 identical owned artifacts. Classical endpoint scope and spectral normalization are documented explicitly.
