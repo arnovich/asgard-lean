@@ -43,3 +43,4 @@ import Gimle.Asgard.Tests.ExpPoly
 import Gimle.Asgard.Tests.ExpPolyTable
 import Gimle.Asgard.Tests.Mild
 import Gimle.Asgard.Tests.MildTable
+import Gimle.Asgard.Tests.MildRadius
