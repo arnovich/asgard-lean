@@ -77,3 +77,17 @@ Task069 is implemented, tested and panel-approved in dependent Asgard PR34;
 task068 PR33 passed CI. This work starts from the reviewed bounds commit.
 Development overlaps waiting CI, while publication remains ordered after
 the replay repair, generalized Euler consumer, circuit and bounds releases.
+
+## Implementation and validation
+
+The classical field, one-sided initial derivative, coefficient PDE, both
+finite and infinite nonlinear cancellations, modewise differentiated energy
+and enstrophy sums, and closed-interval nonincrease are implemented. A
+reconstruction theorem explicitly identifies the spectral coefficient sum
+with the classical field. Both bounds apply to the same actual Wild output;
+zero viscosity and zero geometric ratio are covered. Regression proofs pass (3436 jobs), the full build passes (7022 jobs), and all
+four optional executables pass (6811 jobs). Axiom audits report only propext,
+Classical.choice and Quot.sound; no placeholders or unchecked axioms remain.
+All three panel roles passed. The mathematical reviewer requested an explicit
+reconstruction bridge, now implemented and re-reviewed. CI, ordered merge,
+and release remain pending.
