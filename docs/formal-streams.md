@@ -989,7 +989,58 @@ consumer can try both certificates.
 lake build Gimle.Asgard.Tests.MildRadius
 ```
 
-These results certify the interaction series. They do not yet assert the
-viscous PDE, its integral equation, dissipation, uniqueness among classical
-fields, global existence, or continuation. Classical realization and the
-energy/enstrophy identities belong to task 070.
+### Classical realization and dissipation
+
+[`MildSolution`](../Gimle/Asgard/Streams/MildSolution.lean) realizes the same
+Wild stream as `IsMildClassicalSolution` for even, mean-zero finite initial
+data and any certified geometric bound on `[0,T]`. Both bounds above supply
+that premise. Each spatial partial that occurs in the equation, including
+the mixed stream-function derivatives giving divergence-free velocity, is
+proved by differentiating the absolutely convergent series. The field and
+these partials are jointly continuous on the closed time strip. The time
+partial and vorticity PDE hold on `(0,T)`; at zero there is a right derivative
+when `T > 0`, with no assumption about negative time. The initial field is
+exactly the supplied polynomial. A zero-length interval retains continuity
+and the initial value, without asserting a time derivative there.
+
+The physical Fourier coefficients are
+`W_k(t) = Σ_n ExpPoly.eval ν t (wild ν boundary n k)`.
+[`FourierExchanges.analyticField_eq_fourier`](../Gimle/Asgard/Streams/FourierExchanges.lean)
+proves that `Σ_k W_k(t) cos(k·x)` reconstructs the very same field by an
+absolutely justified degree/mode exchange. Evenness gives the usual real
+exponential-coordinate interpretation; no extra power `t^n` is inserted.
+
+[`MildDissipation`](../Gimle/Asgard/Streams/MildDissipation.lean) supplies
+`HasDissipation` for the actual stream. Its spectral conventions are
+`Z = Σ_k W_k²`, `E = Σ_k W_k²/|k|²` (zero weight at `k=0`), and
+`P = Σ_k |k|² W_k²`. Thus neither quadratic quantity includes a factor of
+one half. On `(0,T)` it proves
+
+```text
+Z' = -2ν P          E' = -2ν Z.
+```
+
+The proof differentiates the mode sums under separate uniform, summable
+bounds on `|W_k| |W'_k|`. Polynomially weighted physical coefficients are
+summable. Both nonlinear cancellations first hold for finite real Fourier
+polynomials; absolutely summable infinite triads then justify the required
+mode exchanges. Mean zero is used when canceling the inverse Laplacian.
+`Z` and `E` are continuous and nonincreasing on `[0,T]`, so their initial
+values bound them at the upper endpoint too. These are spectral identities;
+no additional Parseval or spatial-integral normalization theorem is asserted.
+
+Exact-zero data, zero viscosity, and geometric ratio zero are supported.
+An internal ratio strictly between the supplied ratio and one avoids any
+division by zero without shrinking the certified interval. The three-mode
+example exports both classical and dissipation conclusions for the Catalan
+interval and for the Euler-scale interval. The regression suite also binds
+these conclusions to every related typed circuit output, constraining only
+`boundary 0`; higher boundary slices remain arbitrary.
+
+```sh
+lake build Gimle.Asgard.Tests.MildClassical
+```
+
+No uniqueness among arbitrary classical fields, continuation, global
+existence, or inviscid-limit theorem is claimed. Uniqueness of the formal
+circuit stream is the causal result from `MildCircuit`, a separate statement.
