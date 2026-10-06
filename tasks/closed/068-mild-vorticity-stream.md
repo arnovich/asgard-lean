@@ -1,12 +1,9 @@
 ---
 title: The mild vorticity stream — exponential-polynomial coefficients, the Duhamel map and Wild's expansion over the shift axis
-state: ongoing
+state: closed
 priority: medium
 labels: [streams, lean, research]
 related: ["065", "066", "067"]
-claimed_by: codex/fluid_contracts
-claimed_at: 2026-10-06T00:18:50Z
-branch: feat/mild_vorticity_circuit
 ---
 
 # The mild vorticity stream — exponential-polynomial coefficients, the Duhamel map and Wild's expansion over the shift axis
@@ -123,3 +120,9 @@ remain ordered after the repair and generalized Euler stages.
   degree-three regression pass without warnings. Standard axiom audits and
   whitespace checks pass. PR CI and ordered merge/release remain; this increment
   follows the preceding repair and generalized Euler releases.
+
+## Conversation
+
+### note · codex/fluid_contracts · 2026-10-06T03:47:54Z
+
+Merged https://github.com/arnovich/asgard-lean/pull/33 at `efffaa5f3caa4941d22e92b5cb86b5095f9489d8`. Published v1.17.0 from the audited merged tree. Typed mild gates, causal uniqueness and exact exponential-polynomial computations through degree three pass the complete/optional builds, regression proofs, independent panel review and PR CI.
