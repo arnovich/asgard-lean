@@ -1,10 +1,13 @@
 ---
 title: Two bounds for the mild vorticity stream — the Wiener-algebra contraction, the Euler scale at every viscosity, certified truncation and bands
-state: open
+state: ongoing
 priority: medium
 labels: [streams, lean, research]
 related: ["066", "068"]
 depends_on: ["068"]
+claimed_by: codex/fluid_contracts
+claimed_at: 2026-10-06T01:07:56Z
+branch: feat/mild_vorticity_bounds
 ---
 
 # Two bounds for the mild vorticity stream — the Wiener-algebra contraction, the Euler scale at every viscosity, certified truncation and bands
@@ -77,3 +80,23 @@ about 1800 lines, bound two about 500 of them, all bookkeeping. The two bounds
 cross at `ν > 2L/(9Kθ²)`, `8/9` for this start at `θ = 1/2`; a notebook can
 state both and the lane (gimle-forseti) certifies the better. Both are far
 from sharp: the spike's 60-digit sups fall by about `10⁻⁴` per degree.
+
+## Plan
+
+Implement both reviewed bounds on the actual Wild terms, using rational
+modewise majorants for bound one and weighted real evaluated norms for bound
+two. Reuse the exact integral representation and finite support invariants of
+task 068. Handle the zero output mode before dividing by its Laplacian rate,
+keep strict geometric endpoints, and certify the requested window/tail/band
+without reading exponential-polynomial coefficient absolute sums. Add the
+three-mode rational regressions and axiom audits, then full/optional builds,
+three-role panel review and CI. Classical realization and dissipation remain
+task 070.
+
+## Conversation
+
+The owner authorized all three fluid stages without further permission. Task
+068 is implemented, locally validated and panel-approved in Asgard PR33. This
+dependent worktree starts from that reviewed commit while CI runs. Releases
+and merges remain ordered: replay repair, generalized Euler consumer, task068,
+then these bounds. No dependent release is published ahead of its prerequisite.
