@@ -39,3 +39,7 @@ import Gimle.Asgard.Tests.Vorticity
 import Gimle.Asgard.Tests.EulerRadius
 import Gimle.Asgard.Tests.EulerSolution
 import Gimle.Asgard.Tests.FourierCircuit
+import Gimle.Asgard.Tests.ExpPoly
+import Gimle.Asgard.Tests.ExpPolyTable
+import Gimle.Asgard.Tests.Mild
+import Gimle.Asgard.Tests.MildTable
