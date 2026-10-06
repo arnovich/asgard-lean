@@ -864,3 +864,69 @@ requires the existing mean-zero, evenness and convergence proofs. The circuit
 does not establish convergence for positive viscosity or classical uniqueness
 among arbitrary real fields. Forseti's `Examples.EulerContract` uses this
 relation to state a total contract for the three-mode Euler example.
+
+### Mild viscous circuits: exact interaction terms
+
+[`Streams.ExpPoly`](../Gimle/Asgard/Streams/ExpPoly.lean) represents finite sums
+`Σ_k p_k(t) exp(-ν k t)` using rational polynomials. The carrier is independent
+of viscosity. Evaluation is an algebra map; its formal derivative agrees with
+the real derivative. Exact Duhamel integration satisfies both the forced heat
+equation and the zero initial condition, and evaluates to the usual integral
+against `exp(-ν μ (t-s))`. The rational resonance test is
+`ν * ((μ : ℚ) - (k : ℚ)) = 0`: zero viscosity, equal rates and negative rate
+differences all have kernel-checked regressions.
+
+[`Streams.Mild`](../Gimle/Asgard/Streams/Mild.lean) uses these coefficients on
+finite Fourier polynomials. Its stream axis counts nonlinear interactions,
+not powers of physical time. `shiftAxis` supplies the plain degree shift and
+the causal solver constructs
+
+```text
+wild_0 = heat(initial)
+wild_(n+1) = -Duhamel(Σ_(m+l=n) transport(wild_m, wild_l)).
+```
+
+Mean zero, parity and the support bound `(n+1)K` propagate. Positive-degree
+terms satisfy their physical-time differential equations. The degree-zero heat
+equation is stated for constant embedded initial Fourier data; arbitrary
+exponential-polynomial boundary data can themselves depend on time.
+[`Mild.wild_eval_zero`](../Gimle/Asgard/Streams/MildEvaluation.lean)
+identifies evaluated zero-viscosity terms with `t^n` times the Euler OGF
+coefficients. It does not equate the redundant exact carriers at `ν = 0`.
+
+[`Streams.MildCircuit`](../Gimle/Asgard/Streams/MildCircuit.lean) makes the
+construction a typed circuit. Its primitives are routing, rational scaling,
+addition, Fourier transport convolution, heat, Duhamel and `shiftFrom`, combined
+by pairing, composition and relational trace. `Expr.compile_rel` proves the
+expression compiler total and deterministic. The loop exposes the feedback
+stream and reconstructs it from the heated boundary and integrated transport.
+`mildCircuit_rel_iff` proves that every related output is exactly `wild`, and
+`mildCircuit_solution` provides such an output for every boundary. Only its
+interaction-degree-zero slice is read. This is uniqueness of formal
+interaction streams, not uniqueness among arbitrary classical fields.
+
+[`Streams.ExpPolyTable`](../Gimle/Asgard/Streams/ExpPolyTable.lean) and
+[`Streams.MildTable`](../Gimle/Asgard/Streams/MildTable.lean) mirror the operations
+on computable sparse lists, merging repeated indices and dropping exact zero
+entries. `stream_eq_table` connects the computed tables to the actual stream.
+For the three-mode start and `ν=1/10`, the terms have 6, 12, 28 and 52 Fourier
+modes through degree three, with 6, 24, 112 and 382 time-coefficient entries.
+The default regression build kernel-checks concrete terms through degree two,
+including a resonant `t exp(-8νt)` term. A separate degree-three regression
+checks the coefficient `-5247629/15375360` at mode `(1,0)`, heat rate 1, polynomial
+degree 0, together with the two table counts:
+
+```sh
+lake build Gimle.Asgard.Tests.MildDegreeThree
+```
+
+On the development Linux machine, building that regression with dependencies
+already built took 20.45 seconds (Lean reported 19 seconds for the module) and
+about 5.25 GiB peak RSS. CI runs it in a separate step after the normal build.
+These are measured computation costs, not a mathematical bound.
+
+Nothing in these modules estimates the size of a physical field, proves
+convergence of the interaction expansion or constructs a classical viscous
+solution. Exponential-polynomial coefficients can cancel heavily; their
+absolute coefficient sums are not analytic majorants. The two convergence
+estimates and classical/dissipation contracts are subsequent layers.

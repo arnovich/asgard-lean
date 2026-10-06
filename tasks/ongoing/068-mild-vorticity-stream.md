@@ -100,3 +100,26 @@ zero-viscosity agreement, invariants and measured kernel-computation outcomes.
 Run full/optional builds and axiom audits, three-role panel review and CI before
 merge. Independent construction overlaps the earlier CI queue; release merges
 remain ordered after the repair and generalized Euler stages.
+
+## Progress
+
+- Exact `ExpPoly` algebra, rational resonance split (including negative rate
+  difference and zero viscosity), derivative, zero initial value and the
+  heat-kernel integral interpretation compile with standard axiom reports.
+- Generic `shiftAxis`, Mild heat/transport/Duhamel operators, causal Wild
+  recursion and uniqueness, termwise positive-degree equation, mean-zero,
+  parity and support-size propagation compile.
+- Typed `Mild.Circuit` and expression compiler compile. The feedback relation
+  is proved equivalent to the unique Wild output for every boundary stream.
+- The physical initial-term equation and initial-value theorem, evaluated
+  zero-viscosity agreement, computable table mirror and kernel coefficients
+  through degree two are implemented and pass their regression builds.
+- Degree three is measured: the coefficient at (1,0), rate 1, degree 0 is
+  -5247629/15375360; counts are 52 modes and 382 entries. Three kernel checks
+  took 20.45 seconds and about 5.25 GiB peak RSS, so CI runs them separately.
+- Circuit/adversarial proofs and documentation are implemented. All three
+  panel judges pass: mathematics, circuit architecture and computation/integration.
+  The full build (6,994 jobs), four optional executables (6,811 jobs), and separate
+  degree-three regression pass without warnings. Standard axiom audits and
+  whitespace checks pass. PR CI and ordered merge/release remain; this increment
+  follows the preceding repair and generalized Euler releases.

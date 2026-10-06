@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths-ignore: ["tasks/**", "docs/**"]
+  pull_request:
+    paths-ignore: ["tasks/**", "docs/**"]
   workflow_dispatch:
 
 concurrency:
@@ -35,3 +37,5 @@ jobs:
         run: lake build
       - name: Compile optional executable entry points
         run: lake build simulation_demo simulation_process_tests rational_simulation_demo three_state_demo
+      - name: Check degree-three mild table regression separately
+        run: lake build Gimle.Asgard.Tests.MildDegreeThree
