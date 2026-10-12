@@ -45,3 +45,4 @@ import Gimle.Asgard.Tests.Mild
 import Gimle.Asgard.Tests.MildTable
 import Gimle.Asgard.Tests.MildRadius
 import Gimle.Asgard.Tests.MildClassical
+import Gimle.Asgard.Tests.AIF

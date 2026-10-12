@@ -41,3 +41,4 @@ import Gimle.Asgard.Examples.BurgersFront
 import Gimle.Asgard.Examples.EulerThreeMode
 import Gimle.Asgard.Examples.EulerBand
 import Gimle.Asgard.Examples.MildBand
+import Gimle.Asgard.Examples.AIF

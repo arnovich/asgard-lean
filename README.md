@@ -26,6 +26,7 @@ Open an example in VS Code with the Lean 4 extension:
 | --- | --- |
 | [Energy](Gimle/Asgard/Examples/EnergyDemo.lean) | Typed circuits and an exact energy identity |
 | [Equation compiler](Gimle/Asgard/Examples/PolynomialCompiler.lean) | Named equations compiled to primitive circuits |
+| [AIF biochemical model](Gimle/Asgard/Examples/AIF.lean) | Four named species equations, a fixed real sequestration parameter, and exact zero-startup feedback semantics; safety and existence remain separate |
 | [Three-state model](Gimle/Asgard/Examples/ThreeState.lean) | Coupled ODEs, exact initial data, and energy calculations |
 | [Differential isolation](Gimle/Asgard/Examples/DifferentialIsolation.lean) | `3*D_t(x) + x = y` isolated with its residual and initial data, and solved |
 | [Higher-order isolation](Gimle/Asgard/Examples/HigherOrderIsolation.lean) | `4*D_t(D_t(x)) + x = 0` lowered through a declared velocity state and its initial value, and solved |
@@ -53,6 +54,7 @@ Check an individual example with `lake env lean Gimle/Asgard/Examples/EnergyDemo
 ## Guides
 
 - [Models and proof coverage](docs/models.md)
+- [AIF source and feedback](docs/aif.md)
 - [Formal streams](docs/formal-streams.md)
 - [Circuit diagrams and SVG export](docs/circuit-viewer.md)
 - [Optional Python simulation](docs/simulation.md)
