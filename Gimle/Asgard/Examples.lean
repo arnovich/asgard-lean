@@ -1,0 +1,42 @@
+-- Gimle/Asgard/Examples/CircuitGallery.lean is deliberately NOT imported here.
+-- It pulls in Visualization.Widget, the only ProofWidgets consumer in this
+-- repository; importing it would make an Infoview UI dependency mandatory for
+-- the whole examples library. It builds as its own lean_lib target instead.
+import Gimle.Asgard.Examples.EnergyDemo
+import Gimle.Asgard.Examples.EnergyOptimization
+import Gimle.Asgard.Examples.Oscillator
+import Gimle.Asgard.Examples.VerifiedTranslation
+import Gimle.Asgard.Examples.PolynomialCompiler
+import Gimle.Asgard.Examples.Feedback
+import Gimle.Asgard.Examples.LinearOscillator
+import Gimle.Asgard.Examples.LinearDiagram
+import Gimle.Asgard.Examples.AlgebraicFeedback
+import Gimle.Asgard.Examples.DeclaredAlgebraic
+import Gimle.Asgard.Examples.StochasticJump
+import Gimle.Asgard.Examples.VariableIsolation
+import Gimle.Asgard.Examples.DifferentialIsolation
+import Gimle.Asgard.Examples.HigherOrderIsolation
+import Gimle.Asgard.Examples.DampedOscillator
+import Gimle.Asgard.Examples.SourceIntegrals
+import Gimle.Asgard.Examples.DrivenForcing
+import Gimle.Asgard.Examples.IntegralStates
+import Gimle.Asgard.Examples.NestedIntegralStates
+import Gimle.Asgard.Examples.RealAtomics
+import Gimle.Asgard.Examples.PartialFeedback
+import Gimle.Asgard.Examples.AtomicSource
+import Gimle.Asgard.Examples.FormalHeat
+import Gimle.Asgard.Examples.DeclaredHeat
+import Gimle.Asgard.Examples.HeatIsolation
+import Gimle.Asgard.Examples.PolynomialHeat
+import Gimle.Asgard.Examples.GeometricTail
+import Gimle.Asgard.Examples.ExpHeat
+import Gimle.Asgard.Examples.ExternalBlend
+import Gimle.Asgard.Examples.Approximation
+import Gimle.Asgard.Examples.EquationModels
+import Gimle.Asgard.Examples.RationalModel
+import Gimle.Asgard.Examples.ThreeState
+import Gimle.Asgard.Examples.BurgersSquare
+import Gimle.Asgard.Examples.BurgersFront
+import Gimle.Asgard.Examples.EulerThreeMode
+import Gimle.Asgard.Examples.EulerBand
+import Gimle.Asgard.Examples.MildBand
