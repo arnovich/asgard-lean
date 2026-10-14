@@ -1,3 +1,4 @@
+import Gimle.Asgard.Tests.AIF
 import Gimle.Asgard.Tests.Core
 import Gimle.Asgard.Tests.Compiler
 import Gimle.Asgard.Tests.ExportFixtures
