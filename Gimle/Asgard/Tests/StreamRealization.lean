@@ -24,8 +24,8 @@ example : ofPoly .ogf (T * X ^ 2) (Finsupp.single 0 1 + Finsupp.single 1 2) = 1 
   have mono : T * X ^ 2 = MvPolynomial.monomial (Finsupp.single 0 1 + Finsupp.single 1 2) 1 := by
     rw [MvPolynomial.X_pow_eq_monomial]
     show MvPolynomial.monomial (Finsupp.single 0 1) 1 * _ = _
-    rw [MvPolynomial.monomial_mul, one_mul]
-  rw [ofPoly_ogf_apply, ofPoly_egf_apply, mono, MvPolynomial.coeff_monomial, if_pos rfl]
+    rw [MvPolynomial.monomial_mul_monomial, one_mul]
+  rw [ofPoly_ogf_apply, ofPoly_egf_apply, mono, MvPolynomial.coeff_monomial, ite_eq_left rfl]
   simp [factorial, Fin.prod_univ_two]
 
 /-- The evaluated field is the finite sum of decoded coefficients (EGF too). -/

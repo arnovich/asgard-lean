@@ -52,7 +52,7 @@ theorem ogfD_C {d : Nat} (i : Fin d) (q : ℚ) : ogfD i (C q : Stream d) = 0 := 
   funext n
   change (n i + 1 : ℚ) * (C q : Stream d) (n.update i (n i + 1)) = 0
   rw [show (C q : Stream d) (n.update i (n i + 1)) = coeff (n.update i (n i + 1)) (C q) from rfl,
-    coeff_C, if_neg]
+    coeff_C, ite_eq_right]
   · simp
   · intro h
     have := congrArg (fun m : Index d => m i) h
@@ -80,7 +80,7 @@ theorem X_mul_ogfD {d : Nat} (i : Fin d) (a : Stream d) : X i * ogfD i a = degre
   change coeff n (X i * ogfD i a) = (n i : ℚ) * a n
   rw [X_def, coeff_monomial_mul]
   by_cases h : Finsupp.single i 1 ≤ n
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have pos : 1 ≤ n i := by simpa using h i
     have back : (n - Finsupp.single i 1).update i ((n - Finsupp.single i 1 : Index d) i + 1) = n := by
       ext j
@@ -92,7 +92,7 @@ theorem X_mul_ogfD {d : Nat} (i : Fin d) (a : Stream d) : X i * ogfD i a = degre
     simp only [Finsupp.tsub_apply, Finsupp.single_eq_same, one_mul]
     have cast : ((n i - 1 : ℕ) : ℚ) + 1 = n i := by exact_mod_cast Nat.sub_add_cancel pos
     rw [cast]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have zero : n i = 0 := by
       by_contra ne
       apply h
@@ -188,7 +188,7 @@ theorem majorizes_mono {d : Nat} {a : Stream d} {m : Majorant d} (h : Majorizes 
     Majorizes .ogf a m' := by
   intro α
   refine (h α).trans (mul_le_mul bound ?_ (le_of_lt (radiiWeight_pos m.radius_pos α)) m'.bound_nonneg)
-  refine Finset.prod_le_prod (fun i _ => le_of_lt (inv_pos.mpr (pow_pos (m.radius_pos i) _)))
+  refine Finset.prod_le_prod₀ (fun i _ => le_of_lt (inv_pos.mpr (pow_pos (m.radius_pos i) _)))
     fun i _ => ?_
   exact inv_anti₀ (pow_pos (m'.radius_pos i) _) (pow_le_pow_left₀ (le_of_lt (m'.radius_pos i))
     (radius i) _)
@@ -228,7 +228,7 @@ theorem card_antidiagonal_eq {d : Nat} (α : Index d) :
 theorem card_antidiagonal_le {d : Nat} (α : Index d) :
     ((Finset.antidiagonal α).card : ℚ) ≤ ∏ i, (2 : ℚ) ^ α i := by
   rw [card_antidiagonal_eq]
-  refine Finset.prod_le_prod (fun i _ => by positivity) fun i _ => ?_
+  refine Finset.prod_le_prod₀ (fun i _ => by positivity) fun i _ => ?_
   exact_mod_cast Nat.lt_two_pow_self (n := α i)
 
 /-- **Products.** Bounds multiply and radii halve: the antidiagonal of `α` has
@@ -342,7 +342,7 @@ theorem sum_antidiagonal_qpow_lt_le {d : Nat} {q : Fin d → ℚ} (hq0 : ∀ i, 
   rw [← Finset.sum_filter, filter_eq, Finset.sum_erase_eq_sub mem, qpow_zero,
     sum_antidiagonal_qpow]
   refine sub_le_sub_right ?_ 1
-  exact Finset.prod_le_prod (fun i _ => Finset.sum_nonneg fun j _ => pow_nonneg (hq0 i) _)
+  exact Finset.prod_le_prod₀ (fun i _ => Finset.sum_nonneg fun j _ => pow_nonneg (hq0 i) _)
     fun i _ => geom_partial_le (hq0 i) (hq1 i) _
 /-- **Inverse.** If `φ` has constant term `c` and the rest of it is majorized
 by `M` at radii `R`, then `φ⁻¹` is majorized by `1/|c|` at any smaller radii `r`
@@ -366,7 +366,7 @@ theorem coeff_inv_le {d : Nat} (φ : Stream d) {c M : ℚ} (hc : constantCoeff �
     rw [show coeff (0 : Index d) φ⁻¹ = (constantCoeff φ)⁻¹ from
       (congrFun coeff_zero_eq_constantCoeff φ⁻¹).trans (constantCoeff_inv φ), hc, abs_inv]
     simp [radiiWeight]
-  rw [coeff_inv, if_neg hα, hc, abs_mul, abs_neg, abs_inv]
+  rw [coeff_inv, ite_eq_right hα, hc, abs_mul, abs_neg, abs_inv]
   refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr (abs_nonneg c))
   have wpos := radiiWeight_pos hr α
   calc |∑ x ∈ Finset.antidiagonal α, if x.2 < α then coeff x.1 φ * coeff x.2 φ⁻¹ else 0|

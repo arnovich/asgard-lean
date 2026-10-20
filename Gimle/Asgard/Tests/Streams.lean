@@ -26,7 +26,7 @@ example : integral .ogf 0 (0 : Stream 2) (MvPowerSeries.X 0) = 0 := by
     intro eq
     subst n
     simp at h
-  · simp only [integral, h, if_false]
+  · simp only [integral, h, ite_false]
     change (0 : ℚ) / (n 0 : ℚ) = 0
     exact zero_div _
 
@@ -198,14 +198,12 @@ example : reindex cycle asymmetric degrees = 213 := by
   have h1 : cycle 1 = 0 := by decide
   have h2 : cycle 2 = 1 := by decide
   norm_num [reindex, pullIndex, asymmetric, degrees, h0, h1, h2, Matrix.cons_val]
-  norm_num [show (![1,2,3] : Fin 3 → ℕ) 2 = 3 from rfl]
 
 example : reindex cycle.symm asymmetric degrees ≠ 213 := by
   have h0 : cycle.symm 0 = 1 := by decide
   have h1 : cycle.symm 1 = 2 := by decide
   have h2 : cycle.symm 2 = 0 := by decide
   norm_num [reindex, pullIndex, asymmetric, degrees, h0, h1, h2, Matrix.cons_val]
-  norm_num [show (![1,2,3] : Fin 3 → ℕ) 2 = 3 from rfl]
 
 example (basis : Basis) (a boundary : Stream 3) :
     reindex cycle (integral basis 0 a boundary) =

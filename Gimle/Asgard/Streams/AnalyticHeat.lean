@@ -151,8 +151,8 @@ private theorem egf_stream_pde (g : ℕ → ℚ) :
       derivative .egf 1 (derivative .egf 1 (stream .egf g)) := by
   funext n
   simp only [derivative, stream_egf_apply, Finsupp.update_apply]
-  simp only [Fin.isValue, if_true, show ((1 : Fin 2) = 0) = False by decide,
-    show ((0 : Fin 2) = 1) = False by decide, if_false]
+  simp only [Fin.isValue, ite_true, show ((1 : Fin 2) = 0) = False by decide,
+    show ((0 : Fin 2) = 1) = False by decide, ite_false]
   congr 1
   ring
 
@@ -170,7 +170,7 @@ theorem stream_pde (basis : Basis) (g : ℕ → ℚ) :
 
 private theorem series_slice (g : ℕ → ℚ) (n : Index 2) (zero : n 0 = 0) :
     series g n = boundarySeries g n := by
-  simp only [series, boundarySeries, zero, factorial_two, if_true, mul_zero, add_zero,
+  simp only [series, boundarySeries, zero, factorial_two, ite_true, mul_zero, add_zero,
     Nat.factorial_zero, Nat.cast_one, one_mul]
 
 /-- On the `t = 0` slice the heat stream is the boundary profile. -/
@@ -210,7 +210,7 @@ noncomputable def ofPolynomial (p : Heat.Profile) : ℕ → ℚ :=
   fun j => (j.factorial : ℚ) * p.coeff j
 
 private theorem coeff_lift (p : Heat.Profile) (n : Index 2) :
-    MvPolynomial.coeff n (Heat.lift p) = if n 0 = 0 then p.coeff (n 1) else 0 := by
+    (Heat.lift p).coeff n = if n 0 = 0 then p.coeff (n 1) else 0 := by
   classical
   have expand : Heat.lift p =
       ∑ i ∈ p.support, MvPolynomial.monomial (Finsupp.single 1 i) (p.coeff i) := by
@@ -234,7 +234,7 @@ private theorem coeff_lift (p : Heat.Profile) (n : Index 2) :
     split_ifs with h
     · rfl
     · exact (not_not.mp h).symm
-  · refine Finset.sum_eq_zero fun i _ => if_neg fun h => zero ?_
+  · refine Finset.sum_eq_zero fun i _ => ite_eq_right fun h => zero ?_
     rw [← h]
     simp
 
@@ -243,7 +243,7 @@ theorem boundary_ofPolynomial (basis : Basis) (p : Heat.Profile) :
   rw [Heat.boundary, ofPoly, boundary]
   congr 1
   funext n
-  change boundarySeries (ofPolynomial p) n = MvPolynomial.coeff n (Heat.lift p)
+  change boundarySeries (ofPolynomial p) n = (Heat.lift p).coeff n
   rw [coeff_lift, boundarySeries, ofPolynomial]
   split_ifs
   · field_simp

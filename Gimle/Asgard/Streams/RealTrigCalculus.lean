@@ -268,7 +268,7 @@ theorem l1_laplacianInv_le (P : RealPoly) : l1 (laplacianInv P) ≤ l1 P := by
   refine Finset.sum_le_sum fun k _ => ?_
   by_cases hk : k = 0
   · subst hk; simp
-  · rw [laplacianInv_apply, if_neg hk, abs_neg, abs_div,
+  · rw [laplacianInv_apply, ite_eq_right hk, abs_neg, abs_div,
       abs_of_pos (show (0 : ℝ) < lam k by exact_mod_cast lam_pos hk)]
     exact div_le_self (abs_nonneg _) (one_le_lam hk)
 
@@ -287,7 +287,7 @@ theorem sum_laplacianInv (P : RealPoly) (c f : Wave → ℝ) :
   refine Finset.sum_congr rfl fun p _ => ?_
   by_cases hp : p = 0
   · subst hp; simp [lam]
-  · simp only [laplacianInv_apply, hp, if_false]
+  · simp only [laplacianInv_apply, hp, ite_false]
     ring
 
 /-- `∂₁ ψ` for `ψ = field (Δ⁻¹P)`, over the support of `P`. -/

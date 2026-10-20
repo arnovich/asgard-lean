@@ -274,7 +274,7 @@ theorem integral_agree {d : Nat} (basis : Basis) {axis : Fin d} {k : ℕ} {a b c
   by_cases zero : m axis = 0
   · rw [integral_boundary _ _ _ _ _ zero, integral_boundary _ _ _ _ _ zero, slice m zero]
   · have prev : (m.update axis (m axis - 1)) axis = m axis - 1 := by simp
-    cases basis <;> simp only [integral, zero, if_false] <;> rw [h _ (by rw [prev]; omega)]
+    cases basis <;> simp only [integral, zero, ite_false] <;> rw [h _ (by rw [prev]; omega)]
 
 /-- The axis `axis` of `Stream d` in the given basis: agreement below a degree,
 the stream derivative and integral, and gluing by reading each coefficient

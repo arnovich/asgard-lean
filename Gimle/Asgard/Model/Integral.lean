@@ -123,7 +123,7 @@ theorem primitiveFrom_eq {start : ℝ} {f : ℝ → Option ℝ} {F g : ℝ → �
   have ex : ∃ F : ℝ → ℝ, F start = 0 ∧
       ∀ s ∈ Ici start, ∃ x, f s = some x ∧ HasDerivWithinAt F x (Ici start) s :=
     ⟨F, h0, fun s hs => ⟨g s, hf s hs, hF s hs⟩⟩
-  rw [primitiveFrom, dif_pos ex]
+  rw [primitiveFrom, dite_eq_left ex]
   obtain ⟨c0, cd⟩ := ex.choose_spec
   have hc : ∀ s ∈ Ici start, HasDerivWithinAt ex.choose (g s) (Ici start) s := by
     intro s hs
@@ -139,7 +139,7 @@ theorem derivFrom_eq {start : ℝ} {f : ℝ → Option ℝ} {g : ℝ → ℝ} {r
     (ht : t ∈ Ici start) : derivFrom start f t = some r := by
   have ex : ∃ g : ℝ → ℝ, (∀ s ∈ Ici start, f s = some (g s)) ∧
       DifferentiableWithinAt ℝ g (Ici start) t := ⟨g, hf, hd.differentiableWithinAt⟩
-  rw [derivFrom, dif_pos ex]
+  rw [derivFrom, dite_eq_left ex]
   obtain ⟨cf, -⟩ := ex.choose_spec
   have eq : EqOn ex.choose g (Ici start) := by
     intro s hs
@@ -186,7 +186,7 @@ theorem primitiveFrom_iff {start : ℝ} {f : ℝ → Option ℝ} {g : ℝ → �
     have eq : ∀ t ∈ Ici start, ex.choose t = g t := by
       intro t ht
       have := h t ht
-      rw [primitiveFrom, dif_pos ex, Option.some.injEq] at this
+      rw [primitiveFrom, dite_eq_left ex, Option.some.injEq] at this
       exact this
     refine ⟨(Option.some.inj h0) ▸ c0, fun s hs => ?_⟩
     obtain ⟨x, hx, hd⟩ := cd s hs
@@ -194,7 +194,7 @@ theorem primitiveFrom_iff {start : ℝ} {f : ℝ → Option ℝ} {g : ℝ → �
   · rintro ⟨h0, hd⟩ t ht
     have ex : ∃ F : ℝ → ℝ, F start = 0 ∧
         ∀ s ∈ Ici start, ∃ x, f s = some x ∧ HasDerivWithinAt F x (Ici start) s := ⟨g, h0, hd⟩
-    rw [primitiveFrom, dif_pos ex]
+    rw [primitiveFrom, dite_eq_left ex]
     obtain ⟨c0, cd⟩ := ex.choose_spec
     have deriv : ∀ {G : ℝ → ℝ}, (∀ s ∈ Ici start, ∃ x, f s = some x ∧
         HasDerivWithinAt G x (Ici start) s) →
@@ -949,13 +949,13 @@ the trajectory (`Term.cancelAtom_agrees`). Together they discharge the premise o
 /-- An evolution-axis integral reads the antiderivative of its integrand. -/
 theorem Term.along_integral_axis (T : Trajectory) (X : Term) (t : ℝ) :
     (Term.integral T.axis X).along T t = primitiveFrom T.start (X.along T) t := by
-  simp only [Term.along, if_true]
+  simp only [Term.along, ite_true]
 
 /-- An evolution-axis derivative of a non-chain reads the derivative within the
 half-line. -/
 theorem Term.along_derivative_nonchain {T : Trajectory} {op : Term} (h : op.chain = none)
     (t : ℝ) : (Term.derivative T.axis op).along T t = derivFrom T.start (op.along T) t := by
-  simp only [Term.along, h, if_true]
+  simp only [Term.along, h, ite_true]
 
 /-- The integral from the start reads only its integrand on the half-line. -/
 theorem primitiveFrom_congr {start : ℝ} {f f' : ℝ → Option ℝ}
@@ -980,7 +980,7 @@ theorem primitiveFrom_congr {start : ℝ} {f f' : ℝ → Option ℝ}
         ∀ s ∈ Ici start, ∃ x, f' s = some x ∧ HasDerivWithinAt F x (Ici start) s := by
       rintro ⟨F, h0, hd⟩
       exact ex ⟨F, h0, fun s hs => by rw [h s hs]; exact hd s hs⟩
-    simp only [primitiveFrom, dif_neg ex, dif_neg ex']
+    simp only [primitiveFrom, dite_eq_right ex, dite_eq_right ex']
 
 /-- The derivative within the half-line reads only the function on the half-line. -/
 theorem derivFrom_congr {start : ℝ} {f f' : ℝ → Option ℝ}
@@ -995,7 +995,7 @@ theorem derivFrom_congr {start : ℝ} {f f' : ℝ → Option ℝ}
         DifferentiableWithinAt ℝ g (Ici start) t := by
       rintro ⟨g, hg, hd⟩
       exact ex ⟨g, fun s hs => (h s hs).trans (hg s hs), hd⟩
-    simp only [derivFrom, dif_neg ex, dif_neg ex']
+    simp only [derivFrom, dite_eq_right ex, dite_eq_right ex']
 
 /-- An inverse pair reads only its integrand's trajectory reading on the half-line. -/
 theorem Term.along_pair_congr {T : Trajectory} {a b : String} {X Y : Term}
@@ -1538,12 +1538,12 @@ theorem Term.cancelAtom_below {c : Context} {n : Nat} {u : Term} (hu : u.size �
         split
         · rfl
         · simp only [size] at hu
-          simp only [Boundary.below, if_pos (show (Term.derivative a op).size < n by
+          simp only [Boundary.below, ite_eq_left (show (Term.derivative a op).size < n by
             simp only [size]; omega)]
           rfl
       · rename_i b X _
         simp only [size] at hu
-        simp only [hb, hb', Option.bind_some, Boundary.below, if_pos (show X.size < n by omega)]
+        simp only [hb, hb', Option.bind_some, Boundary.below, ite_eq_left (show X.size < n by omega)]
         rfl
       · rfl
 

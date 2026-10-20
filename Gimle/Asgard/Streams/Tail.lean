@@ -95,7 +95,7 @@ private theorem hasSum_geometric_tail {q : ℝ} (h0 : 0 ≤ q) (h1 : q < 1) (N :
     HasSum (fun k : ℕ => if N ≤ k then q ^ k else 0) (q ^ N * (1 - q)⁻¹) := by
   rw [← hasSum_nat_add_iff' N]
   have zero : ∑ i ∈ Finset.range N, (if N ≤ i then q ^ i else 0) = 0 :=
-    Finset.sum_eq_zero fun i hi => if_neg (by simpa using hi)
+    Finset.sum_eq_zero fun i hi => ite_eq_right (by simpa using hi)
   rw [zero, sub_zero]
   refine ((hasSum_geometric_of_lt_one h0 h1).mul_left (q ^ N)).congr_fun fun k => ?_
   simp [pow_add, mul_comm]
@@ -188,7 +188,7 @@ theorem norm_seriesTerm_le (majorizes : Majorizes basis a m) {x : Fin d → ℝ}
     push_cast at h
     exact h
   have mono : ∏ i, |x i| ^ α i ≤ ∏ i, (b.radius i : ℝ) ^ α i :=
-    Finset.prod_le_prod (fun i _ => by positivity)
+    Finset.prod_le_prod₀ (fun i _ => by positivity)
       (fun i _ => pow_le_pow_left₀ (abs_nonneg _) (hx i) _)
   have rhs : (m.bound : ℝ) * (∏ i, ((m.radius i : ℝ) ^ α i)⁻¹) * ∏ i, (b.radius i : ℝ) ^ α i =
       (m.bound : ℝ) * ∏ i, (ratio m b i : ℝ) ^ α i := by
@@ -264,8 +264,8 @@ theorem abs_analyticField_sub_windowField_le (majorizes : Majorizes basis a m)
       (windowField basis N a x) := by
     have h : HasSum (fun α => if α ∈ window N then seriesTerm basis a x α else 0)
         (∑ α ∈ window N, if α ∈ window N then seriesTerm basis a x α else 0) :=
-      hasSum_sum_of_ne_finset_zero fun α hα => if_neg hα
-    rw [Finset.sum_congr rfl fun α hα => if_pos hα] at h
+      hasSum_sum_of_ne_finset_zero fun α hα => ite_eq_right hα
+    rw [Finset.sum_congr rfl fun α hα => ite_eq_left hα] at h
     exact h
   have hT : HasSum (fun α => if α ∈ window N then 0 else seriesTerm basis a x α)
       (analyticField basis a x - windowField basis N a x) :=
@@ -510,14 +510,14 @@ noncomputable def windowPoly {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : 
   polyOfCoeffs (window N) (decode basis (truncate N a))
 
 theorem coeff_windowPoly {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : Stream d) (α : Index d) :
-    MvPolynomial.coeff α (windowPoly basis N a) = decode basis (truncate N a) α := by
+    (windowPoly basis N a).coeff α = decode basis (truncate N a) α := by
   refine coeff_polyOfCoeffs _ _ (fun n hn => ?_) α
   rw [mem_window]
   by_contra out
   apply hn
   rw [decode_truncate]
   simp only [truncate]
-  exact if_neg out
+  exact ite_eq_right out
 
 /-- The truncated stream is polynomially realized, in its own basis. -/
 theorem truncate_realizes {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : Stream d) :
@@ -537,7 +537,7 @@ theorem field_windowPoly {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : Stre
     seriesTerm]
   refine Finset.sum_congr rfl fun α hα => ?_
   rw [Finsupp.prod_fintype _ _ (fun i => pow_zero _), decode_truncate]
-  simp only [truncate, if_pos ((mem_window N α).mp hα)]
+  simp only [truncate, ite_eq_left ((mem_window N α).mp hα)]
   rfl
 
 /-- The window field is also the analytic field of the truncated stream: a
@@ -546,10 +546,10 @@ theorem analyticField_truncate {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a 
     (x : Fin d → ℝ) : analyticField basis (truncate N a) x = windowField basis N a x := by
   rw [analyticField, tsum_eq_sum (s := window N)]
   · refine Finset.sum_congr rfl fun α hα => ?_
-    simp only [seriesTerm, decode_truncate, truncate, if_pos ((mem_window N α).mp hα)]
+    simp only [seriesTerm, decode_truncate, truncate, ite_eq_left ((mem_window N α).mp hα)]
   · intro α hα
     rw [mem_window] at hα
-    simp only [seriesTerm, decode_truncate, truncate, if_neg hα, Rat.cast_zero, zero_mul]
+    simp only [seriesTerm, decode_truncate, truncate, ite_eq_right hα, Rat.cast_zero, zero_mul]
 
 /-! ## Finite prefixes certify nothing -/
 

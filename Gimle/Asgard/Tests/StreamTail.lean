@@ -54,7 +54,7 @@ theorem hostile_diverges (N : ℕ) : ¬ Summable (seriesTerm .ogf (hostile N) ![
     intro m hm
     simp only [Function.comp_apply, seriesTerm, decode, hostile, single_zero_apply_one,
       Finsupp.single_eq_same, Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
-      pow_zero, mul_one, true_and, if_pos hm]
+      pow_zero, mul_one, true_and, ite_eq_left hm]
     push_cast
     rw [← mul_pow]
     norm_num

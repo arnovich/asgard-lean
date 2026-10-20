@@ -282,7 +282,7 @@ theorem transport_eq_jacobian {P : TrigPoly} (hP : MeanZero P) (Q : TrigPoly) (k
     rw [Finsupp.mem_support_iff] at hp
     exact hp (e ▸ hP)
   split_ifs
-  · rw [laplacianInv_apply, if_neg p0, coupling]
+  · rw [laplacianInv_apply, ite_eq_right p0, coupling]
     field_simp [lam_ne_zero p0]
   · rfl
 

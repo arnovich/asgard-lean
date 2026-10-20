@@ -25,12 +25,12 @@ def ν : ℚ := 1 / 10
 
 /-- Coefficients at `n 0 = 0` of `T * q` vanish. -/
 theorem coeff_T_mul_slice (q : Poly 2) (n : Index 2) (zero : n 0 = 0) :
-    MvPolynomial.coeff n (T * q) = 0 := by
+    (T * q).coeff n = 0 := by
   rw [MvPolynomial.coeff_X_mul']
   simp [zero]
 
 theorem coeff_T_pow_mul_slice (k : ℕ) (q : Poly 2) (n : Index 2) (zero : n 0 = 0) :
-    MvPolynomial.coeff n (T ^ (k + 1) * q) = 0 := by
+    (T ^ (k + 1) * q).coeff n = 0 := by
   rw [pow_succ', mul_assoc, coeff_T_mul_slice _ _ zero]
 
 /-- The constants of the iterates, as multiples of `ν`. -/
@@ -59,7 +59,7 @@ theorem picard_one :
     simp
     ring
   · intro n zero
-    rw [MvPolynomial.coeff_add, coeff_T_mul_slice _ _ zero, add_zero]
+    rw [AddMonoidAlgebra.coeff_add, Finsupp.add_apply, coeff_T_mul_slice _ _ zero, add_zero]
 
 /-- Second iterate: right to `t²`; its `t³` term is an artefact of the iteration. -/
 theorem picard_two :
@@ -74,7 +74,7 @@ theorem picard_two :
     simp
     ring
   · intro n zero
-    simp only [MvPolynomial.coeff_add, coeff_T_mul_slice _ _ zero,
+    simp only [AddMonoidAlgebra.coeff_add, Finsupp.add_apply, coeff_T_mul_slice _ _ zero,
       coeff_T_pow_mul_slice _ _ _ zero, add_zero]
 
 /-- Third iterate: right to `t³` (`16x²/5 − 14x⁵`); the terms from `t⁴` on are
@@ -98,7 +98,7 @@ theorem picard_three :
     simp [ν]
     ring
   · intro n zero
-    simp only [MvPolynomial.coeff_add, coeff_T_mul_slice _ _ zero,
+    simp only [AddMonoidAlgebra.coeff_add, Finsupp.add_apply, coeff_T_mul_slice _ _ zero,
       coeff_T_pow_mul_slice _ _ _ zero, add_zero]
 
 /-- The stream's coefficient of `t` is `1/5`: the viscous term alone, since

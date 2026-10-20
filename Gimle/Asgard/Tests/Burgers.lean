@@ -35,7 +35,7 @@ example : ¬ Causal.IsCausal (0 : Fin 2) (derivative .ogf 0) := by
     intro m hm
     have zero : m 0 = 0 := Nat.le_zero.mp hm
     change (0 : ℚ) = MvPowerSeries.coeff m (MvPowerSeries.X 0)
-    rw [MvPowerSeries.coeff_X, if_neg]
+    rw [MvPowerSeries.coeff_X, ite_eq_right]
     intro same
     have := congrArg (fun q : Index 2 => q 0) same
     simp [zero] at this
@@ -59,8 +59,8 @@ example (basis : Basis) (ν : ℚ) (g : Poly 2) :
     stream basis ν (ofPoly basis (X ^ 2 + T * g)) = stream basis ν (ofPoly basis (X ^ 2)) := by
   apply stream_congr_slice
   intro m zero
-  cases basis <;> simp only [ofPoly_ogf_apply, ofPoly_egf_apply, MvPolynomial.coeff_add,
-    coeff_T_mul_slice _ _ zero, add_zero]
+  cases basis <;> simp only [ofPoly_ogf_apply, ofPoly_egf_apply, AddMonoidAlgebra.coeff_add,
+    Finsupp.add_apply, coeff_T_mul_slice _ _ zero, add_zero]
 
 /-- Two solutions with the same profile agree, in either basis and for any `ν`. -/
 example (basis : Basis) (ν : ℚ) (a b : Stream 2)

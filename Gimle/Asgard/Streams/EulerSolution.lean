@@ -99,8 +99,7 @@ theorem hasDerivAt_sum_cos_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.cos (hasDerivAt_phase_fst k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A cosine sum's derivative in the second coordinate. -/
 theorem hasDerivAt_sum_cos_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -109,8 +108,7 @@ theorem hasDerivAt_sum_cos_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.cos (hasDerivAt_phase_snd k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A sine sum's derivative in the first coordinate. -/
 theorem hasDerivAt_sum_sin_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -119,8 +117,7 @@ theorem hasDerivAt_sum_sin_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.sin (hasDerivAt_phase_fst k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A sine sum's derivative in the second coordinate. -/
 theorem hasDerivAt_sum_sin_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -129,8 +126,7 @@ theorem hasDerivAt_sum_sin_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.sin (hasDerivAt_phase_snd k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- `∂₁ field P = fieldD₁ P`. -/
 theorem hasDerivAt_field_fst (P : TrigPoly) (x : ℝ × ℝ) :
@@ -330,7 +326,7 @@ theorem l1_laplacianInv_le (P : TrigPoly) : l1 (laplacianInv P) ≤ l1 P := by
   refine Finset.sum_le_sum fun k _ => ?_
   by_cases hk : k = 0
   · subst hk; simp
-  · rw [laplacianInv_apply, if_neg hk, abs_neg, abs_div,
+  · rw [laplacianInv_apply, ite_eq_right hk, abs_neg, abs_div,
       abs_of_pos (show (0 : ℚ) < lam k by exact_mod_cast lam_pos hk)]
     exact div_le_self (abs_nonneg _) (one_le_lam hk)
 
@@ -349,7 +345,7 @@ theorem sum_laplacianInv (P : TrigPoly) (c f : Wave → ℝ) :
   refine Finset.sum_congr rfl fun p _ => ?_
   by_cases hp : p = 0
   · subst hp; simp [lam]
-  · simp only [laplacianInv_apply, hp, if_false]
+  · simp only [laplacianInv_apply, hp, ite_false]
     push_cast
     ring
 

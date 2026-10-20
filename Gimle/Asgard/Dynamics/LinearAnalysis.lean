@@ -64,7 +64,7 @@ theorem unique_on {n : Nat} (L : Point n →L[ℝ] Point n) (start : ℝ)
     fun t ht => hasDerivWithinAt_pi.mpr (hy t ht)
   intro t ht
   have equal : Set.EqOn x y (Set.Icc start t) :=
-    ODE_solution_unique (v := fun _ z => L z) (fun _ => L.lipschitz)
+    ODE_solution_unique (v := fun _ z => L z) (fun _ => L.lipschitzWith)
       (fun u hu => (hx' u hu.1).continuousWithinAt.mono (fun _ hv => hv.1))
       (fun u hu => (hx' u hu.1).mono (fun _ hv => le_trans hu.1 hv))
       (fun u hu => (hy' u hu.1).continuousWithinAt.mono (fun _ hv => hv.1))

@@ -72,12 +72,12 @@ theorem coeff_inv_window (φ : Stream d) (hc : constantCoeff φ ≠ 0) (N : Fin 
   have id := identity α hα
   by_cases h0 : α = 0
   · subst h0
-    rw [Finsupp.antidiagonal_zero, Finset.sum_singleton, if_pos rfl,
+    rw [Finsupp.antidiagonal_zero, Finset.sum_singleton, ite_eq_left rfl,
       coeff_zero_eq_constantCoeff_apply] at id
     rw [show coeff (0 : Index d) φ⁻¹ = (constantCoeff φ)⁻¹ from
       (congrFun coeff_zero_eq_constantCoeff φ⁻¹).trans (constantCoeff_inv φ)]
     exact (eq_inv_of_mul_eq_one_right id).symm
-  rw [coeff_inv, if_neg h0]
+  rw [coeff_inv, ite_eq_right h0]
   have mem : ((0 : Index d), α) ∈ Finset.antidiagonal α :=
     Finset.mem_antidiagonal.mpr (zero_add α)
   have filt : (Finset.antidiagonal α).filter (fun p => p.2 < α) =
@@ -100,7 +100,7 @@ theorem coeff_inv_window (φ : Stream d) (hc : constantCoeff φ ≠ 0) (N : Fin 
     split_ifs with lt
     · rw [ih p.2 lt (below_of_le hα (le_of_lt lt))]
     · rfl
-  rw [same, ite_sum, if_neg h0] at *
+  rw [same, ite_sum, ite_eq_right h0] at *
   rw [id, zero_sub, coeff_zero_eq_constantCoeff_apply]
   field_simp
 
@@ -145,7 +145,7 @@ theorem sum_window_eq_grid {M : Type*} [AddCommMonoid M] (N : Fin d → ℕ) (hN
 theorem abs_monomial_le {b : Box d} {x : Fin d → ℝ} (hx : b.Mem x) (α : Index d) :
     |∏ i, x i ^ α i| ≤ ∏ i, ((b.radius i : ℚ) : ℝ) ^ α i := by
   rw [Finset.abs_prod]
-  refine Finset.prod_le_prod (fun i _ => abs_nonneg _) fun i _ => ?_
+  refine Finset.prod_le_prod₀ (fun i _ => abs_nonneg _) fun i _ => ?_
   rw [abs_pow]
   exact pow_le_pow_left₀ (abs_nonneg _) (hx i) _
 
@@ -174,9 +174,9 @@ theorem abs_windowField_sub_le (N : Fin d → ℕ) (hN : ∀ i, 0 < N i) (a : St
           (if α = 0 then 0 else |((coeff α a : ℚ) : ℝ)| * ∏ i, ((b.radius i : ℚ) : ℝ) ^ α i) := by
         rw [← Finset.sum_erase (window N) (f := fun α =>
           if α = 0 then (0 : ℝ) else |((coeff α a : ℚ) : ℝ)| * ∏ i, ((b.radius i : ℚ) : ℝ) ^ α i)
-          (if_pos rfl)]
+          (ite_eq_left rfl)]
         refine Finset.sum_congr rfl fun α hα => ?_
-        rw [if_neg (Finset.ne_of_mem_erase hα)]
+        rw [ite_eq_right (Finset.ne_of_mem_erase hα)]
 
 /-- At a rational point the window field is a rational sum, cast. -/
 theorem windowField_rat (N : Fin d → ℕ) (a : Stream d) (p : Fin d → ℚ) :

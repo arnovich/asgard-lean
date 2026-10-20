@@ -56,7 +56,7 @@ theorem tsum_triad (w W : Wave → ℝ) (hw : ∀ k, w (-k) = w k) (p q : Wave) 
     ring
   · intro r hr
     simp only [RealPoly.triad]
-    rw [if_neg (fun h => hr (eq_neg_of_add_eq_zero_right h))]
+    rw [ite_eq_right (fun h => hr (eq_neg_of_add_eq_zero_right h))]
 
 /-- The double flux is an absolutely convergent triple sum. -/
 theorem fourierFlux_eq_triad {w W : Wave → ℝ} (hw : ∀ k, |w k| ≤ 1)

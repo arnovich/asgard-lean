@@ -166,7 +166,7 @@ theorem same_prefix :
   · have : tail n = 0 := by
       have := inside 1
       simp only [tail]
-      rw [if_neg (by simp at this; omega)]
+      rw [ite_eq_right (by simp at this; omega)]
     change stream .ogf _ n + tail n = _
     rw [this, add_zero]
   · rfl

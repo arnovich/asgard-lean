@@ -40,17 +40,17 @@ noncomputable def ofPoly {d : Nat} (basis : Basis) (p : Poly d) : Stream d :=
   decode_encode basis _
 
 theorem ofPoly_ogf_apply {d : Nat} (p : Poly d) (n : Index d) :
-    ofPoly .ogf p n = MvPolynomial.coeff n p :=
+    ofPoly .ogf p n = p.coeff n :=
   MvPolynomial.coeff_coe p n
 
 theorem ofPoly_egf_apply {d : Nat} (p : Poly d) (n : Index d) :
-    ofPoly .egf p n = factorial n * MvPolynomial.coeff n p := by
+    ofPoly .egf p n = factorial n * p.coeff n := by
   change factorial n * MvPowerSeries.coeff n (p : MvPowerSeries (Fin d) ℚ) = _
   rw [MvPolynomial.coeff_coe]
 
 /-- The decoded coefficient at every index is the polynomial coefficient. -/
 theorem decode_ofPoly_apply {d : Nat} (basis : Basis) (p : Poly d) (n : Index d) :
-    decode basis (ofPoly basis p) n = MvPolynomial.coeff n p := by
+    decode basis (ofPoly basis p) n = p.coeff n := by
   rw [decode_ofPoly]
   exact MvPolynomial.coeff_coe p n
 
@@ -78,7 +78,7 @@ noncomputable def polyOfCoeffs {d : Nat} (s : Finset (Index d)) (f : Index d →
 
 theorem coeff_polyOfCoeffs {d : Nat} (s : Finset (Index d)) (f : Index d → ℚ)
     (support : ∀ n, f n ≠ 0 → n ∈ s) (m : Index d) :
-    MvPolynomial.coeff m (polyOfCoeffs s f) = f m := by
+    (polyOfCoeffs s f).coeff m = f m := by
   classical
   simp only [polyOfCoeffs, MvPolynomial.coeff_sum, MvPolynomial.coeff_monomial,
     Finset.sum_ite_eq']
@@ -187,7 +187,7 @@ theorem field_eq_sum {d : Nat} (basis : Basis) (p : Poly d) (x : Fin d → ℝ) 
 
 /-- A numeral factor scales every coefficient. -/
 @[simp] theorem coeff_ofNat_mul {d : Nat} (k : ℕ) [k.AtLeastTwo] (n : Index d) (p : Poly d) :
-    MvPolynomial.coeff n ((ofNat(k) : Poly d) * p) = ofNat(k) * MvPolynomial.coeff n p := by
+    ((ofNat(k) : Poly d) * p).coeff n = ofNat(k) * p.coeff n := by
   rw [← map_ofNat (MvPolynomial.C (σ := Fin d) (R := ℚ)) k, MvPolynomial.coeff_C_mul]
 
 /-- Polynomial fields over ℝ determine the rational polynomial. -/
@@ -264,14 +264,14 @@ theorem integral_coe {d : Nat} (i : Fin d) (p b : Poly d) :
   · left
     refine ⟨?_, zero⟩
     have := hm
-    simp only [integral, zero, if_true] at this
+    simp only [integral, zero, ite_true] at this
     rwa [← MvPolynomial.coeff_coe]
   · right
     have pos : 0 < m i := Nat.pos_of_ne_zero zero
     refine ⟨m.update i (m i - 1), ?_, ?_⟩
     · intro coeff_zero
       apply hm
-      simp only [integral, zero, if_false]
+      simp only [integral, zero, ite_false]
       change MvPowerSeries.coeff _ (p : MvPowerSeries (Fin d) ℚ) / _ = 0
       rw [MvPolynomial.coeff_coe, coeff_zero, zero_div]
     · rw [← update_succ]
@@ -294,7 +294,7 @@ theorem pderiv_integralPoly {d : Nat} (i : Fin d) (p b : Poly d) :
 
 /-- Along axis degree zero the integral keeps every boundary coefficient. -/
 theorem coeff_integralPoly_boundary {d : Nat} (i : Fin d) (p b : Poly d) (n : Index d)
-    (zero : n i = 0) : MvPolynomial.coeff n (integralPoly i p b) = MvPolynomial.coeff n b := by
+    (zero : n i = 0) : (integralPoly i p b).coeff n = b.coeff n := by
   rw [← ofPoly_ogf_apply, ← integral_ofPoly, integral_boundary _ _ _ _ _ zero, ofPoly_ogf_apply]
 
 /-- Single-axis polynomial substitution: axis `i` of `p` is replaced by `q`. -/
@@ -392,11 +392,11 @@ theorem field_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (x : Fin d → ℝ
   rw [MvPolynomial.aeval_bind₁, point]
 
 theorem coeff_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (n : Index d) :
-    MvPolynomial.coeff n (restrictZero i p) = if n i = 0 then MvPolynomial.coeff n p else 0 := by
+    (restrictZero i p).coeff n = if n i = 0 then p.coeff n else 0 := by
   classical
   induction p using MvPolynomial.induction_on' with
   | add p q hp hq =>
-      simp only [restrictZero, map_add, MvPolynomial.coeff_add] at hp hq ⊢
+      simp only [restrictZero, map_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply] at hp hq ⊢
       rw [hp, hq]
       split_ifs <;> simp
   | monomial m c =>
@@ -421,7 +421,7 @@ theorem coeff_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (n : Index d) :
       · have prod : ∏ j ∈ m.support, (Function.update MvPolynomial.X i 0 j : Poly d) ^ m j = 0 := by
           apply Finset.prod_eq_zero (i := i) (Finsupp.mem_support_iff.mpr hm)
           simp [zero_pow hm]
-        rw [prod, mul_zero, MvPolynomial.coeff_zero, MvPolynomial.coeff_monomial]
+        rw [prod, mul_zero, AddMonoidAlgebra.coeff_zero, MvPolynomial.coeff_monomial]
         split_ifs with e h
         · subst h; exact absurd e hm
         · rfl
@@ -430,7 +430,7 @@ theorem coeff_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (n : Index d) :
 /-- Two polynomials with equal coefficients on the axis-`i` zero slice have equal
 fields on the hyperplane `x_i = 0`, and conversely. -/
 theorem slice_iff {d : Nat} (i : Fin d) (p q : Poly d) :
-    (∀ n : Index d, n i = 0 → MvPolynomial.coeff n p = MvPolynomial.coeff n q) ↔
+    (∀ n : Index d, n i = 0 → p.coeff n = q.coeff n) ↔
       ∀ x, field p (Function.update x i 0) = field q (Function.update x i 0) := by
   constructor
   · intro h x
@@ -444,8 +444,8 @@ theorem slice_iff {d : Nat} (i : Fin d) (p q : Poly d) :
   · intro h n zero
     have eq : restrictZero i p = restrictZero i q :=
       field_injective fun x => by rw [field_restrictZero, field_restrictZero, h]
-    have := congrArg (MvPolynomial.coeff n) eq
-    rwa [coeff_restrictZero, coeff_restrictZero, if_pos zero, if_pos zero] at this
+    have := congrArg (fun q => q.coeff n) eq
+    rwa [coeff_restrictZero, coeff_restrictZero, ite_eq_left zero, ite_eq_left zero] at this
 
 /-- The integral keeps the full boundary profile on the hyperplane `x_i = 0`. -/
 theorem field_integralPoly_zero {d : Nat} (i : Fin d) (p b : Poly d) (x : Fin d → ℝ) :
