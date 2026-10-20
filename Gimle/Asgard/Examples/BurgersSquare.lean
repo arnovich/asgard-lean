@@ -25,12 +25,12 @@ def ν : ℚ := 1 / 10
 
 /-- Coefficients at `n 0 = 0` of `T * q` vanish. -/
 theorem coeff_T_mul_slice (q : Poly 2) (n : Index 2) (zero : n 0 = 0) :
-    MvPolynomial.coeff n (T * q) = 0 := by
+    (T * q).coeff n = 0 := by
   rw [MvPolynomial.coeff_X_mul']
   simp [zero]
 
 theorem coeff_T_pow_mul_slice (k : ℕ) (q : Poly 2) (n : Index 2) (zero : n 0 = 0) :
-    MvPolynomial.coeff n (T ^ (k + 1) * q) = 0 := by
+    (T ^ (k + 1) * q).coeff n = 0 := by
   rw [pow_succ', mul_assoc, coeff_T_mul_slice _ _ zero]
 
 /-- The constants of the iterates, as multiples of `ν`. -/

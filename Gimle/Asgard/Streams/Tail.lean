@@ -510,7 +510,7 @@ noncomputable def windowPoly {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : 
   polyOfCoeffs (window N) (decode basis (truncate N a))
 
 theorem coeff_windowPoly {d : Nat} (basis : Basis) (N : Fin d → ℕ) (a : Stream d) (α : Index d) :
-    MvPolynomial.coeff α (windowPoly basis N a) = decode basis (truncate N a) α := by
+    (windowPoly basis N a).coeff α = decode basis (truncate N a) α := by
   refine coeff_polyOfCoeffs _ _ (fun n hn => ?_) α
   rw [mem_window]
   by_contra out

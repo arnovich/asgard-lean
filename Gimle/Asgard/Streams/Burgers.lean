@@ -173,13 +173,13 @@ theorem stream_ofPoly_apply (basis : Basis) (ν : ℚ) (b : Poly 2) (m : Index 2
 
 /-- The OGF coefficient at `t`-degree `n` is a coefficient of the `n`-th iterate. -/
 theorem stream_ogf_coeff (ν : ℚ) (b : Poly 2) (m : Index 2) :
-    stream .ogf ν (ofPoly .ogf b) m = MvPolynomial.coeff m (picard ν b (m 0)) := by
+    stream .ogf ν (ofPoly .ogf b) m = (picard ν b (m 0)).coeff m := by
   rw [stream_ofPoly_apply, ofPoly_ogf_apply]
 
 /-- A polynomial with the right `t`-derivative and the right zero slice is the
 integral: the way to evaluate `integralPoly` by exhibiting its value. -/
 theorem integralPoly_eq (p b r : Poly 2) (der : MvPolynomial.pderiv 0 r = p)
-    (slice : ∀ n : Index 2, n 0 = 0 → MvPolynomial.coeff n r = MvPolynomial.coeff n b) :
+    (slice : ∀ n : Index 2, n 0 = 0 → r.coeff n = b.coeff n) :
     integralPoly 0 p b = r := by
   apply ofPoly_injective .ogf
   rw [← integral_ofPoly, ← der, ← derivative_ofPoly]
