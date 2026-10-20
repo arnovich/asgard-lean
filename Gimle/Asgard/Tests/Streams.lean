@@ -26,7 +26,7 @@ example : integral .ogf 0 (0 : Stream 2) (MvPowerSeries.X 0) = 0 := by
     intro eq
     subst n
     simp at h
-  · simp only [integral, h, if_false]
+  · simp only [integral, h, ite_false]
     change (0 : ℚ) / (n 0 : ℚ) = 0
     exact zero_div _
 

@@ -52,7 +52,7 @@ theorem hasSum_degree_envelope (P : MildPoly) (a : ℝ) :
     HasSum (fun k => if k ∈ P.support then a else 0) (P.support.card * a) := by
   have h : HasSum (fun k => if k ∈ P.support then a else 0)
       (∑ k ∈ P.support, if k ∈ P.support then a else 0) := hasSum_sum_of_ne_finset_zero (s := P.support) (f := fun k => if k ∈ P.support then a else 0)
-    (fun k hk => if_neg hk)
+    (fun k hk => ite_eq_right hk)
   simpa only [Finset.sum_ite_mem, Finset.inter_self, Finset.sum_const, nsmul_eq_mul] using h
 
 /-- Summable degree masses give a summable double-index mode envelope. -/

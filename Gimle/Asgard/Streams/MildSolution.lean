@@ -77,7 +77,7 @@ theorem analyticField_zero (ν : ℚ) (b : Stream) (P : TrigPoly) (hb : b 0 = em
   rw [analyticField, tsum_eq_single 0]
   · simp only [seriesTerm, wild_initial ν b P hb, ite_true]
   · intro n hn
-    simp only [seriesTerm, wild_initial ν b P hb, if_neg hn, RealPoly.field_zero]
+    simp only [seriesTerm, wild_initial ν b P hb, ite_eq_right hn, RealPoly.field_zero]
 
 /-- Either certified bound realizes the same stream as a classical solution.
 A slightly larger internal ratio covers exact zero data without dividing by zero. -/

@@ -153,7 +153,7 @@ theorem coeff_solution_slice (p : Profile) (n : Index 2) (zero : n 0 = 0) :
     have : term p (k + 1) = MvPolynomial.X 0 * (MvPolynomial.C (1 / ((k + 1).factorial : ℚ)) *
         MvPolynomial.X 0 ^ k * lift (_root_.Polynomial.derivative^[2 * (k + 1)] p)) := by
       rw [term]; ring
-    rw [this, MvPolynomial.coeff_X_mul', if_neg (by simpa using zero)]
+    rw [this, MvPolynomial.coeff_X_mul', ite_eq_right (by simpa using zero)]
   simp [later]
 
 /-! ## Real fields -/
@@ -338,7 +338,7 @@ theorem formal_unique (basis : Basis) (a b : Stream 2)
     have pos : n 0 ≠ 0 := by omega
     have prev : (n.update 0 (n 0 - 1)) 0 = k := by simp; omega
     rw [← ea, ← eb]
-    cases basis <;> simp only [integral, pos, if_false] <;> rw [same _ prev]
+    cases basis <;> simp only [integral, pos, ite_false] <;> rw [same _ prev]
 
 /-- Uniqueness within the finite bivariate polynomial class. -/
 theorem poly_unique (p : Profile) (q : Poly 2)

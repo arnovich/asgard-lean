@@ -117,23 +117,23 @@ theorem wild_euler_band {ν T : ℚ} (hν : 0 ≤ ν) (hT : 0 ≤ T)
     intro t ht n _
     by_cases hn : n = 0
     · subst n
-      simp only [a, if_pos rfl]
+      simp only [a, ite_eq_left rfl]
       have h := mwnorm_heat_embed_le 0 hν P ht.1
       rw [mwnorm, RealPoly.wnorm_zero, Torus.wnorm_zero] at h
       rw [wild_zero, hb]
       exact h.trans (by exact_mod_cast hL)
-    · simp only [a, if_neg hn]
+    · simp only [a, ite_eq_right hn]
       have h := wild_euler_geometric hν b P hb hK hsupp hL T t ht n
       simpa using h
   have h := band_of_truncation (wild_euler_truncation hν hT b P hb hK hsupp hL hq N) a ha
   have hs : ∑ n ∈ Finset.range N, a n =
       (L : ℝ) + ∑ n ∈ Finset.Ico 1 N, 3 * L * ((72 * L * K * T : ℚ) : ℝ) ^ n := by
     rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot hN]
-    simp only [a, if_pos rfl]
+    simp only [a, ite_eq_left rfl]
     congr 1
     apply Finset.sum_congr rfl
     intro n hn
-    rw [if_neg (by have := (Finset.mem_Ico.mp hn).1; omega)]
+    rw [ite_eq_right (by have := (Finset.mem_Ico.mp hn).1; omega)]
   rw [hs] at h
   simpa [eulerBand] using h
 

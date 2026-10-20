@@ -70,10 +70,10 @@ theorem analyticField_C_mul (q : ℚ) (a : Stream d) (x : Fin d → ℝ) :
 theorem analyticField_one (x : Fin d → ℝ) : analyticField .ogf (1 : Stream d) x = 1 := by
   unfold analyticField
   rw [tsum_eq_single 0]
-  · rw [seriesTerm_ogf, coeff_one, if_pos rfl]
+  · rw [seriesTerm_ogf, coeff_one, ite_eq_left rfl]
     simp
   · intro n hn
-    rw [seriesTerm_ogf, coeff_one, if_neg hn]
+    rw [seriesTerm_ogf, coeff_one, ite_eq_right hn]
     simp
 
 /-- **The field of an inverse is the inverse of the field**, for a stream with

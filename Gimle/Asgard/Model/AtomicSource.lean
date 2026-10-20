@@ -824,7 +824,7 @@ theorem PartialTrace.exact {k n : Nat} {as : List PartialAssignment}
       intro name w h
       by_cases same : name = a.output.name
       · subst name
-        simp only [Polynomial.bind, if_true, Option.some.injEq] at h
+        simp only [Polynomial.bind, ite_true, Option.some.injEq] at h
         subst h
         have hv := a.rhs.resolve_correct prev axes x
         rw [resolved, Option.bind_some, PartialExpr.eval_resolved resolved ih] at hv

@@ -38,7 +38,7 @@ noncomputable def xSquared : Stream 2 := fun index => if index 0 = 0 ∧ index 1
 example (index : Index 2) (inside : index 0 ≤ 1 ∧ index 1 ≤ 1) :
     xSquared index = (0 : Stream 2) index := by
   simp only [xSquared]
-  rw [if_neg (by omega)]
+  rw [ite_eq_right (by omega)]
   rfl
 
 /-- …but their observed `D_x²` at `(0,0)` differs, because it reads `(0,2)`. -/

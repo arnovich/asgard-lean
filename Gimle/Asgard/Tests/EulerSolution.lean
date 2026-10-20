@@ -116,7 +116,7 @@ example : SizeLE 3 (laplacianInv ω₀) := sizeLE_laplacianInv start_sizeLE
 
 /-- `Δ⁻¹` divides by `|k|²`: the `(2, 1)` coefficient `1/2` of the start becomes `−1/10`. -/
 example : laplacianInv ω₀ (2, 1) = -(1 / 10) := by
-  rw [laplacianInv_apply, if_neg (by decide), ω₀_eq_table, Table.toTrig_apply]
+  rw [laplacianInv_apply, ite_eq_right (by decide), ω₀_eq_table, Table.toTrig_apply]
   decide +kernel
 
 /-! ### Summability -/

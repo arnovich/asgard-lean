@@ -264,14 +264,14 @@ theorem integral_coe {d : Nat} (i : Fin d) (p b : Poly d) :
   · left
     refine ⟨?_, zero⟩
     have := hm
-    simp only [integral, zero, if_true] at this
+    simp only [integral, zero, ite_true] at this
     rwa [← MvPolynomial.coeff_coe]
   · right
     have pos : 0 < m i := Nat.pos_of_ne_zero zero
     refine ⟨m.update i (m i - 1), ?_, ?_⟩
     · intro coeff_zero
       apply hm
-      simp only [integral, zero, if_false]
+      simp only [integral, zero, ite_false]
       change MvPowerSeries.coeff _ (p : MvPowerSeries (Fin d) ℚ) / _ = 0
       rw [MvPolynomial.coeff_coe, coeff_zero, zero_div]
     · rw [← update_succ]
@@ -445,7 +445,7 @@ theorem slice_iff {d : Nat} (i : Fin d) (p q : Poly d) :
     have eq : restrictZero i p = restrictZero i q :=
       field_injective fun x => by rw [field_restrictZero, field_restrictZero, h]
     have := congrArg (fun q => q.coeff n) eq
-    rwa [coeff_restrictZero, coeff_restrictZero, if_pos zero, if_pos zero] at this
+    rwa [coeff_restrictZero, coeff_restrictZero, ite_eq_left zero, ite_eq_left zero] at this
 
 /-- The integral keeps the full boundary profile on the hyperplane `x_i = 0`. -/
 theorem field_integralPoly_zero {d : Nat} (i : Fin d) (p b : Poly d) (x : Fin d → ℝ) :

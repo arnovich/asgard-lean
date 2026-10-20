@@ -151,8 +151,8 @@ private theorem egf_stream_pde (g : ℕ → ℚ) :
       derivative .egf 1 (derivative .egf 1 (stream .egf g)) := by
   funext n
   simp only [derivative, stream_egf_apply, Finsupp.update_apply]
-  simp only [Fin.isValue, if_true, show ((1 : Fin 2) = 0) = False by decide,
-    show ((0 : Fin 2) = 1) = False by decide, if_false]
+  simp only [Fin.isValue, ite_true, show ((1 : Fin 2) = 0) = False by decide,
+    show ((0 : Fin 2) = 1) = False by decide, ite_false]
   congr 1
   ring
 
@@ -170,7 +170,7 @@ theorem stream_pde (basis : Basis) (g : ℕ → ℚ) :
 
 private theorem series_slice (g : ℕ → ℚ) (n : Index 2) (zero : n 0 = 0) :
     series g n = boundarySeries g n := by
-  simp only [series, boundarySeries, zero, factorial_two, if_true, mul_zero, add_zero,
+  simp only [series, boundarySeries, zero, factorial_two, ite_true, mul_zero, add_zero,
     Nat.factorial_zero, Nat.cast_one, one_mul]
 
 /-- On the `t = 0` slice the heat stream is the boundary profile. -/
@@ -234,7 +234,7 @@ private theorem coeff_lift (p : Heat.Profile) (n : Index 2) :
     split_ifs with h
     · rfl
     · exact (not_not.mp h).symm
-  · refine Finset.sum_eq_zero fun i _ => if_neg fun h => zero ?_
+  · refine Finset.sum_eq_zero fun i _ => ite_eq_right fun h => zero ?_
     rw [← h]
     simp
 

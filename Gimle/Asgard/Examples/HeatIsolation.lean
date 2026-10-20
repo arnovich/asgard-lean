@@ -123,7 +123,7 @@ theorem scaled_unique (basis : Basis) (c : ℚ) (a b : Stream 2)
     have pos : n 0 ≠ 0 := by omega
     have prev : (n.update 0 (n 0 - 1)) 0 = k := by simp; omega
     rw [← ea, ← eb]
-    cases basis <;> simp only [integral, pos, if_false] <;> rw [same _ prev]
+    cases basis <;> simp only [integral, pos, ite_false] <;> rw [same _ prev]
 
 theorem solution_time : derivative .egf 0 solution =
     scaled (1 / 2) (derivative .egf 1 (derivative .egf 1 solution)) := by

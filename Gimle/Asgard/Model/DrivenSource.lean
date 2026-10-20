@@ -79,11 +79,11 @@ theorem Term.readRates_eval (c : Context) (rate : String → Option String)
       | var y =>
           by_cases hc : axis = c.axis
           · cases hl : rate y with
-            | none => simp only [readRates, if_pos hc, hl]
+            | none => simp only [readRates, ite_eq_left hc, hl]
             | some port =>
-                simp only [readRates, if_pos hc, hl, Term.eval, Term.chain, Context.rates]
+                simp only [readRates, ite_eq_left hc, hl, Term.eval, Term.chain, Context.rates]
                 simp [Context.lift, hc, h y port hl]
-          · simp only [readRates, if_neg hc]
+          · simp only [readRates, ite_eq_right hc]
       | _ => rfl
 
 /-- The same source with every explicit assignment and differential equation read

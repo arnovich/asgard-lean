@@ -48,8 +48,8 @@ theorem heatSeries_pde (ν : ℚ) (g : ℕ → ℚ) :
     ogfD 0 (heatSeries ν g) = C ν * ogfD 1 (ogfD 1 (heatSeries ν g)) := by
   ext α
   rw [coeff_C_mul, coeff_ogfD, coeff_ogfD, ogfD_apply]
-  simp only [heatSeries, Finsupp.update_apply, if_true, show ((1 : Fin 2) = 0) = False by decide,
-    show ((0 : Fin 2) = 1) = False by decide, if_false, factorial_two]
+  simp only [heatSeries, Finsupp.update_apply, ite_true, show ((1 : Fin 2) = 0) = False by decide,
+    show ((0 : Fin 2) = 1) = False by decide, ite_false, factorial_two]
   rw [show α 1 + 2 * (α 0 + 1) = α 1 + 1 + 1 + 2 * α 0 by ring]
   simp only [Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one, pow_succ]
   have h0 : ((α 0).factorial : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero _
@@ -61,8 +61,8 @@ theorem ogfD_heatSeries (ν : ℚ) (g : ℕ → ℚ) :
     ogfD 1 (heatSeries ν g) = heatSeries ν fun j => g (j + 1) := by
   ext α
   rw [coeff_ogfD, coeff_heatSeries]
-  simp only [heatSeries, Finsupp.update_apply, if_true, show ((0 : Fin 2) = 1) = False by decide,
-    if_false, factorial_two]
+  simp only [heatSeries, Finsupp.update_apply, ite_true, show ((0 : Fin 2) = 1) = False by decide,
+    ite_false, factorial_two]
   rw [show α 1 + 1 + 2 * α 0 = α 1 + 2 * α 0 + 1 by ring]
   simp only [Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
   have h0 : ((α 0).factorial : ℚ) ≠ 0 := by exact_mod_cast Nat.factorial_ne_zero _

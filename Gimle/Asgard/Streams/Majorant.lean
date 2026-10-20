@@ -52,7 +52,7 @@ theorem ogfD_C {d : Nat} (i : Fin d) (q : ℚ) : ogfD i (C q : Stream d) = 0 := 
   funext n
   change (n i + 1 : ℚ) * (C q : Stream d) (n.update i (n i + 1)) = 0
   rw [show (C q : Stream d) (n.update i (n i + 1)) = coeff (n.update i (n i + 1)) (C q) from rfl,
-    coeff_C, if_neg]
+    coeff_C, ite_eq_right]
   · simp
   · intro h
     have := congrArg (fun m : Index d => m i) h
@@ -80,7 +80,7 @@ theorem X_mul_ogfD {d : Nat} (i : Fin d) (a : Stream d) : X i * ogfD i a = degre
   change coeff n (X i * ogfD i a) = (n i : ℚ) * a n
   rw [X_def, coeff_monomial_mul]
   by_cases h : Finsupp.single i 1 ≤ n
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have pos : 1 ≤ n i := by simpa using h i
     have back : (n - Finsupp.single i 1).update i ((n - Finsupp.single i 1 : Index d) i + 1) = n := by
       ext j
@@ -92,7 +92,7 @@ theorem X_mul_ogfD {d : Nat} (i : Fin d) (a : Stream d) : X i * ogfD i a = degre
     simp only [Finsupp.tsub_apply, Finsupp.single_eq_same, one_mul]
     have cast : ((n i - 1 : ℕ) : ℚ) + 1 = n i := by exact_mod_cast Nat.sub_add_cancel pos
     rw [cast]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have zero : n i = 0 := by
       by_contra ne
       apply h
@@ -366,7 +366,7 @@ theorem coeff_inv_le {d : Nat} (φ : Stream d) {c M : ℚ} (hc : constantCoeff �
     rw [show coeff (0 : Index d) φ⁻¹ = (constantCoeff φ)⁻¹ from
       (congrFun coeff_zero_eq_constantCoeff φ⁻¹).trans (constantCoeff_inv φ), hc, abs_inv]
     simp [radiiWeight]
-  rw [coeff_inv, if_neg hα, hc, abs_mul, abs_neg, abs_inv]
+  rw [coeff_inv, ite_eq_right hα, hc, abs_mul, abs_neg, abs_inv]
   refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr (abs_nonneg c))
   have wpos := radiiWeight_pos hr α
   calc |∑ x ∈ Finset.antidiagonal α, if x.2 < α then coeff x.1 φ * coeff x.2 φ⁻¹ else 0|

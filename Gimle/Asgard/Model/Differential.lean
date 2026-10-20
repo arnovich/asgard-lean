@@ -136,17 +136,17 @@ theorem Term.collapse_eval (c : Context) (t : Term) (env : String → Option ℝ
         obtain ⟨axes, state⟩ := p
         by_cases h : axes ≠ [] ∧ (axis :: axes).all (· == c.axis) = true
         · cases hl : c.lift axes.length state with
-          | none => simp only [collapse, hc, if_pos h, hl]
+          | none => simp only [collapse, hc, ite_eq_left h, hl]
           | some top =>
-            simp only [collapse, hc, if_pos h, hl]
+            simp only [collapse, hc, ite_eq_left h, hl]
             obtain ⟨hne, hall⟩ := h
             have hall' := hall
             simp only [List.all_cons, Bool.and_eq_true, beq_iff_eq] at hall'
             simp only [Term.eval, Term.chain, Context.rates, hc]
-            rw [if_pos ⟨List.cons_ne_nil _ _, by simp [hall'.1]⟩,
-              if_pos ⟨List.cons_ne_nil _ _, hall⟩]
+            rw [ite_eq_left ⟨List.cons_ne_nil _ _, by simp [hall'.1]⟩,
+              ite_eq_left ⟨List.cons_ne_nil _ _, hall⟩]
             simp [Context.lift, hl]
-        · simp only [collapse, hc, if_neg h]
+        · simp only [collapse, hc, ite_eq_right h]
 
 /-- The velocity equations of a context, read through derivative ports: in
 `env`, each declared velocity `y` of a state `x` carries the value of `x`'s
@@ -197,12 +197,12 @@ theorem Term.readVelocities_eval (c : Context) (output : String) (t : Term)
       | var y =>
           by_cases hc : axis = c.axis ∧ (c.locate y).isSome ∧ c.locate y ≠ some output
           · cases hv : c.velocity y with
-            | none => simp only [readVelocities, if_pos hc, hv]
+            | none => simp only [readVelocities, ite_eq_left hc, hv]
             | some z =>
-                simp only [readVelocities, if_pos hc, hv, Term.eval, Term.chain]
+                simp only [readVelocities, ite_eq_left hc, hv, Term.eval, Term.chain]
                 rw [← h y z hv]
                 simp [Context.rates, Context.lift, hc.1]
-          · simp only [readVelocities, if_neg hc]
+          · simp only [readVelocities, ite_eq_right hc]
       | _ => rfl
 
 /-- Read every first-order evolution-axis atom `D_t(y)` of a state `y` as the name
@@ -236,11 +236,11 @@ theorem Term.readPorts_eval (c : Context) (t : Term) (env : String → Option �
       | var y =>
           by_cases hc : axis = c.axis
           · cases hl : c.locate y with
-            | none => simp only [readPorts, if_pos hc, hl]
+            | none => simp only [readPorts, ite_eq_left hc, hl]
             | some port =>
-                simp only [readPorts, if_pos hc, hl, Term.eval, Term.chain, Context.rates]
+                simp only [readPorts, ite_eq_left hc, hl, Term.eval, Term.chain, Context.rates]
                 simp [Context.lift, hc, hl]
-          · simp only [readPorts, if_neg hc]
+          · simp only [readPorts, ite_eq_right hc]
       | _ => rfl
 
 /-- Classify every derivative node, before counting. An integral, anywhere, is

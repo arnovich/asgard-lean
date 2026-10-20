@@ -249,7 +249,7 @@ theorem SourceBody.Solves.derivative_denotes {sb : SourceBody} {e : Evolution}
       e.stateIds i = p.id ∧ HasDerivWithinAt (fun t => state t i) r e.time.domain t := by
   simp only [Context.rates, context, SourceBody.locate, Context.lift, ne_eq, List.cons_ne_nil,
     not_false_eq_true, List.all_cons, beq_self_eq_true, List.all_nil, Bool.and_self, and_self,
-    if_true, List.length_cons, List.length_nil, Nat.sub_self, Option.bind_some] at h
+    ite_true, List.length_cons, List.length_nil, Nat.sub_self, Option.bind_some] at h
   cases hp : sb.inputs.find? (fun p => p.name == x && p.role == .state) with
   | none => simp [hp] at h
   | some p =>

@@ -354,7 +354,7 @@ theorem NamedExpr.affine_means (along unknown : String) :
         | some _ => simp [hb, hq, bind, Except.bind] at h
         | none =>
           simp only [hb, hq, bind, Except.bind, Option.isSome_none, Bool.false_eq_true,
-            if_false, pure, Except.pure, Except.ok.injEq] at h
+            ite_false, pure, Except.pure, Except.ok.injEq] at h
           subst h
           have hbm := affine_means along unknown b q hb
           rw [hq] at hbm
@@ -379,7 +379,7 @@ theorem NamedExpr.affine_means (along unknown : String) :
         | some _ => simp [ha, hq, bind, Except.bind] at h
         | none =>
           simp only [ha, hq, bind, Except.bind, Option.isSome_none, Bool.false_eq_true,
-            if_false, pure, Except.pure, Except.ok.injEq] at h
+            ite_false, pure, Except.pure, Except.ok.injEq] at h
           subst h
           have ham := affine_means along unknown a q ha
           rw [hq] at ham
@@ -658,7 +658,7 @@ theorem SourceEquation.Isolated.solves_iff {se : SourceEquation} (i : se.Isolate
   have means : ∀ e v, (∃ domain, c.meaning basis e x = some (v, domain) ∧ domain) ↔
       e.Means basis c.axis inputs v := by
     intro e v
-    simp only [Context.meaning, valid, if_true, NamedExpr.Means, inputs]
+    simp only [Context.meaning, valid, ite_true, NamedExpr.Means, inputs]
   -- The atom `D_along(unknown)` means the derivative of the unknown's stream.
   have atom_means : ∀ u j a, c.input se.unknown = some u → c.axis se.along = some j →
       ((atom se.along se.unknown).Means basis c.axis inputs a ↔ a = derivative basis j (x u)) := by

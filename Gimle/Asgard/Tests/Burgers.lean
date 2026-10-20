@@ -35,7 +35,7 @@ example : ¬ Causal.IsCausal (0 : Fin 2) (derivative .ogf 0) := by
     intro m hm
     have zero : m 0 = 0 := Nat.le_zero.mp hm
     change (0 : ℚ) = MvPowerSeries.coeff m (MvPowerSeries.X 0)
-    rw [MvPowerSeries.coeff_X, if_neg]
+    rw [MvPowerSeries.coeff_X, ite_eq_right]
     intro same
     have := congrArg (fun q : Index 2 => q 0) same
     simp [zero] at this
