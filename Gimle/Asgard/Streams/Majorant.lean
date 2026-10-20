@@ -188,7 +188,7 @@ theorem majorizes_mono {d : Nat} {a : Stream d} {m : Majorant d} (h : Majorizes 
     Majorizes .ogf a m' := by
   intro α
   refine (h α).trans (mul_le_mul bound ?_ (le_of_lt (radiiWeight_pos m.radius_pos α)) m'.bound_nonneg)
-  refine Finset.prod_le_prod (fun i _ => le_of_lt (inv_pos.mpr (pow_pos (m.radius_pos i) _)))
+  refine Finset.prod_le_prod₀ (fun i _ => le_of_lt (inv_pos.mpr (pow_pos (m.radius_pos i) _)))
     fun i _ => ?_
   exact inv_anti₀ (pow_pos (m'.radius_pos i) _) (pow_le_pow_left₀ (le_of_lt (m'.radius_pos i))
     (radius i) _)
@@ -228,7 +228,7 @@ theorem card_antidiagonal_eq {d : Nat} (α : Index d) :
 theorem card_antidiagonal_le {d : Nat} (α : Index d) :
     ((Finset.antidiagonal α).card : ℚ) ≤ ∏ i, (2 : ℚ) ^ α i := by
   rw [card_antidiagonal_eq]
-  refine Finset.prod_le_prod (fun i _ => by positivity) fun i _ => ?_
+  refine Finset.prod_le_prod₀ (fun i _ => by positivity) fun i _ => ?_
   exact_mod_cast Nat.lt_two_pow_self (n := α i)
 
 /-- **Products.** Bounds multiply and radii halve: the antidiagonal of `α` has
@@ -342,7 +342,7 @@ theorem sum_antidiagonal_qpow_lt_le {d : Nat} {q : Fin d → ℚ} (hq0 : ∀ i, 
   rw [← Finset.sum_filter, filter_eq, Finset.sum_erase_eq_sub mem, qpow_zero,
     sum_antidiagonal_qpow]
   refine sub_le_sub_right ?_ 1
-  exact Finset.prod_le_prod (fun i _ => Finset.sum_nonneg fun j _ => pow_nonneg (hq0 i) _)
+  exact Finset.prod_le_prod₀ (fun i _ => Finset.sum_nonneg fun j _ => pow_nonneg (hq0 i) _)
     fun i _ => geom_partial_le (hq0 i) (hq1 i) _
 /-- **Inverse.** If `φ` has constant term `c` and the rest of it is majorized
 by `M` at radii `R`, then `φ⁻¹` is majorized by `1/|c|` at any smaller radii `r`

@@ -188,7 +188,7 @@ theorem norm_seriesTerm_le (majorizes : Majorizes basis a m) {x : Fin d → ℝ}
     push_cast at h
     exact h
   have mono : ∏ i, |x i| ^ α i ≤ ∏ i, (b.radius i : ℝ) ^ α i :=
-    Finset.prod_le_prod (fun i _ => by positivity)
+    Finset.prod_le_prod₀ (fun i _ => by positivity)
       (fun i _ => pow_le_pow_left₀ (abs_nonneg _) (hx i) _)
   have rhs : (m.bound : ℝ) * (∏ i, ((m.radius i : ℝ) ^ α i)⁻¹) * ∏ i, (b.radius i : ℝ) ^ α i =
       (m.bound : ℝ) * ∏ i, (ratio m b i : ℝ) ^ α i := by
