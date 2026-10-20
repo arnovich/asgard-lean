@@ -2,7 +2,7 @@ name = "asgard"
 version = "0.1.0"
 # Spike stopgap: Lean 4.33 flipped this default to true (see AlgebraicCompiler,
 # Reindex, AIF, Feedback); restores the 4.32 unification behaviour.
-leanOptions = { "backward.isDefEq.respectTransparency.types" = false }
+moreLeanArgs = ["-Dbackward.isDefEq.respectTransparency.types=false"]
 defaultTargets = ["Gimle.Asgard", "Gimle.Asgard.Examples", "Gimle.Asgard.Tests",
   "Gimle.Asgard.Examples.CircuitGallery", "diagram_demo"]
 
