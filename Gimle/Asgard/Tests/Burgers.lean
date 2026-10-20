@@ -59,8 +59,8 @@ example (basis : Basis) (ν : ℚ) (g : Poly 2) :
     stream basis ν (ofPoly basis (X ^ 2 + T * g)) = stream basis ν (ofPoly basis (X ^ 2)) := by
   apply stream_congr_slice
   intro m zero
-  cases basis <;> simp only [ofPoly_ogf_apply, ofPoly_egf_apply, MvPolynomial.coeff_add,
-    coeff_T_mul_slice _ _ zero, add_zero]
+  cases basis <;> simp only [ofPoly_ogf_apply, ofPoly_egf_apply, AddMonoidAlgebra.coeff_add,
+    Finsupp.add_apply, coeff_T_mul_slice _ _ zero, add_zero]
 
 /-- Two solutions with the same profile agree, in either basis and for any `ν`. -/
 example (basis : Basis) (ν : ℚ) (a b : Stream 2)

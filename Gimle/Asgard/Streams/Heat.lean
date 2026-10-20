@@ -147,7 +147,8 @@ theorem coeff_solution_slice (p : Profile) (n : Index 2) (zero : n 0 = 0) :
     (solution p).coeff n = (lift p).coeff n := by
   classical
   unfold solution
-  rw [Finset.sum_range_succ', MvPolynomial.coeff_add, MvPolynomial.coeff_sum, term_zero]
+  rw [Finset.sum_range_succ', AddMonoidAlgebra.coeff_add, Finsupp.add_apply,
+    MvPolynomial.coeff_sum, term_zero]
   have later : ∀ k, (term p (k + 1)).coeff n = 0 := by
     intro k
     have : term p (k + 1) = MvPolynomial.X 0 * (MvPolynomial.C (1 / ((k + 1).factorial : ℚ)) *

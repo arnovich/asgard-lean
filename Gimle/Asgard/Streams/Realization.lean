@@ -396,7 +396,7 @@ theorem coeff_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (n : Index d) :
   classical
   induction p using MvPolynomial.induction_on' with
   | add p q hp hq =>
-      simp only [restrictZero, map_add, MvPolynomial.coeff_add] at hp hq ⊢
+      simp only [restrictZero, map_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply] at hp hq ⊢
       rw [hp, hq]
       split_ifs <;> simp
   | monomial m c =>
@@ -421,7 +421,7 @@ theorem coeff_restrictZero {d : Nat} (i : Fin d) (p : Poly d) (n : Index d) :
       · have prod : ∏ j ∈ m.support, (Function.update MvPolynomial.X i 0 j : Poly d) ^ m j = 0 := by
           apply Finset.prod_eq_zero (i := i) (Finsupp.mem_support_iff.mpr hm)
           simp [zero_pow hm]
-        rw [prod, mul_zero, MvPolynomial.coeff_zero, MvPolynomial.coeff_monomial]
+        rw [prod, mul_zero, AddMonoidAlgebra.coeff_zero, MvPolynomial.coeff_monomial]
         split_ifs with e h
         · subst h; exact absurd e hm
         · rfl

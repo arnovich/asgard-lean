@@ -1,5 +1,5 @@
 import Gimle.Asgard.Circuit
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 import Mathlib.Tactic
 
 /-! Exact real interpretation; this does not assert correctness of floating-point execution. -/
