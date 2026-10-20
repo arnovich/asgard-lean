@@ -210,7 +210,7 @@ noncomputable def ofPolynomial (p : Heat.Profile) : ℕ → ℚ :=
   fun j => (j.factorial : ℚ) * p.coeff j
 
 private theorem coeff_lift (p : Heat.Profile) (n : Index 2) :
-    MvPolynomial.coeff n (Heat.lift p) = if n 0 = 0 then p.coeff (n 1) else 0 := by
+    (Heat.lift p).coeff n = if n 0 = 0 then p.coeff (n 1) else 0 := by
   classical
   have expand : Heat.lift p =
       ∑ i ∈ p.support, MvPolynomial.monomial (Finsupp.single 1 i) (p.coeff i) := by
@@ -243,7 +243,7 @@ theorem boundary_ofPolynomial (basis : Basis) (p : Heat.Profile) :
   rw [Heat.boundary, ofPoly, boundary]
   congr 1
   funext n
-  change boundarySeries (ofPolynomial p) n = MvPolynomial.coeff n (Heat.lift p)
+  change boundarySeries (ofPolynomial p) n = (Heat.lift p).coeff n
   rw [coeff_lift, boundarySeries, ofPolynomial]
   split_ifs
   · field_simp

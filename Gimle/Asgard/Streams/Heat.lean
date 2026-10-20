@@ -144,11 +144,11 @@ theorem pde_poly (p : Profile) :
 
 /-- On `t`-degree zero the heat polynomial has exactly the profile's coefficients. -/
 theorem coeff_solution_slice (p : Profile) (n : Index 2) (zero : n 0 = 0) :
-    MvPolynomial.coeff n (solution p) = MvPolynomial.coeff n (lift p) := by
+    (solution p).coeff n = (lift p).coeff n := by
   classical
   unfold solution
   rw [Finset.sum_range_succ', MvPolynomial.coeff_add, MvPolynomial.coeff_sum, term_zero]
-  have later : ∀ k, MvPolynomial.coeff n (term p (k + 1)) = 0 := by
+  have later : ∀ k, (term p (k + 1)).coeff n = 0 := by
     intro k
     have : term p (k + 1) = MvPolynomial.X 0 * (MvPolynomial.C (1 / ((k + 1).factorial : ℚ)) *
         MvPolynomial.X 0 ^ k * lift (_root_.Polynomial.derivative^[2 * (k + 1)] p)) := by
@@ -223,7 +223,7 @@ theorem field_pde_iff (q : Poly 2) :
 condition on the whole `t = 0` slice. -/
 theorem field_initial_iff (q : Poly 2) (p : Profile) :
     (∀ x : ℝ, field q ![0, x] = _root_.Polynomial.aeval x p) ↔
-    ∀ n : Index 2, n 0 = 0 → MvPolynomial.coeff n q = MvPolynomial.coeff n (lift p) := by
+    ∀ n : Index 2, n 0 = 0 → q.coeff n = (lift p).coeff n := by
   rw [slice_iff]
   have slice : ∀ y : Fin 2 → ℝ, Function.update y 0 0 = ![0, y 1] := by
     intro y; funext j; fin_cases j <;> rfl
@@ -343,7 +343,7 @@ theorem formal_unique (basis : Basis) (a b : Stream 2)
 /-- Uniqueness within the finite bivariate polynomial class. -/
 theorem poly_unique (p : Profile) (q : Poly 2)
     (pde : MvPolynomial.pderiv 0 q = MvPolynomial.pderiv 1 (MvPolynomial.pderiv 1 q))
-    (slice : ∀ n : Index 2, n 0 = 0 → MvPolynomial.coeff n q = MvPolynomial.coeff n (lift p)) :
+    (slice : ∀ n : Index 2, n 0 = 0 → q.coeff n = (lift p).coeff n) :
     q = solution p := by
   apply ofPoly_injective .ogf
   apply formal_unique .ogf
