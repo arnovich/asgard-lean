@@ -99,8 +99,7 @@ theorem hasDerivAt_sum_cos_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.cos (hasDerivAt_phase_fst k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A cosine sum's derivative in the second coordinate. -/
 theorem hasDerivAt_sum_cos_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -109,8 +108,7 @@ theorem hasDerivAt_sum_cos_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.cos (hasDerivAt_phase_snd k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A sine sum's derivative in the first coordinate. -/
 theorem hasDerivAt_sum_sin_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -119,8 +117,7 @@ theorem hasDerivAt_sum_sin_fst (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.sin (hasDerivAt_phase_fst k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- A sine sum's derivative in the second coordinate. -/
 theorem hasDerivAt_sum_sin_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × ℝ) :
@@ -129,8 +126,7 @@ theorem hasDerivAt_sum_sin_snd (s : Finset Wave) (c : Wave → ℝ) (x : ℝ × 
   refine HasDerivAt.fun_sum fun k _ => ?_
   have h := (HasDerivAt.sin (hasDerivAt_phase_snd k x)).const_mul (c k)
   convert h using 1
-  · rfl
-  · simp only [Prod.mk.eta]; ring
+  simp only [Prod.mk.eta]; ring
 
 /-- `∂₁ field P = fieldD₁ P`. -/
 theorem hasDerivAt_field_fst (P : TrigPoly) (x : ℝ × ℝ) :
