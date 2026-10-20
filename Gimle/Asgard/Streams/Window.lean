@@ -145,7 +145,7 @@ theorem sum_window_eq_grid {M : Type*} [AddCommMonoid M] (N : Fin d → ℕ) (hN
 theorem abs_monomial_le {b : Box d} {x : Fin d → ℝ} (hx : b.Mem x) (α : Index d) :
     |∏ i, x i ^ α i| ≤ ∏ i, ((b.radius i : ℚ) : ℝ) ^ α i := by
   rw [Finset.abs_prod]
-  refine Finset.prod_le_prod (fun i _ => abs_nonneg _) fun i _ => ?_
+  refine Finset.prod_le_prod₀ (fun i _ => abs_nonneg _) fun i _ => ?_
   rw [abs_pow]
   exact pow_le_pow_left₀ (abs_nonneg _) (hx i) _
 
