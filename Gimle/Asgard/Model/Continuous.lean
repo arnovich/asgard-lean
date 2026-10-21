@@ -2,7 +2,7 @@ import Gimle.Asgard.Model.Compiler
 import Gimle.Asgard.Dynamics.Linear
 
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 def Evolution.stateIds (e : Evolution) (i : Fin e.states.length) : String := e.states[i].stateId
 def Evolution.derivativeIds (e : Evolution) (i : Fin e.states.length) : String :=

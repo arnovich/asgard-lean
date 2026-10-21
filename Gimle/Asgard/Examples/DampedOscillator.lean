@@ -19,7 +19,7 @@ the source has exactly one solution on `t ≥ 0`, `x(t) = 2e^(-t) - e^(-2t)`.
 
 The pinned Python compiler rejects this form; see the regression file. -/
 namespace Gimle.Asgard.Examples.DampedOscillator
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body : SourceBody := {
   inputs := [⟨"state-x", "x", .state⟩, ⟨"state-v", "v", .state⟩,

@@ -5,7 +5,7 @@ import Gimle.Asgard.Dynamics.Feedback
 Eta is a real input fixed along each feedback trajectory. These equivalences
 assert no trajectory existence, uniqueness, species positivity or safety bound. -/
 namespace Gimle.Asgard.Examples.AIF
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 def inputs : List Port := [⟨"eta", "eta", .driver⟩,
   ⟨"x1", "x1", .state⟩, ⟨"x2", "x2", .state⟩,

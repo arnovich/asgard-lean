@@ -2,7 +2,7 @@ import Gimle.Asgard.Compile.Syntax
 import Gimle.Asgard.Compile.Interchange
 
 namespace Gimle.Asgard.Tests
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 -- Empty contexts, exact fractions, shared inputs and asymmetric routing.
 example (x : Point 0) : (Expr.constant (n := 0) (1 / 3)).compile.run x 0 = (1 / 3 : ℝ) := by

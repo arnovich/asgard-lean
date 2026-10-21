@@ -4,7 +4,7 @@ import Gimle.Asgard.Stochastic.Named
 import Gimle.Asgard.Stochastic.FiniteJump
 
 namespace Gimle.Asgard.Tests.Stochastic
-open Gimle.Asgard.Stochastic Polynomial
+open Gimle.Asgard.Stochastic _root_.Gimle.Asgard.Polynomial
 
 -- The compiler must preserve the complete increment and initialized solution
 -- relations for every admitted integral interpretation and shared driver family.
@@ -17,7 +17,7 @@ example {n d w j : Nat} (s : NamedSystem n d w j) (p : Prepared s)
 end Gimle.Asgard.Tests.Stochastic
 
 namespace Gimle.Asgard.Tests.Stochastic
-open Gimle.Asgard.Stochastic Polynomial
+open Gimle.Asgard.Stochastic _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators Topology
 
 -- Asymmetric state order [y,x], an ordinary driver named u0, one unused
@@ -139,7 +139,7 @@ def empty : NamedSystem 0 0 0 0 := {
 end Gimle.Asgard.Tests.Stochastic
 
 namespace Gimle.Asgard.Tests.Stochastic
-open Gimle.Asgard.Stochastic Polynomial
+open Gimle.Asgard.Stochastic _root_.Gimle.Asgard.Polynomial
 open Examples.StochasticJump
 
 -- Reusing the valid trajectory with a different initial value fails on the
@@ -192,7 +192,7 @@ example (u : Process Unit 0) (initial : Unit → Point 1) (x : Process Unit 1) :
 end Gimle.Asgard.Tests.Stochastic
 
 namespace Gimle.Asgard.Tests.Stochastic
-open Gimle.Asgard.Stochastic Polynomial
+open Gimle.Asgard.Stochastic _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators Topology
 
 lemma constant_limits {Ω : Type} {n : Nat} (time : Window) (x : Point n) :

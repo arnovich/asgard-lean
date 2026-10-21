@@ -3,7 +3,7 @@ import Gimle.Asgard.Model.Declaration
 /-! Proof-carrying resolution of original, unordered named equations. The source
 relation quantifies real environments and never executes a target circuit. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- Agreement is required only at defined names, not on unrelated variables. -/
 def Agrees {α : Type} (a b : String → Option α) : Prop :=

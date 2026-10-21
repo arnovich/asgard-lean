@@ -13,7 +13,7 @@ The declared initial values stay in the unchanged `Evolution`. The compiled
 field is homogeneous linear, so the source equation has exactly one solution
 on `t ≥ 0`, which is `x(t) = 2 + 3 exp(-t/3)` and `y(t) = 2`. -/
 namespace Gimle.Asgard.Examples.DifferentialIsolation
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-- Scale 3 is a parameter of the declaration, so a changed model can be checked. -/
 def body (scale : ℚ) : SourceBody := {

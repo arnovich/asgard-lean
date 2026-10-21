@@ -10,7 +10,7 @@ Python's accept/reject outcome is recorded beside each one as **same** or
 **differs**; it is a regression reference, not an oracle. Lean's values are
 exact. -/
 namespace Gimle.Asgard.Tests.AtomicSource
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-! ## Literals -/
 

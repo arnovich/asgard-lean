@@ -23,7 +23,7 @@ or uniqueness states whatever further regularity of the drivers it uses.
 signal. It is not an existence or uniqueness claim, and it says nothing about
 any other signal, such as a sampled or held one. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- The number of driver coordinates. -/
 abbrev DriverBinding.width (ds : List DriverBinding) : Nat := (DriverBinding.ports ds).length

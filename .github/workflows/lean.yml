@@ -35,3 +35,15 @@ jobs:
         run: lake build
       - name: Check degree-three mild table regression separately
         run: lake build Gimle.Asgard.Tests.MildDegreeThree
+      # Replay authenticates compiled bytes, so an absolute checkout path (for
+      # example in a linter log) would make otherwise identical builds differ.
+      - name: Check compiled artifacts contain no checkout paths
+        shell: bash
+        run: |
+          lib=.lake/build/lib/lean
+          test -n "$(find "$lib" -name '*.olean' -print -quit)"
+          if grep -rlF "$PWD" "$lib" --include='*.olean' --include='*.olean.server' \
+              --include='*.olean.private' --include='*.ir'; then
+            echo "checkout path embedded in the files above" >&2
+            exit 1
+          fi

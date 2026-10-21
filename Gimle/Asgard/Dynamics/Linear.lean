@@ -8,7 +8,7 @@ State coordinates and their initial values use the same finite ordered context.
 Compilation and existence are separate statements. -/
 namespace Gimle.Asgard.Dynamics.Linear
 
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 abbrev Matrix (n : Nat) := Fin n → Fin n → ℚ
 

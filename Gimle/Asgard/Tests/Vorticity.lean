@@ -133,7 +133,7 @@ example : transport ω₀ ω₀ (0, 1) =
     simp only [startTable, Table.coeff, Finset.mem_insert, Finset.mem_singleton, not_or] at h ⊢
     obtain ⟨p1, p2⟩ := p
     simp only [Prod.neg_mk, Prod.ext_iff] at h ⊢
-    split_ifs <;> first | rfl | (exfalso; omega) | norm_num
+    split_ifs <;> first | (exfalso; omega) | norm_num
 
 /-- `Δ⁻¹` inverts `Δ` on a mean-zero polynomial. -/
 example : laplacian (laplacianInv ω₀) = ω₀ := laplacian_laplacianInv ω₀_meanZero

@@ -16,7 +16,7 @@ Dropping the boundary term would give `D_t(x) + x = 1`, whose solution
 `1 + e^(-t)` from the same initial value does not solve the source
 (`boundary_dropped`). Python rejects this source ("competing derivative"). -/
 namespace Gimle.Asgard.Examples.SourceIntegrals
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def evolution (name : String) (x0 : ℚ) : Evolution := {
   states := [⟨"state-" ++ name, "d" ++ name, "initial-" ++ name⟩]

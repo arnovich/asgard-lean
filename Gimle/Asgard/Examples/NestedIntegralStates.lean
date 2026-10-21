@@ -26,7 +26,7 @@ The pinned Python compiler accepts the same source as Form-A
 `f = int(int(int(f,t),t),t) + f0`, with two hidden states starting at zero; Lean
 requires both declared, with their initial values written in the evolution. -/
 namespace Gimle.Asgard.Examples.NestedIntegralStates
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body : SourceBody := {
   inputs := [⟨"state-f", "f", .state⟩, ⟨"state-F", "F", .state⟩, ⟨"state-G", "G", .state⟩]

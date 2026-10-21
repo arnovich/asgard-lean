@@ -42,7 +42,7 @@ reading of its integral (`Solves.integral_state`). The main
 results are `Lowered.solves_iff` and the composed
 `SourceContinuousModel.solves_iff_realizes`. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- An explicit named assignment. Its right-hand side may contain applied
 lambdas, and derivative atoms only where lowering reads them as declared

@@ -5,7 +5,7 @@ The equation is 2*z + u = z + 3*v, so z = 3*v - u.
 For u(t)=t and v(t)=2*t+1, the solution is z(t)=5*t+3, with z(0)=3.
 This is pointwise algebraic elimination, not differentiation or ODE solving. -/
 namespace Gimle.Asgard.Examples.VariableIsolation
-open Polynomial Normalization Isolation
+open _root_.Gimle.Asgard.Polynomial Normalization Isolation
 
 /-- Original coordinate order is [u,z,v]. The selected coordinate occurs on
 both sides. The right side also includes a beta-reducible application (λw.3*w) v. -/

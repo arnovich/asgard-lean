@@ -5,7 +5,7 @@ import Gimle.Asgard.Examples.AlgebraicFeedback
 `z ∈ [-2, 2]`, the admitted inputs `u ∈ [-1, 1]` and the supplied inverse `2` of
 `1 - 1/2`. The membership obligation is `half_membership`. -/
 namespace Gimle.Asgard.Algebraic.Examples
-open Polynomial Matrix
+open _root_.Gimle.Asgard.Polynomial Matrix
 
 def halfDeclaration : Declaration 1 1 1 where
   loop := ![⟨"z", "z", .state⟩]

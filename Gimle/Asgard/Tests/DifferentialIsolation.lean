@@ -10,7 +10,7 @@ Python's accept/reject outcome is recorded beside each one; it is a
 regression reference, not an oracle. Lean's expected values are exact, and
 the cases where the fragments deliberately differ are marked "differs". -/
 namespace Gimle.Asgard.Tests.DifferentialIsolation
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-! ## Isolation of one equation
 

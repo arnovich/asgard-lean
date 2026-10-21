@@ -6,7 +6,7 @@ import Gimle.Asgard.Examples.Oscillator
 /-! Editable equations compiled to primitive circuits, with universal real
 correctness proofs. Open this file in VS Code and inspect the AST definitions. -/
 namespace Gimle.Asgard.Examples.PolynomialCompiler
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 def inputs : List Port := [⟨"state-x", "x", .state⟩, ⟨"state-y", "y", .state⟩]
 

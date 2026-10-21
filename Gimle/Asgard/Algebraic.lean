@@ -5,7 +5,7 @@ import Mathlib.Data.Matrix.Basic
 The finite coordinate order is [loop, external]; external may pack inputs and
 fixed parameters. Exact rational affine compilation preserves solution sets. -/
 namespace Gimle.Asgard.Algebraic
-open Polynomial Matrix
+open _root_.Gimle.Asgard.Polynomial Matrix
 
 def semanticId : String := "asgard.algebraic.real.affine.v1"
 

@@ -5,7 +5,7 @@ import Gimle.Asgard.Compile.Named
 interleave states and external inputs, and retain intermediate assignments.
 Every state explicitly names its derivative output and its initial-value port. -/
 namespace Gimle.Asgard.Dynamics
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 structure Axis where
   id : String

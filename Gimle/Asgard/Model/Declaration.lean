@@ -4,7 +4,7 @@ import Gimle.Asgard.Dynamics.Named
 not dependency order, solvability or compilation. The original AST is retained.
 The polynomial and continuous interpretations remain distinct. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- A fixed exact value, bound by stable port ID rather than display name. -/
 structure RationalBinding where

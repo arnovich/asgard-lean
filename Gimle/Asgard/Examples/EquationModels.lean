@@ -5,7 +5,7 @@ import Gimle.Asgard.Examples.LinearDiagram
 The readable `energyProgram` and `oscillatorProgram` live in PolynomialCompiler.
 No numerical settings or Python imports participate in these definitions. -/
 namespace Gimle.Asgard.Examples.EquationModels
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- Select the energy output from the declared [s,d,energy] assignment order. -/
 def energy : Circuit 2 1 :=

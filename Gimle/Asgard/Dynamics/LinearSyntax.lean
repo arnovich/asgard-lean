@@ -4,7 +4,7 @@ import Gimle.Asgard.Compile.Polynomial
 extracts exact rational coefficients; rejection makes no claim of nonlinearity
 or insolubility. No ODE existence theorem follows from polynomial compilation. -/
 namespace Gimle.Asgard.Dynamics.LinearSyntax
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 abbrev Coefficients (n : Nat) := Fin n → ℚ
 
@@ -115,9 +115,7 @@ theorem coefficients_correct {n : Nat} (e : Expr n) (c : Coefficients n)
           subst c
           rw [evaluate_neg, Expr.eval, ha _ hca]
   | mul a b ha hb =>
-      cases a <;> first
-        | exact scale_left_correct _ _ _ _ hb accepted
-        | skip
+      cases a <;> try exact scale_left_correct _ _ _ _ hb accepted
       all_goals cases b <;> first
         | exact scale_right_correct _ _ _ _ ha accepted
         | contradiction

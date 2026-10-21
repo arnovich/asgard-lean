@@ -88,7 +88,7 @@ private def check {n m : Nat} (c : Circuit n m) (input expected : List ℚ) : Ex
 end Gimle.Asgard.Tests.Visualization
 
 namespace Gimle.Asgard.Tests.Visualization
-open Gimle.Asgard Visualization Polynomial Model
+open Gimle.Asgard Visualization _root_.Gimle.Asgard.Polynomial Model
 
 private def body : Body := {
   program := ⟨[⟨"z", "z", .state⟩, ⟨"x", "x", .state⟩, ⟨"y", "y", .state⟩],
@@ -122,7 +122,7 @@ private def compiled : ContinuousModel body evolution :=
 end Gimle.Asgard.Tests.Visualization
 
 namespace Gimle.Asgard.Tests.Visualization
-open Gimle.Asgard Visualization Polynomial Model
+open Gimle.Asgard Visualization _root_.Gimle.Asgard.Polynomial Model
 
 private def chain : Nat → Circuit 1 1
   | 0 => .id

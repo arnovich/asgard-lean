@@ -15,7 +15,7 @@ the signal is not admitted, because `du` must be the actual derivative of `u`,
 so no state solves the source with it: a derivative port is never an
 unconstrained extra input. -/
 namespace Gimle.Asgard.Examples.DrivenForcing
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body : SourceBody := {
   inputs := [⟨"state-x", "x", .state⟩, ⟨"driver-u", "u", .driver⟩, ⟨"driver-du", "du", .driver⟩]

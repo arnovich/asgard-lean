@@ -7,7 +7,7 @@ its deliberate order mismatches, shared forward auxiliaries, unused parameter
 and reused observation display names are accepted for the stated reasons, and
 that neighbouring invalid bindings are rejected rather than silently repaired. -/
 namespace Gimle.Asgard.Tests.ThreeState
-open Polynomial Model Examples.ThreeState
+open _root_.Gimle.Asgard.Polynomial Model Examples.ThreeState
 
 /-! ## Nothing is silently reordered -/
 

@@ -22,7 +22,7 @@ zero; Lean requires that state declared, with its initial value `0` written in
 the evolution. A declared initial value other than `0` is rejected
 (`nonzero_rejected`). -/
 namespace Gimle.Asgard.Examples.IntegralStates
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body : SourceBody := {
   inputs := [⟨"state-f", "f", .state⟩, ⟨"state-F", "F", .state⟩]
