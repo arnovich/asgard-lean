@@ -147,7 +147,7 @@ theorem guardedField_rel {k n m r : Nat} (outs : Fin m → Expr k n)
 end Gimle.Asgard.RealAtomics
 
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-! ## Named partial expressions -/
 

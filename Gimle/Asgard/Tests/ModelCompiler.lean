@@ -2,7 +2,7 @@ import Gimle.Asgard.Model.Linear
 import Gimle.Asgard.Compile.Syntax
 
 namespace Gimle.Asgard.Tests.ModelCompiler
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def forward : Body := {
   program := ⟨[⟨"x", "x", .input⟩, ⟨"a", "a", .parameter⟩],

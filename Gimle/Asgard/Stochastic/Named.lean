@@ -4,7 +4,7 @@ import Gimle.Asgard.Dynamics.Named
 /-! Named polynomial coefficient source, checked resolution, and compilation to
 process integral banks. Source evaluation never runs a target circuit. -/
 namespace Gimle.Asgard.Stochastic
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators
 
 abbrev Channels (w j : Nat) := Fin ((1 + w) + j)

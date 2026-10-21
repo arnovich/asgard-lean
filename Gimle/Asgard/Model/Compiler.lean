@@ -1,7 +1,7 @@
 import Gimle.Asgard.Model.Resolution
 
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- Runtime coordinates are explicit stable IDs, never inferred from name order. -/
 def index {n : Nat} (ids : Fin n → String) (id : String) : Option (Fin n) :=

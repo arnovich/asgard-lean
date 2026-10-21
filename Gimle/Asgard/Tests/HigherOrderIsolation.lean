@@ -10,7 +10,7 @@ it is a regression reference, not an oracle, and the cases where the fragments
 deliberately differ are marked "differs". Outcomes marked "probed" are not
 pinned test cases; they were observed with the Python compiler. -/
 namespace Gimle.Asgard.Tests.HigherOrderIsolation
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-! ## Isolation of one equation
 

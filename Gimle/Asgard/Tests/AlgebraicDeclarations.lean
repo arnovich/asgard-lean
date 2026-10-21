@@ -18,7 +18,7 @@ algebraic elimination to agree with, so every case differs:
 Python's multi-equation algebraic layering (`compile/cross_wiring.py`) refuses a
 cycle among algebraic equations outright, so it offers no elimination either. -/
 namespace Gimle.Asgard.Tests.AlgebraicDeclarations
-open Polynomial Matrix Algebraic
+open _root_.Gimle.Asgard.Polynomial Matrix Algebraic
 
 /-- The first diagnostic, if any. -/
 def diagnostic {α : Type} : Except Model.Diagnostic α → Option Model.Diagnostic

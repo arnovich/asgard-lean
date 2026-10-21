@@ -10,7 +10,7 @@ The pre-jump state is 2, hence ΔX(1) = 2·3 = 6 and X(1) = 8.
 We prove the named source equation and the compiled initialized circuit admit
 this trajectory. Brownian integration and probability bounds are not used. -/
 namespace Gimle.Asgard.Examples.StochasticJump
-open Stochastic Polynomial
+open Stochastic _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators Topology
 
 abbrev system : NamedSystem 1 0 0 1 := {

@@ -2,7 +2,7 @@ import Gimle.Asgard.Model.Driven
 import Gimle.Asgard.Compile.Syntax
 
 namespace Gimle.Asgard.Examples.RationalModel
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-- x' = y/3, y' = -2x/7. The input declaration order differs from state order;
 observations [y,x] deliberately reuse state display names with distinct IDs. -/

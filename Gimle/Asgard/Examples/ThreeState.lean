@@ -8,7 +8,7 @@ One declaration is the single source for the compiled field, its initialization,
 and its observations. The definitions support downstream trajectory proofs;
 no floating-point result appears among the theorems. -/
 namespace Gimle.Asgard.Examples.ThreeState
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-- x' = -a*x + y - z, y' = -x - b*y + z, z' = x - y - c*z, with the energy
 V = x²+y²+z² and its exact rate as auxiliary assignments.

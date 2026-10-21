@@ -2,7 +2,7 @@ import Gimle.Asgard.Visualization.Diagram
 import Gimle.Asgard.Model.Continuous
 
 namespace Gimle.Asgard.Visualization
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 /-- Fully parenthesized expressions preserve precedence and exact rationals.
 Limits are checked during recursion, before a potentially exponential display. -/

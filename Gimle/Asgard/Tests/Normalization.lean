@@ -3,7 +3,7 @@ import Gimle.Asgard.Compile.Isolation
 import Gimle.Asgard.Examples.VariableIsolation
 
 namespace Gimle.Asgard.Tests.Normalization
-open Polynomial Gimle.Asgard.Normalization Isolation
+open _root_.Gimle.Asgard.Polynomial Gimle.Asgard.Normalization Isolation
 
 /-- (λx. (λy. x+y) u) 3: the free u must not be captured by either binder. -/
 def nested : Source 1 :=

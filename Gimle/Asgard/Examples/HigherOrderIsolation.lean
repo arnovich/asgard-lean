@@ -16,7 +16,7 @@ and accepts only the bare chain, whose velocity initial value it fixes to zero
 without declaring it; see the regression file. Python is not used here as an
 oracle. -/
 namespace Gimle.Asgard.Examples.HigherOrderIsolation
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body : SourceBody := {
   inputs := [⟨"state-x", "x", .state⟩, ⟨"state-v", "v", .state⟩]

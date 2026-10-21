@@ -5,7 +5,7 @@ moved to zero by an explicit permutation; the remaining coordinates keep the
 order supplied by that permutation. Polynomial inverse witnesses are checked
 under explicit hypotheses, never inferred from totalized real division. -/
 namespace Gimle.Asgard.Isolation
-open Polynomial Normalization
+open _root_.Gimle.Asgard.Polynomial Normalization
 
 def semanticVersion : String := "asgard.polynomial-isolation/v1"
 

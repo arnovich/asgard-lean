@@ -9,7 +9,7 @@ Both derivatives and the initial values are properties of the actual closed
 circuit. This example reuses the existing explicit solution; general linear
 existence and uniqueness belong to the subsequent ODE milestone. -/
 namespace Gimle.Asgard.Examples.Feedback
-open Polynomial Dynamics
+open _root_.Gimle.Asgard.Polynomial Dynamics
 
 def noDrivers : Signal 0 := fun _ i => Fin.elim0 i
 

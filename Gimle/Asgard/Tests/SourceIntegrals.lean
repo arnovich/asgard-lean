@@ -10,7 +10,7 @@ Every body has states `f` and `g`, with `g' = 0`, and the parameter `p = 3`, on
 the axis `t` from `0`, with `f(0) = 2`. The nonzero initial value makes every
 boundary term visible: `int(diff(f,t),t)` lowers to `f - 2`, never to `f`. -/
 namespace Gimle.Asgard.Tests.SourceIntegrals
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def body (equations : List DifferentialEquation)
     (extra : List SourceAssignment := []) : SourceBody := {

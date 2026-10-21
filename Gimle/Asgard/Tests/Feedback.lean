@@ -4,7 +4,7 @@ import Gimle.Asgard.Compile.Syntax
 import Gimle.Asgard.Examples.Feedback
 
 namespace Gimle.Asgard.Tests.Feedback
-open Polynomial Dynamics
+open _root_.Gimle.Asgard.Polynomial Dynamics
 
 -- The general theorem concerns actual integrators and trace, including zero states.
 example {d n : Nat} (axis : String) (field : Gimle.Asgard.Circuit (d + n) n)

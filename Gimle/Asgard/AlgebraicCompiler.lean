@@ -3,7 +3,7 @@ import Gimle.Asgard.Algebraic
 /-! Executable construction of the eliminated typed circuits from exact rational
 source equations. The supplied inverse must carry checked product equations. -/
 namespace Gimle.Asgard.Algebraic
-open Polynomial Matrix
+open _root_.Gimle.Asgard.Polynomial Matrix
 
 /-- Simultaneous equations z=M z+b(u), and ordered affine observable outputs. -/
 structure Problem (n d o : Nat) where

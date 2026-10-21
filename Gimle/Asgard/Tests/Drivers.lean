@@ -12,7 +12,7 @@ The state `a` has derivative port `da` and initial value `1`, and `g` has `dg`
 and `2`, on the axis `t` from `0`. `z` is a driver with derivative port `dz`, `f`
 a driver without one, and `p = 3` a parameter. -/
 namespace Gimle.Asgard.Tests.Drivers
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def inputs : List Port :=
   [⟨"state-a", "a", .state⟩, ⟨"state-g", "g", .state⟩, ⟨"driver-z", "z", .driver⟩,

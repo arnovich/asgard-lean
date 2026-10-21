@@ -45,7 +45,7 @@ integrals that no inverse rewrite removed and no declared integral state reads
 (`unsupportedIntegral`). An explicit assignment is not isolated; its atoms are read
 as declared velocities, and an atom that is not read is rejected. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- What an evolution declaration tells the integral rewrites of
 `Model.Integral`: `input` holds for a name read from a state coordinate or a

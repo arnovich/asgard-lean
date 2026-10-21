@@ -28,7 +28,7 @@ non-local atom as undefined. Velocity declarations and higher-order chains of
 states are lowered as in `Model.Source`; a chain of a driver is rejected. The
 main result is `SourceDrivenModel.solves_iff_realizes`. -/
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 /-- The display name of the derivative port of the first `.driver` input named
 `y`, when that driver is declared differentiable. -/

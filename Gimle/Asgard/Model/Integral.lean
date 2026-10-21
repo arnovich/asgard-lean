@@ -74,7 +74,7 @@ antiderivatives of their integrands, whose bound parameters are constant and who
 declared velocities are the derivatives of their states: in particular, at every
 time of a solution of the source or of the lowered body. -/
 namespace Gimle.Asgard.Model
-open Polynomial Set
+open _root_.Gimle.Asgard.Polynomial Set
 
 /-! ## Primitives and derivatives on the forward half-line -/
 

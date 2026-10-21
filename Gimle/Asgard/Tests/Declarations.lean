@@ -2,7 +2,7 @@ import Gimle.Asgard.Model.Declaration
 import Gimle.Asgard.Compile.Syntax
 
 namespace Gimle.Asgard.Tests.Declarations
-open Polynomial Model
+open _root_.Gimle.Asgard.Polynomial Model
 
 def constant : Body := {
   program := ⟨[], equations% { c := rat(1, 3); }⟩

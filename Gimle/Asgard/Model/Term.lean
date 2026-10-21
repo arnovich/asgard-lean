@@ -53,7 +53,7 @@ theorem Binary.partial_of_domain {op : Binary} {x y : ℝ} (h : op.Domain x y) :
 end Gimle.Asgard.RealAtomics
 
 namespace Gimle.Asgard.Model
-open Polynomial
+open _root_.Gimle.Asgard.Polynomial
 
 inductive Term where
   | var (name : String)

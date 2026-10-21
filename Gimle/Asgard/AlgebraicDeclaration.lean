@@ -40,7 +40,7 @@ common compiler schedules, rejecting every cycle as `cyclicDependency`, while
 this declaration carries predicates and a proof obligation. Only affine loops
 are declared; nonlinear elimination is out of scope. -/
 namespace Gimle.Asgard.Algebraic
-open Polynomial Matrix
+open _root_.Gimle.Asgard.Polynomial Matrix
 
 /-- Simultaneous affine loop equations with ports in the order [loop, external],
 a supplied inverse of `1 - M`, a loop domain, admitted inputs, and the proof
