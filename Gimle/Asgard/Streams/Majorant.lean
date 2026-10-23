@@ -51,12 +51,13 @@ theorem ogfD_sub {d : Nat} (i : Fin d) (a b : Stream d) : ogfD i (a - b) = ogfD 
 theorem ogfD_C {d : Nat} (i : Fin d) (q : ℚ) : ogfD i (C q : Stream d) = 0 := by
   funext n
   change (n i + 1 : ℚ) * (C q : Stream d) (n.update i (n i + 1)) = 0
-  rw [show (C q : Stream d) (n.update i (n i + 1)) = coeff (n.update i (n i + 1)) (C q) from rfl,
-    coeff_C, ite_eq_right]
-  · simp
-  · intro h
+  have hne : n.update i (n i + 1) ≠ 0 := by
+    intro h
     have := congrArg (fun m : Index d => m i) h
     simp at this
+  rw [show (C q : Stream d) (n.update i (n i + 1)) = coeff (n.update i (n i + 1)) (C q) from rfl,
+    coeff_C, if_neg hne]
+  simp
 
 /-- Constants pass through the derivative. -/
 theorem ogfD_C_mul {d : Nat} (i : Fin d) (q : ℚ) (a : Stream d) : ogfD i (C q * a) = C q * ogfD i a := by
