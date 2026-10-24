@@ -1,12 +1,5 @@
 name = "asgard"
 version = "0.1.0"
-# Temporary: Lean 4.33 changed the default of
-# backward.isDefEq.respectTransparency.types to true, which breaks unification
-# in about 30 files (Decidable instances, rw motives, simp). This restores
-# the previous default package-wide; remove it in a follow-up that ports those
-# proofs. It is passed as a raw -D argument because leanOptions treats the
-# dotted name as a single quoted identifier.
-moreLeanArgs = ["-Dbackward.isDefEq.respectTransparency.types=false"]
 defaultTargets = ["Gimle.Asgard", "Gimle.Asgard.Examples", "Gimle.Asgard.Tests",
   "Gimle.Asgard.Examples.CircuitGallery", "diagram_demo"]
 
