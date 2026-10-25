@@ -25,7 +25,8 @@ def energyExpressions : List (Expr 2) := energyProgram.resolve.get (by decide)
 
 def energyCircuit : Circuit 2 3 := compileList energyExpressions
 
-theorem energy_resolved : energyProgram.resolve = some energyExpressions := by decide
+theorem energy_resolved : energyProgram.resolve = some energyExpressions :=
+  (Option.some_get _).symm
 
 /-- The named source equations and all three compiled outputs have identical solutions. -/
 theorem energy_satisfaction (x : Point 2) (outputs : List ℝ) :

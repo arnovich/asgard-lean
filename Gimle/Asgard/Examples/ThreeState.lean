@@ -18,8 +18,11 @@ damping survives; `dissipation` records that exact rate.
 
 Input, derivative, observation and initial-condition orders deliberately differ,
 `sqx`/`sqy`/`sqz` are shared by two assignments and declared after both uses, and
-`param-unused` is bound but never read. None of this is silently reordered. -/
-def body (a b c : ℚ) : Body := {
+`param-unused` is bound but never read. None of this is silently reordered.
+
+An `abbrev`, like `evolution`, so the observation count the compiled circuits
+are typed by reduces to a numeral during unification. -/
+abbrev body (a b c : ℚ) : Body := {
   program := ⟨[⟨"state-y", "y", .state⟩, ⟨"param-c", "c", .parameter⟩,
       ⟨"state-z", "z", .state⟩, ⟨"param-a", "a", .parameter⟩,
       ⟨"state-x", "x", .state⟩, ⟨"param-b", "b", .parameter⟩,
@@ -43,8 +46,9 @@ def body (a b c : ℚ) : Body := {
 }
 
 /-- State order is [x,y,z] with initial state (1,2,-1) at t=2. The initial-port
-and initial-value orders differ from it again; bindings are by stable ID. -/
-def evolution : Evolution := {
+and initial-value orders differ from it again; bindings are by stable ID.
+An `abbrev` so the state count reduces to `3` during unification. -/
+abbrev evolution : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩, ⟨"state-y", "dy", "initial-y"⟩,
     ⟨"state-z", "dz", "initial-z"⟩]
   initialPorts := [⟨"initial-z", "z0", .initial⟩, ⟨"initial-x", "x0", .initial⟩,

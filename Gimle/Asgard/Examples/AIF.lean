@@ -25,7 +25,7 @@ def source : Program := {
 def expressions : List (Expr 5) := source.resolve.get (by decide +kernel)
 def field : Circuit 5 4 := compileList expressions
 
-theorem resolved : source.resolve = some expressions := by decide +kernel
+theorem resolved : source.resolve = some expressions := (Option.some_get _).symm
 
 /-- The original named equations and the compiled field have exactly the same values. -/
 theorem source_satisfaction (x : Point 5) (values : List ℝ) :
