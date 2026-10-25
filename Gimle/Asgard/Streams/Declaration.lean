@@ -272,8 +272,10 @@ structure Declaration where
   equations : List Equation
   deriving Repr, DecidableEq
 
-/-- The named context the right-hand sides resolve in, in declared order. -/
-def Declaration.context (s : Declaration) : Context := ⟨s.axes, s.inputs⟩
+/-- The named context the right-hand sides resolve in, in declared order.
+Reducible, so a declaration's axis and input counts are its own lists' lengths
+during unification. -/
+abbrev Declaration.context (s : Declaration) : Context := ⟨s.axes, s.inputs⟩
 
 /-- Input IDs a source expression reads, in source order. -/
 def NamedExpr.inputRefs : NamedExpr → List String
