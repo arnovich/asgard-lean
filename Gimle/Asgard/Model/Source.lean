@@ -1669,7 +1669,7 @@ theorem SourceContinuousModel.constrained_iff {sb : SourceBody} {e : Evolution}
 theorem SourceContinuousModel.observations_correct {sb : SourceBody} {e : Evolution}
     (p : SourceContinuousModel sb e) (output : Dynamics.Signal sb.observations.length) :
     sb.ObservedSolution e output ↔ p.model.ObservedRealization output := by
-  rw [← p.model.observations_correct output]
+  rw [← p.model.observations_correct]
   refine exists_congr fun state => ?_
   rw [p.lowered.solves_iff]
   refine and_congr_right fun hs => ?_
