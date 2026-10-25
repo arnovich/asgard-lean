@@ -116,8 +116,10 @@ outputs, in declaration order. -/
 def SourceBody.outputs (sb : SourceBody) : List Port :=
   sb.assignments.map (·.output) ++ sb.equations.map (·.output)
 
-/-- The body with the same interface and the given explicit assignments. -/
-def SourceBody.withAssignments (sb : SourceBody) (as : List Assignment) : Body where
+/-- The body with the same interface and the given explicit assignments.
+Reducible, like `Lowered.body`, so a compiled model's ports and observations
+are the source's own during unification. -/
+abbrev SourceBody.withAssignments (sb : SourceBody) (as : List Assignment) : Body where
   program := ⟨sb.inputs, as⟩
   parameters := sb.parameters
   observations := sb.observations
@@ -1146,7 +1148,8 @@ structure Lowered (sb : SourceBody) (c : Context) where
   velocityStates : sb.VelocityStates
   integralStates : sb.IntegralStates c
 
-def Lowered.body {sb : SourceBody} {c : Context} (l : Lowered sb c) : Body :=
+/-- The source interface with the lowered assignments. -/
+abbrev Lowered.body {sb : SourceBody} {c : Context} (l : Lowered sb c) : Body :=
   sb.withAssignments l.assignments
 
 /-- Lower an explicit assignment: apply the integral rewrites, collapse declared
@@ -1384,7 +1387,7 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
 theorem Lowered.value {sb : SourceBody} {c : Context} (l : Lowered sb c)
     {α : Type} (env : String → Option α) (id : String) :
     l.body.value env id = sb.value env id := by
-  simp [Body.value, SourceBody.value, Lowered.body, SourceBody.withAssignments, l.outputs]
+  simp [Body.value, SourceBody.value, l.outputs]
 
 theorem Lowered.source {sb : SourceBody} {c : Context} (l : Lowered sb c) {n : Nat}
     (ids : Fin n → String) (x : Point n) {atoms : Term → Option ℝ} (env : String → Option ℝ)

@@ -203,11 +203,11 @@ theorem SourceDrivenModel.observations_correct {sb : SourceBody} {e : Evolution}
     (drivers : Dynamics.Signal (DriverBinding.width ds))
     (output : Dynamics.Signal sb.observations.length) :
     sb.ObservedDriven e ds drivers output ↔ p.model.ObservedRealization drivers output := by
-  rw [← p.model.observations_correct]
+  rw [← p.model.observations_correct drivers output]
   refine exists_congr fun state => and_congr
     ((p.solves_iff_realizes drivers state).trans (p.model.solves_iff_realizes drivers state).symm)
     (forall₂_congr fun t _ => ?_)
-  rw [← p.lowered.observes _ _ _ _ rfl]
+  rw [← p.lowered.observes _ p.lowered.body.observationIds _ (output t) rfl]
   simp only [SourceBody.Observes, SourceBody.drivenSource, sb.readRates_value]
   exact exists_congr fun env => and_congr_left fun _ =>
     (sb.readRates_source (sb.drivenContext e ds) _ (sb.driverRate_located e ds) _ _ _ env).symm
