@@ -713,8 +713,10 @@ structure SourceDeclaration where
   equations : List SourceEquation
   deriving Repr, DecidableEq
 
-/-- The named context both sides resolve in, in declared order. -/
-def SourceDeclaration.context (s : SourceDeclaration) : Context := ⟨s.axes, s.inputs⟩
+/-- The named context both sides resolve in, in declared order. Reducible, like
+`Declaration.context`, so concrete axis and input counts reduce during
+unification. -/
+abbrev SourceDeclaration.context (s : SourceDeclaration) : Context := ⟨s.axes, s.inputs⟩
 
 /-- The stream declaration with the same basis, axes and inputs and the given
 equations. Its context is `s.context`. -/
