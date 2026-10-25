@@ -156,7 +156,7 @@ example (y : StreamPoint 2 0) : ¬
     Binary.Domain, CanCompose, constant, decode, encode]
 
 /-- IDs are resolved in their declared order, with distinct axis/input scopes. -/
-def context : Context where
+abbrev context : Context where
   axes := [⟨"u", "u"⟩, ⟨"space", "x"⟩]
   inputs := [⟨"u", "u", .input⟩, ⟨"v", "v", .input⟩, ⟨"unused", "unused", .parameter⟩]
 

@@ -27,7 +27,9 @@ def body (equations : List DifferentialEquation) (integrals : List IntegralDecla
   parameters := [⟨"param-p", 3⟩]
 }
 
-def evolution (F0 : ℚ := 0) : Evolution := {
+-- Evolutions here are `abbrev`s so their state counts reduce to numerals
+-- during unification.
+abbrev evolution (F0 : ℚ := 0) : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-g", "dg", "initial-g"⟩,
     ⟨"state-F", "dF", "initial-F"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-g", "g0", .initial⟩,
@@ -132,7 +134,7 @@ def withVelocity : SourceBody := {
   integrals := integrals% { dF : F = int(f, t); }
 }
 
-def velocityEvolution : Evolution := {
+abbrev velocityEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-v", "dv", "initial-v"⟩,
     ⟨"state-F", "dF", "initial-F"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-v", "v0", .initial⟩,
@@ -173,7 +175,7 @@ example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })
     some ⟨.nonzeroInitial, "dF", "F"⟩ := by decide +kernel
 -- A missing initial value: `F` without a `StateBinding`, so without an initial
 -- port or value, fails interface validation before any term is read.
-def unbound : Evolution := {
+abbrev unbound : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-g", "dg", "initial-g"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-g", "g0", .initial⟩]
   initialValues := [⟨"initial-f", 2⟩, ⟨"initial-g", 1⟩]
@@ -185,7 +187,7 @@ example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })
     (integrals% { dF : F = int(f, t); })) unbound =
     some ⟨.missingBinding, "states", "state-F"⟩ := by decide +kernel
 -- A binding whose initial port has no value.
-def valueless : Evolution := { evolution 0 with
+abbrev valueless : Evolution := { evolution 0 with
   initialValues := [⟨"initial-f", 2⟩, ⟨"initial-g", 1⟩] }
 example : rejected (body (differentials% { df : diff(f, t) = int(f, t); })
     (integrals% { dF : F = int(f, t); })) valueless =
@@ -263,7 +265,7 @@ def duplicate : SourceBody := {
   differentials := differentials% { df : diff(f, t) = int(f, t); }
   integrals := integrals% { dF : F = int(f, t); dG : G = int(f, t); }
 }
-def duplicateEvolution : Evolution := {
+abbrev duplicateEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-F", "dF", "initial-F"⟩,
     ⟨"state-G", "dG", "initial-G"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-F", "F0", .initial⟩,
@@ -302,7 +304,7 @@ def nested (equations : List DifferentialEquation) (integrals : List IntegralDec
   integrals := integrals
 }
 
-def nestedEvolution : Evolution := {
+abbrev nestedEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-F", "dF", "initial-F"⟩,
     ⟨"state-G", "dG", "initial-G"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-F", "F0", .initial⟩,
@@ -404,7 +406,7 @@ def threeLevels (integrals : List IntegralDeclaration) : SourceBody :=
   { nested (differentials% { df : diff(f, t) = int(int(int(f, t), t), t); }) integrals with
     inputs := [⟨"state-f", "f", .state⟩, ⟨"state-F", "F", .state⟩, ⟨"state-G", "G", .state⟩,
       ⟨"state-H", "H", .state⟩] }
-def threeEvolution : Evolution := { nestedEvolution with
+abbrev threeEvolution : Evolution := { nestedEvolution with
   states := nestedEvolution.states ++ [⟨"state-H", "dH", "initial-H"⟩]
   initialPorts := nestedEvolution.initialPorts ++ [⟨"initial-H", "H0", .initial⟩]
   initialValues := nestedEvolution.initialValues ++ [⟨"initial-H", 0⟩] }

@@ -23,7 +23,8 @@ def body : SourceBody := {
   differentials := differentials% { dx : diff(x, t) + x = diff(u, t) + u; }
 }
 
-def evolution : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩]
   initialPorts := [⟨"initial-x", "x0", .initial⟩]
   initialValues := [⟨"initial-x", 0⟩]
@@ -42,9 +43,10 @@ theorem lowered : model.lowered.assignments =
     [⟨⟨"dx", "dx", .output⟩, .add (.add (.var "du") (.var "u")) (.neg (.var "x"))⟩] := by
   decide +kernel
 
-/-- The compiled field over `[u, du, x]`. -/
+/-- The compiled field over `[u, du, x]`, written at the field's own input
+count: `DriverBinding.width` only reduces to `2` by unfolding. -/
 theorem rates_expressions : model.model.rates.expressions =
-    (![.add (.add (.var 1) (.var 0)) (.neg (.var 2))] : Fin 1 → Expr 3) := by
+    ![.add (.add (.var ⟨1, by decide⟩) (.var ⟨0, by decide⟩)) (.neg (.var ⟨2, by decide⟩))] := by
   decide +kernel
 
 /-- Without the binding, the `.driver` ports are not drivers. -/
@@ -61,7 +63,7 @@ noncomputable def wrongDerivative : Dynamics.Signal 2 := fun t => ![Real.sin t, 
 noncomputable def solution : Dynamics.Signal 1 := fun t => ![Real.sin t]
 
 private theorem domain : evolution.time.domain = Set.Ici 0 := by
-  simp [Evolution.time, evolution, Dynamics.TimeDomain.domain]
+  simp [Evolution.time, Dynamics.TimeDomain.domain]
 
 private theorem width : DriverBinding.width drivers = 2 := rfl
 
@@ -84,7 +86,8 @@ theorem forcing_admitted : evolution.Admitted drivers forcing := by
 
 /-- `x = sin` solves the ORIGINAL source, driver and initial data included. -/
 theorem solution_solves : body.SolvesDriven evolution drivers forcing solution := by
-  rw [model.solves_iff_realizes, ← model.model.solves_iff_realizes, model.model.solves_iff_field]
+  rw [model.solves_iff_realizes forcing solution, ← model.model.solves_iff_realizes forcing solution,
+    model.model.solves_iff_field forcing solution]
   refine ⟨forcing_admitted, ?_, fun t _ i => ?_⟩
   · have : model.model.initials = ![0] := by decide +kernel
     ext i

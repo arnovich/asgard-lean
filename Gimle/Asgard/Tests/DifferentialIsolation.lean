@@ -192,8 +192,9 @@ example : (term% (λ w => w)(diff(f, t))).beta = none := by decide +kernel
 
 /-! ## Declarations -/
 
-/-- `z = (λw. w*w + a)(x + 1)`, with the exact parameter `a = 1/2`. -/
-def polynomial : SourceBody := {
+/-- `z = (λw. w*w + a)(x + 1)`, with the exact parameter `a = 1/2`. An
+`abbrev`, so its observation count reduces to a numeral during unification. -/
+abbrev polynomial : SourceBody := {
   inputs := [⟨"input-x", "x", .input⟩, ⟨"param-a", "a", .parameter⟩]
   assignments := assignments% { z := (λ w => w * w + a)(x + 1); }
   parameters := [⟨"param-a", 1 / 2⟩]
@@ -207,12 +208,14 @@ example : polynomialModel.lowered.assignments = [⟨⟨"z", "z", .output⟩,
     .add (.mul (.add (.var "x") (.constant 1)) (.add (.var "x") (.constant 1))) (.var "a")⟩] := by
   decide +kernel
 
-/-- The ORIGINAL lambda source observes `z = 19/2` at `x = 2`. -/
+/-- The ORIGINAL lambda source observes `z = 19/2` at `x = 2`. The input and
+variable are written at the model's runtime port count, a filtered length that
+unification does not evaluate. -/
 example : polynomial.Observes Context.empty polynomialModel.lowered.body.runtimeIds
-    polynomial.observationIds (![2] : Point 1) ![19 / 2] := by
+    polynomial.observationIds (fun _ => 2) ![19 / 2] := by
   rw [polynomialModel.correct, Selected.circuit, compileOutputs_correct]
-  have terms : polynomialModel.model.outputs.expressions = (![.add (.mul (.add (.var 0)
-      (.constant 1)) (.add (.var 0) (.constant 1))) (.constant (1 / 2))] : Fin 1 → Expr 1) := by
+  have terms : polynomialModel.model.outputs.expressions = ![.add (.mul (.add (.var ⟨0, by decide⟩)
+      (.constant 1)) (.add (.var ⟨0, by decide⟩) (.constant 1))) (.constant (1 / 2))] := by
     decide +kernel
   rw [terms]
   ext i
@@ -251,7 +254,8 @@ def forced : SourceBody := {
   parameters := [⟨"param-f", 3⟩]
 }
 
-def forcedEvolution : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev forcedEvolution : Evolution := {
   states := [⟨"state-h", "dh", "initial-h"⟩, ⟨"state-g", "dg", "initial-g"⟩]
   initialPorts := [⟨"initial-g", "g0", .initial⟩, ⟨"initial-h", "h0", .initial⟩]
   initialValues := [⟨"initial-g", 2⟩, ⟨"initial-h", 0⟩]
