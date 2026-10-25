@@ -50,6 +50,12 @@ open Gimle.Asgard.Streams
 noncomputable def profile (basis : Basis) (g : ℕ → ℚ) : Stream 1 :=
   encode basis fun α => g (α 0) / ((α 0).factorial : ℚ)
 
+/-- The decoded profile; stated once because the table is a plain function,
+which `decode_encode` cannot read as a stream inside `simp`. -/
+private theorem decode_profile (basis : Basis) (g : ℕ → ℚ) :
+    decode basis (profile basis g) = fun α => g (α 0) / ((α 0).factorial : ℚ) :=
+  decode_encode basis _
+
 /-- The raw EGF coefficients `g_j = j! · [x^j] p` of a one-axis stream `p`
 stored in `basis`. -/
 noncomputable def coeffs (basis : Basis) (p : Stream 1) : ℕ → ℚ :=
@@ -74,7 +80,7 @@ theorem profile_ogf_apply (g : ℕ → ℚ) (α : Index 1) :
 @[simp] theorem coeffs_profile (basis : Basis) (g : ℕ → ℚ) :
     coeffs basis (profile basis g) = g := by
   funext j
-  simp only [coeffs, profile, decode_encode, Finsupp.single_eq_same]
+  simp only [coeffs, decode_profile, Finsupp.single_eq_same]
   field_simp
 
 @[simp] theorem profile_coeffs (basis : Basis) (p : Stream 1) :
@@ -142,7 +148,7 @@ its decoded coefficients are the profile's, elsewhere zero. -/
 theorem decode_boundary_apply (basis : Basis) (g : ℕ → ℚ) (α : Index 2) :
     decode basis (boundary basis g) α =
       if α 0 = 0 then decode basis (profile basis g) (Finsupp.single 0 (α 1)) else 0 := by
-  simp [boundarySeries, profile]
+  simp [boundarySeries, decode_profile]
 
 /-! ## The PDE and the circuit -/
 
