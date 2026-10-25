@@ -4,7 +4,13 @@ import Gimle.Asgard.Compile.Syntax
 namespace Gimle.Asgard.Tests.ModelCompiler
 open _root_.Gimle.Asgard.Polynomial Model
 
-def forward : Body := {
+/- The polynomial models below are typed by `Body.runtimePorts`, which filters
+the declared ports. Unification does not evaluate that filter, so inputs and
+variables are written at the model's own input type (`fun _ => 3`,
+`.var ⟨0, by decide⟩`) rather than at `Point 1` and `Expr 1`. The bodies are
+`abbrev`s so their literal observation counts still reduce to numerals. -/
+
+abbrev forward : Body := {
   program := ⟨[⟨"x", "x", .input⟩, ⟨"a", "a", .parameter⟩],
     equations% { z := y + a*x; y := x*x; }⟩
   parameters := [⟨"a", 1 / 3⟩]
@@ -19,24 +25,27 @@ def polynomial : PolynomialModel forward :=
   (compilePolynomial forward).toOption.get (by decide +kernel)
 
 example : polynomial.outputs.expressions =
-    (![Expr.add (.mul (.var 0) (.var 0)) (.mul (.constant (1 / 3)) (.var 0))] : Fin 1 → Expr 1) := by
+    ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
+      (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by
   decide +kernel
 
-example : polynomial.outputs.circuit.run (![3] : Point 1) = ![(10 : ℝ)] := by
+example : polynomial.outputs.circuit.run (fun _ => 3) = ![(10 : ℝ)] := by
   rw [Selected.circuit, compileOutputs_correct]
   have terms : polynomial.outputs.expressions =
-      (![Expr.add (.mul (.var 0) (.var 0)) (.mul (.constant (1 / 3)) (.var 0))] : Fin 1 → Expr 1) := by decide +kernel
+      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
+        (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
   rw [terms]
   ext i
   change Fin 1 at i
   fin_cases i
   norm_num [Expr.eval]
 
-example : forward.Observes forward.runtimeIds forward.observationIds (![3] : Point 1) ![10] := by
+example : forward.Observes forward.runtimeIds forward.observationIds (fun _ => 3) ![10] := by
   apply (polynomial.outputs.correct _ _).mpr
   rw [Selected.circuit, compileOutputs_correct]
   have terms : polynomial.outputs.expressions =
-      (![Expr.add (.mul (.var 0) (.var 0)) (.mul (.constant (1 / 3)) (.var 0))] : Fin 1 → Expr 1) := by decide +kernel
+      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
+        (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
   rw [terms]
   ext i
   change Fin 1 at i
@@ -44,13 +53,14 @@ example : forward.Observes forward.runtimeIds forward.observationIds (![3] : Poi
   norm_num [Expr.eval]
 
 -- A valid changed coefficient must not inherit the old output claim.
-def changed : Body := { forward with parameters := [⟨"a", 2 / 3⟩] }
+abbrev changed : Body := { forward with parameters := [⟨"a", 2 / 3⟩] }
 def changedModel : PolynomialModel changed :=
   (compilePolynomial changed).toOption.get (by decide +kernel)
-example : ¬ changed.Observes changed.runtimeIds changed.observationIds (![3] : Point 1) ![10] := by
+example : ¬ changed.Observes changed.runtimeIds changed.observationIds (fun _ => 3) ![10] := by
   rw [changedModel.outputs.correct, Selected.circuit, compileOutputs_correct]
   have terms : changedModel.outputs.expressions =
-      (![Expr.add (.mul (.var 0) (.var 0)) (.mul (.constant (2 / 3)) (.var 0))] : Fin 1 → Expr 1) := by decide +kernel
+      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
+        (.mul (.constant (2 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
   rw [terms]
   intro bad
   have := congrFun bad (0 : Fin 1)
@@ -65,43 +75,43 @@ example : (compilePolynomial { forward with observations :=
     [⟨⟨"o1", "first", .output⟩, "x"⟩, ⟨⟨"o2", "second", .output⟩, "x"⟩] }).isOk = true := by
   decide +kernel
 
-def manyInputs : Body := {
+abbrev manyInputs : Body := {
   program := ⟨(List.range 7).map (fun i => ⟨s!"p{i}", s!"x{i}", .input⟩),
     equations% { y := x6 - x1; }⟩
   observations := [⟨⟨"o", "y", .output⟩, "y"⟩]
 }
 def manyModel : PolynomialModel manyInputs :=
   (compilePolynomial manyInputs).toOption.get (by decide +kernel)
-example : manyModel.outputs.expressions = (![Expr.add (.var 6) (.neg (.var 1))] : Fin 1 → Expr 7) := by decide +kernel
+example : manyModel.outputs.expressions =
+    ![Expr.add (.var ⟨6, by decide⟩) (.neg (.var ⟨1, by decide⟩))] := by decide +kernel
 
 -- Undefined values do not satisfy real equations, independently of scheduling.
 example : ¬ Equations (equations% { x := x + 1; }) (fun _ => none) := by
   simp [Equations]
 
-def constantBody : Body := {
+abbrev constantBody : Body := {
   program := ⟨[], equations% { c := rat(2, 7); }⟩
   observations := [⟨⟨"o", "c", .output⟩, "c"⟩]
 }
 def constantModel : PolynomialModel constantBody :=
   (compilePolynomial constantBody).toOption.get (by decide +kernel)
-example : constantModel.outputs.circuit.run ![] = ![(2/7 : ℝ)] := by
+example : constantModel.outputs.circuit.run (fun _ => 0) = ![(2/7 : ℝ)] := by
   rw [Selected.circuit, compileOutputs_correct]
-  have terms : constantModel.outputs.expressions =
-      (![Expr.constant (2/7)] : Fin 1 → Expr 0) := by decide +kernel
+  have terms : constantModel.outputs.expressions = ![Expr.constant (2/7)] := by decide +kernel
   rw [terms]
   ext i
   change Fin 1 at i
   fin_cases i
   norm_num [Expr.eval]
 
-def repeated : Body := { forward with observations :=
+abbrev repeated : Body := { forward with observations :=
   [⟨⟨"o1", "first", .output⟩, "x"⟩, ⟨⟨"o2", "second", .output⟩, "x"⟩] }
 def repeatedModel : PolynomialModel repeated :=
   (compilePolynomial repeated).toOption.get (by decide +kernel)
-example : repeatedModel.outputs.circuit.run (![3] : Point 1) = ![(3 : ℝ), 3] := by
+example : repeatedModel.outputs.circuit.run (fun _ => 3) = ![(3 : ℝ), 3] := by
   rw [Selected.circuit, compileOutputs_correct]
   have terms : repeatedModel.outputs.expressions =
-      (![Expr.var 0, .var 0] : Fin 2 → Expr 1) := by decide +kernel
+      ![Expr.var ⟨0, by decide⟩, .var ⟨0, by decide⟩] := by decide +kernel
   rw [terms]
   ext i
   change Fin 2 at i
@@ -119,8 +129,10 @@ example : (compilePolynomial { forward with program :=
     .error ⟨.unknownReference, "z", "missing"⟩ := by decide +kernel
 
 /-- dx = 2*a*y, dy = -a*x-y. State, input, assignment, IC and output orders
-are different; helper is a shared forward reference. -/
-def field : Body := {
+are different; helper is a shared forward reference. An `abbrev`, like the
+evolutions below, so state and observation counts reduce to numerals during
+unification. -/
+abbrev field : Body := {
   program := ⟨[⟨"state-y", "y", .state⟩, ⟨"param-a", "a", .parameter⟩,
     ⟨"state-x", "x", .state⟩, ⟨"param-unused", "unused", .parameter⟩],
     equations% { dy := -a*x - y; dx := helper + helper; helper := a*y; energy := x^2 + y^2; }⟩
@@ -129,7 +141,7 @@ def field : Body := {
     ⟨⟨"obs-energy", "E", .output⟩, "energy"⟩,
     ⟨⟨"obs-x", "x", .output⟩, "state-x"⟩]
 }
-def evolution : Evolution := {
+abbrev evolution : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩, ⟨"state-y", "dy", "initial-y"⟩]
   initialPorts := [⟨"initial-y", "y0", .initial⟩, ⟨"initial-x", "x0", .initial⟩]
   initialValues := [⟨"initial-x", 1 / 2⟩, ⟨"initial-y", -2⟩]
@@ -181,12 +193,12 @@ theorem observed_initial : model.outputs.circuit.run model.initial =
   fin_cases i <;> norm_num [Expr.eval]
 
 -- Changing only declaration order preserves ID-routed expressions and initial data.
-def permuted : Body := { field with
+abbrev permuted : Body := { field with
   program := { field.program with
     inputs := field.program.inputs.reverse
     assignments := field.program.assignments.reverse }
   parameters := field.parameters.reverse }
-def permutedEvolution : Evolution := { evolution with
+abbrev permutedEvolution : Evolution := { evolution with
   initialPorts := evolution.initialPorts.reverse,
   initialValues := evolution.initialValues.reverse }
 def permutedModel : ContinuousModel permuted permutedEvolution :=
@@ -195,7 +207,12 @@ example : permutedModel.rates.expressions = model.rates.expressions := by decide
 example : permutedModel.outputs.expressions = model.outputs.expressions := by decide +kernel
 example : permutedModel.initials = model.initials := by decide +kernel
 
-def reordered : Body := { field with observations := field.observations.reverse }
+/-- `field` with its observations reversed, written out so their count is a
+literal that unification reduces. -/
+abbrev reordered : Body := { field with observations :=
+  [⟨⟨"obs-x", "x", .output⟩, "state-x"⟩, ⟨⟨"obs-energy", "E", .output⟩, "energy"⟩,
+    ⟨⟨"obs-y", "y", .output⟩, "state-y"⟩] }
+example : reordered.observations = field.observations.reverse := rfl
 def reorderedModel : ContinuousModel reordered evolution :=
   (compileContinuous reordered evolution).toOption.get (by decide +kernel)
 example : reorderedModel.rates.expressions = model.rates.expressions := by decide +kernel
