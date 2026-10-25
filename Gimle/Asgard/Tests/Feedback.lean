@@ -44,7 +44,11 @@ abbrev coupled : System := {
 
 def coupledPrepared : Prepared coupled := coupled.prepare.get (by decide)
 
-example : coupledPrepared.inputRoute = (![0, 3, 1, 4, 2] : Fin 5 → Fin 5) := by decide +kernel
+-- The route's codomain is counted by `System.inputIds`, which only reduces to
+-- `5` by unfolding, so the expected route is cast into it.
+example : coupledPrepared.inputRoute =
+    Fin.cast (show 5 = coupled.inputIds.length by decide) ∘ ![0, 3, 1, 4, 2] := by
+  decide +kernel
 example : coupledPrepared.outputRoute = ![3, 2, 1] := by decide +kernel
 example : coupledPrepared.initialRoute = ![2, 1, 0] := by decide +kernel
 
@@ -54,7 +58,9 @@ example : coupledPrepared.field.run ![7, 11, 2, 3, 5] = ![7, 19, 16] := by
        .add (.add (.add (.var 3) (.var 4)) (.var 4)) (.var 0),
        .add (.add (.var 3) (.var 1)) (.var 2),
        .add (.add (.var 1) (.var 4)) (.var 4)] : List (Expr 5)) := by decide
-  have hi : coupledPrepared.inputRoute = (![0, 3, 1, 4, 2] : Fin 5 → Fin 5) := by decide +kernel
+  have hi : coupledPrepared.inputRoute =
+      Fin.cast (show 5 = coupled.inputIds.length by decide) ∘ ![0, 3, 1, 4, 2] := by
+    decide +kernel
   have ho : coupledPrepared.outputRoute = ![3, 2, 1] := by decide +kernel
   simp only [Prepared.field, Gimle.Asgard.Circuit.run, Polynomial.route_correct,
     compileList, compileOutputs_correct, hi, ho]

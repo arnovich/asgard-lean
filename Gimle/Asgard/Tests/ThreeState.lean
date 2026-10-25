@@ -12,13 +12,14 @@ open _root_.Gimle.Asgard.Polynomial Model Examples.ThreeState
 /-! ## Nothing is silently reordered -/
 
 /-- Reversing every declared list leaves the compiled field, observations and
-initial data identical, because every binding is by stable ID. -/
-def permuted : Body := { body (1 / 3) (1 / 2) 2 with
+initial data identical, because every binding is by stable ID. The `abbrev`s
+keep the state and observation counts reducible to numerals. -/
+abbrev permuted : Body := { body (1 / 3) (1 / 2) 2 with
   program := { (body (1 / 3) (1 / 2) 2).program with
     inputs := (body (1 / 3) (1 / 2) 2).program.inputs.reverse
     assignments := (body (1 / 3) (1 / 2) 2).program.assignments.reverse }
   parameters := (body (1 / 3) (1 / 2) 2).parameters.reverse }
-def permutedEvolution : Evolution := { evolution with
+abbrev permutedEvolution : Evolution := { evolution with
   initialPorts := evolution.initialPorts.reverse
   initialValues := evolution.initialValues.reverse }
 def permutedModel : ContinuousModel permuted permutedEvolution :=
