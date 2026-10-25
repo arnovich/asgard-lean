@@ -48,7 +48,7 @@ theorem reconstructed : integral .ogf 0 two boundary = heat := by
       · simp [integral, zero]
     _ = heat := integral_derivative .ogf 0 heat
 
-def context : Context where
+abbrev context : Context where
   axes := [⟨"time", "t"⟩, ⟨"space", "x"⟩]
   inputs := [⟨"u", "u", .state⟩, ⟨"boundary", "u_at_t0", .boundary⟩,
     ⟨"unused", "unused", .parameter⟩]

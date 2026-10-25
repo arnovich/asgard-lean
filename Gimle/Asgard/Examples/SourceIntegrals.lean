@@ -18,7 +18,8 @@ Dropping the boundary term would give `D_t(x) + x = 1`, whose solution
 namespace Gimle.Asgard.Examples.SourceIntegrals
 open _root_.Gimle.Asgard.Polynomial Model
 
-def evolution (name : String) (x0 : ℚ) : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution (name : String) (x0 : ℚ) : Evolution := {
   states := [⟨"state-" ++ name, "d" ++ name, "initial-" ++ name⟩]
   initialPorts := [⟨"initial-" ++ name, name ++ "0", .initial⟩]
   initialValues := [⟨"initial-" ++ name, x0⟩]
@@ -163,7 +164,7 @@ solve the source, because at `t = 0` its derivative `-1` differs from
 theorem boundary_dropped : ¬ boundary.Solves (evolution "x" 2) droppedSolution := by
   rw [boundaryModel.lowered.solves_iff, boundaryModel.model.solves_iff_field]
   rintro ⟨_, deriv⟩
-  have h := deriv 0 (by simp [Evolution.time, evolution, Dynamics.TimeDomain.domain]) (0 : Fin 1)
+  have h := deriv 0 (by simp [Evolution.time, Dynamics.TimeDomain.domain]) (0 : Fin 1)
   rw [boundary_rates] at h
   have hd : HasDerivAt (fun t => 1 + Real.exp (-t)) (-Real.exp (-0)) 0 := by
     have := ((hasDerivAt_id' (0 : ℝ)).neg.exp).const_add 1

@@ -21,9 +21,12 @@ No existence, uniqueness or numerical claim is made beyond these. -/
 namespace Gimle.Asgard.Examples.AtomicSource
 open Gimle.Asgard Model RealAtomics
 
-/-! ## A polynomial declaration -/
+/-! ## A polynomial declaration
 
-def magnitude : SourceBody := {
+The declarations are `abbrev`s so their observation and state counts reduce to
+numerals during unification. -/
+
+abbrev magnitude : SourceBody := {
   inputs := [⟨"input-x", "x", .input⟩, ⟨"input-y", "y", .input⟩]
   assignments := assignments% { r := sqrt(x * x + y * y); m := r / (1 + r); }
   observations := [⟨⟨"obs-m", "m", .output⟩, "m"⟩]
@@ -106,7 +109,7 @@ theorem magnitude_at : magnitude.Observes Context.empty magnitude.runtimeIds
 
 /-! ## A domain under a zero multiplier -/
 
-def zeroLog : SourceBody := {
+abbrev zeroLog : SourceBody := {
   inputs := [⟨"input-x", "x", .input⟩]
   assignments := assignments% { z := 0 * log(x); }
   observations := [⟨⟨"obs-z", "z", .output⟩, "z"⟩]
@@ -137,7 +140,7 @@ theorem zeroLog_undefined (y : Point 1) :
 
 /-! ## Continuous declarations -/
 
-def evolution : Evolution := {
+abbrev evolution : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩]
   initialPorts := [⟨"initial-x", "x0", .initial⟩]
   initialValues := [⟨"initial-x", 1⟩]
@@ -172,14 +175,14 @@ theorem growth_initial : growthModel.initial = fun _ => 1 := by
 noncomputable def root : Dynamics.Signal Line := fun t _ => Real.sqrt (1 + t)
 
 private theorem domain : evolution.time.domain = Set.Ici 0 := by
-  simp [evolution, Evolution.time, Dynamics.TimeDomain.domain]
+  simp [Evolution.time, Dynamics.TimeDomain.domain]
 
 /-- `x = sqrt(1 + t)` solves the original source: `2 * x' = 1 / x` with every
 `1 / x` defined along it. -/
 theorem growth_solution : growth.Solves evolution root := by
   rw [growthModel.solves_iff, growth_initial]
   simp only [growth_rates, growth_guards, domain]
-  refine ⟨by funext i; simp [root, evolution, Evolution.time], fun t ht => ?_⟩
+  refine ⟨by funext i; simp [root, Evolution.time], fun t ht => ?_⟩
   have ht : (0 : ℝ) ≤ t := ht
   have hpos : 0 < Real.sqrt (1 + t) := Real.sqrt_pos.mpr (by linarith)
   have hd : growthRate.Defined (timeAxis t) (root t) := by

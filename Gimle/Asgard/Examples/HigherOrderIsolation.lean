@@ -25,7 +25,8 @@ def body : SourceBody := {
   velocities := velocities% { dx : diff(x, t) = v; }
 }
 
-def evolution (x0 v0 : ℚ) : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution (x0 v0 : ℚ) : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩, ⟨"state-v", "dv", "initial-v"⟩]
   initialPorts := [⟨"initial-x", "x0", .initial⟩, ⟨"initial-v", "v0", .initial⟩]
   initialValues := [⟨"initial-x", x0⟩, ⟨"initial-v", v0⟩]
@@ -108,7 +109,7 @@ theorem classical (state : Dynamics.Signal 2) (h : body.Solves (evolution 1 0) s
     derivWithin (fun s => state s 0) (Set.Ici 0) 0 = 0 := by
   have states := model.lowered.velocityStates
   have hdom : (evolution 1 0).time.domain = Set.Ici 0 := by
-    simp [Evolution.time, evolution, Dynamics.TimeDomain.domain]
+    simp [Evolution.time, Dynamics.TimeDomain.domain]
   have hy : (body.context (evolution 1 0)).lift 1 "x" = some "v" := by decide +kernel
   have hi : body.coordinate (evolution 1 0) "x" = some ⟨0, by decide⟩ := by decide +kernel
   have hj : body.coordinate (evolution 1 0) "v" = some ⟨1, by decide⟩ := by decide +kernel
@@ -133,7 +134,7 @@ theorem classical (state : Dynamics.Signal 2) (h : body.Solves (evolution 1 0) s
         ((evolution 1 0).states[(⟨1, by decide⟩ : Fin (evolution 1 0).states.length)]).initialId =
         some 0 := by decide +kernel
     rw [iteratedDerivWithin_one, value, hdom] at init
-    have start : (evolution 1 0).time.start = 0 := by simp [Evolution.time, evolution]
+    have start : (evolution 1 0).time.start = 0 := by simp [Evolution.time]
     rw [start] at init
     have := init.symm
     simp only [Rat.cast_zero, Option.map_some, Option.some.injEq] at this

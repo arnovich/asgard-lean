@@ -58,7 +58,7 @@ theorem field_equations (x : Point 2) : prepared.field.run x = ![x 1, -x 0 - 2*x
   simp only [Prepared.field, Gimle.Asgard.Circuit.run, Polynomial.route_correct,
     compileList, compileOutputs_correct, inputs, outputs]
   funext i
-  fin_cases i <;> simp [es, Expr.eval, sub_eq_add_neg] <;> rfl
+  fin_cases i <;> simp [es, Expr.eval, sub_eq_add_neg]
 
 /-- This states the two ODE equations and initial conditions of the generated
 closed circuit on the explicit forward half-line. -/

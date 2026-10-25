@@ -15,8 +15,10 @@ on `t ≥ 0`, which is `x(t) = 2 + 3 exp(-t/3)` and `y(t) = 2`. -/
 namespace Gimle.Asgard.Examples.DifferentialIsolation
 open _root_.Gimle.Asgard.Polynomial Model
 
-/-- Scale 3 is a parameter of the declaration, so a changed model can be checked. -/
-def body (scale : ℚ) : SourceBody := {
+/-- Scale 3 is a parameter of the declaration, so a changed model can be checked.
+An `abbrev`, like `observed`, so the observation count reduces during
+unification. -/
+abbrev body (scale : ℚ) : SourceBody := {
   inputs := [⟨"state-x", "x", .state⟩, ⟨"state-y", "y", .state⟩]
   assignments := assignments% { dy := 0; }
   differentials := [⟨⟨"dx", "dx", .output⟩,
@@ -28,10 +30,11 @@ def body (scale : ℚ) : SourceBody := {
 example : (body 3).differentials = differentials% { dx : 3 * diff(x, t) + x = y; } := rfl
 
 /-- The observation `gap = y - x` is added as an explicit assignment. -/
-def observed (scale : ℚ) : SourceBody :=
+abbrev observed (scale : ℚ) : SourceBody :=
   { body scale with assignments := assignments% { dy := 0; gap := y - x; } }
 
-def evolution (x0 : ℚ) : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution (x0 : ℚ) : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩, ⟨"state-y", "dy", "initial-y"⟩]
   initialPorts := [⟨"initial-x", "x0", .initial⟩, ⟨"initial-y", "y0", .initial⟩]
   initialValues := [⟨"initial-x", x0⟩, ⟨"initial-y", 2⟩]
@@ -132,7 +135,7 @@ theorem changed_scale : ¬ (observed 2).Solves (evolution 5) solution := by
   have rates : changedModel.model.rates.expressions =
       (![.mul (.constant (1 / 2)) (.add (.var 1) (.neg (.var 0))), .constant 0] :
         Fin 2 → Expr 2) := by decide +kernel
-  have h := deriv 0 (by simp [Evolution.time, evolution, Dynamics.TimeDomain.domain]) (0 : Fin 2)
+  have h := deriv 0 (by simp [Evolution.time, Dynamics.TimeDomain.domain]) (0 : Fin 2)
   rw [rates] at h
   have hsol := (solution_deriv 0).hasDerivWithinAt (s := Set.Ici 0)
   have unique := (uniqueDiffOn_Ici (0 : ℝ) 0 Set.self_mem_Ici).eq_deriv _ hsol
