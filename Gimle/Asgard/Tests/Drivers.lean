@@ -26,7 +26,8 @@ def body (equations : List DifferentialEquation)
   parameters := [⟨"param-p", 3⟩]
 }
 
-def evolution : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution : Evolution := {
   states := [⟨"state-a", "da", "initial-a"⟩, ⟨"state-g", "dg", "initial-g"⟩]
   initialPorts := [⟨"initial-a", "a0", .initial⟩, ⟨"initial-g", "g0", .initial⟩]
   initialValues := [⟨"initial-a", 1⟩, ⟨"initial-g", 2⟩]
@@ -35,8 +36,9 @@ def evolution : Evolution := {
   start := 0
 }
 
-/-- `z` is differentiable with derivative port `dz`; `f` is not. -/
-def drivers : List DriverBinding := [⟨"driver-z", some "driver-dz"⟩, ⟨"driver-f", none⟩]
+/-- `z` is differentiable with derivative port `dz`; `f` is not. An `abbrev`
+so the driver count reduces to `3` during unification. -/
+abbrev drivers : List DriverBinding := [⟨"driver-z", some "driver-dz"⟩, ⟨"driver-f", none⟩]
 
 def lowered (sb : SourceBody) (port : String) (ds : List DriverBinding := drivers) :
     Option NamedExpr :=

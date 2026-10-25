@@ -20,7 +20,13 @@ def Problem.loopAffine {n d o : Nat} (p : Problem n d o) : Affine (n + d) n wher
     p.loopAffine.circuit.run (pointAppend z u) = realMatrix p.matrix *ᵥ z + p.offset.eval u := by
   rw [Affine.circuit_correct]
   funext i
-  simp [loopAffine, Affine.eval, realMatrix, Matrix.mulVec, dotProduct,
+  -- Read the loop row through these equations: unfolding `loopAffine` itself
+  -- exposes its rows as a plain function, which `Matrix.map_apply` no longer
+  -- matches as a matrix.
+  have coefficients (j : Fin (n + d)) : p.loopAffine.coefficients i j =
+      Fin.addCases (p.matrix i) (p.offset.coefficients i) j := rfl
+  have constant : p.loopAffine.constant = p.offset.constant := rfl
+  simp [coefficients, constant, Affine.eval, realMatrix, Matrix.mulVec, dotProduct,
     Fin.sum_univ_add, pointAppend]
   ring
 

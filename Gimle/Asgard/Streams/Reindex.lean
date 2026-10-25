@@ -30,7 +30,7 @@ theorem reindex_integral {d e : Nat} (p : Fin d ≃ Fin e) (basis : Basis)
     reindex p (integral basis axis a boundary) =
       integral basis (p axis) (reindex p a) (reindex p boundary) := by
   funext n
-  cases basis <;> simp [integral, reindex, pullIndex_update]
+  cases basis <;> simp [integral, reindex, pullIndex_update] <;> rfl
 
 /-- Window bounds must be permuted with the axes, using the inverse map. -/
 theorem reindex_truncate {d e : Nat} (p : Fin d ≃ Fin e) (window : Fin d → Nat)

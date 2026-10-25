@@ -15,8 +15,10 @@ namespace Gimle.Asgard.Examples.DeclaredHeat
 open Gimle.Asgard.Streams
 open Gimle.Asgard.Examples.FormalHeat (heat boundary heat_time heat_space heat_boundary)
 
-/-- `D_t u = D_x² u` along `time`, with `u = u_at_t0` on the `t = 0` slice. -/
-def declaration : Declaration where
+/-- `D_t u = D_x² u` along `time`, with `u = u_at_t0` on the `t = 0` slice.
+An `abbrev`, like `swapped`, so its axis and input counts reduce to numerals
+during unification. -/
+abbrev declaration : Declaration where
   basis := .ogf
   axes := [⟨"time", "t"⟩, ⟨"space", "x"⟩]
   inputs := [⟨"u", "u", .state⟩, ⟨"boundary", "u_at_t0", .boundary⟩,
@@ -69,7 +71,7 @@ theorem heat_solves (unused : Stream 2) :
 /-! ## The axes declared in the other order -/
 
 /-- The same equation with axes `[space, time]`. -/
-def swapped : Declaration := { declaration with axes := [⟨"space", "x"⟩, ⟨"time", "t"⟩] }
+abbrev swapped : Declaration := { declaration with axes := [⟨"space", "x"⟩, ⟨"time", "t"⟩] }
 
 theorem swapped_valid : swapped.validate = .ok () := by decide
 

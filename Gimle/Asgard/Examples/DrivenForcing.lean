@@ -23,7 +23,8 @@ def body : SourceBody := {
   differentials := differentials% { dx : diff(x, t) + x = diff(u, t) + u; }
 }
 
-def evolution : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution : Evolution := {
   states := [⟨"state-x", "dx", "initial-x"⟩]
   initialPorts := [⟨"initial-x", "x0", .initial⟩]
   initialValues := [⟨"initial-x", 0⟩]
@@ -32,7 +33,8 @@ def evolution : Evolution := {
   start := 0
 }
 
-def drivers : List DriverBinding := [⟨"driver-u", some "driver-du"⟩]
+/-- An `abbrev`, like `evolution`, so the driver count reduces to `2`. -/
+abbrev drivers : List DriverBinding := [⟨"driver-u", some "driver-du"⟩]
 
 def model : SourceDrivenModel body evolution drivers :=
   (compileSourceDriven body evolution drivers).toOption.get (by decide +kernel)
@@ -61,9 +63,7 @@ noncomputable def wrongDerivative : Dynamics.Signal 2 := fun t => ![Real.sin t, 
 noncomputable def solution : Dynamics.Signal 1 := fun t => ![Real.sin t]
 
 private theorem domain : evolution.time.domain = Set.Ici 0 := by
-  simp [Evolution.time, evolution, Dynamics.TimeDomain.domain]
-
-private theorem width : DriverBinding.width drivers = 2 := rfl
+  simp [Evolution.time, Dynamics.TimeDomain.domain]
 
 private theorem index_u : index (DriverBinding.ids drivers) "driver-u" = some ⟨0, by decide⟩ := by
   decide +kernel
@@ -93,7 +93,7 @@ theorem solution_solves : body.SolvesDriven evolution drivers forcing solution :
   · rw [rates_expressions]
     fin_cases i
     refine (Real.hasDerivAt_sin t).hasDerivWithinAt.congr_deriv ?_
-    simp [Expr.eval, forcing, solution, pointAppend, width]
+    simp [Expr.eval, forcing, solution, pointAppend]
 
 /-- A derivative port that is not the actual derivative is not admitted, so no
 state solves the source under that signal. -/

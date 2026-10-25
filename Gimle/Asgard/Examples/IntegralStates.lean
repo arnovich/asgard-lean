@@ -31,7 +31,8 @@ def body : SourceBody := {
   integrals := integrals% { dF : F = int(f, t); }
 }
 
-def evolution (f0 F0 : ℚ) : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution (f0 F0 : ℚ) : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-F", "dF", "initial-F"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-F", "F0", .initial⟩]
   initialValues := [⟨"initial-f", f0⟩, ⟨"initial-F", F0⟩]

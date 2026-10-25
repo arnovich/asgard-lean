@@ -20,8 +20,10 @@ open Gimle.Asgard.Streams
 
 /-! ## Declared heat from its source form -/
 
-/-- `diff(u, time) = diff(diff(u, space), space)` with the context of `DeclaredHeat`. -/
-def source : SourceDeclaration where
+/-- `diff(u, time) = diff(diff(u, space), space)` with the context of `DeclaredHeat`.
+The declarations here are `abbrev`s so their axis and input counts reduce to
+numerals during unification. -/
+abbrev source : SourceDeclaration where
   basis := .ogf
   axes := DeclaredHeat.declaration.axes
   inputs := DeclaredHeat.declaration.inputs
@@ -42,7 +44,7 @@ theorem solutions (u unused : Stream 2) :
 
 /-- With the axes declared as `[space, time]`, the same source isolates to the
 same equation, and the isolated declaration is `DeclaredHeat.swapped`. -/
-def swappedSource : SourceDeclaration := { source with axes := DeclaredHeat.swapped.axes }
+abbrev swappedSource : SourceDeclaration := { source with axes := DeclaredHeat.swapped.axes }
 
 theorem swapped_isolates :
     swappedSource.isolate = .ok DeclaredHeat.swapped.equations := by decide +kernel
@@ -53,7 +55,7 @@ theorem swapped_isolated_eq :
 /-! ## The Python heat fixture -/
 
 /-- The context of the fixture: axes `[t, x]`, unknown, boundary, unused input. -/
-def fixture (equation : SourceEquation) : SourceDeclaration where
+abbrev fixture (equation : SourceEquation) : SourceDeclaration where
   basis := .egf
   axes := [⟨"t", "t"⟩, ⟨"x", "x"⟩]
   inputs := [⟨"u", "u", .state⟩, ⟨"u0", "u0", .boundary⟩, ⟨"unused", "unused", .parameter⟩]
@@ -149,7 +151,7 @@ theorem reconstructs_iff (u : Stream 2) :
     exact (derivative_iff_integral .egf 0 _ _ profile).mp ⟨solution_time, slice⟩
 
 /-- The isolated fixture declaration with the given equation. -/
-def isolatedFixture (equation : Equation) : Declaration where
+abbrev isolatedFixture (equation : Equation) : Declaration where
   basis := .egf
   axes := [⟨"t", "t"⟩, ⟨"x", "x"⟩]
   inputs := [⟨"u", "u", .state⟩, ⟨"u0", "u0", .boundary⟩, ⟨"unused", "unused", .parameter⟩]

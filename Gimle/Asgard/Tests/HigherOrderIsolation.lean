@@ -199,7 +199,9 @@ def bare : SourceBody := {
   parameters := [⟨"param-g", 3⟩]
 }
 
-def bareEvolution : Evolution := {
+-- Evolutions here are `abbrev`s so their state counts reduce to numerals
+-- during unification.
+abbrev bareEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-v", "dv", "initial-v"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-v", "v0", .initial⟩]
   initialValues := [⟨"initial-f", 1⟩, ⟨"initial-v", 0⟩]
@@ -299,7 +301,7 @@ def twoStates : SourceBody := {
   velocities := velocities% { df : diff(f, t) = v; dh : diff(h, t) = v; }
 }
 
-def threeEvolution : Evolution := {
+abbrev threeEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-h", "dh", "initial-h"⟩,
     ⟨"state-v", "dv", "initial-v"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-h", "h0", .initial⟩,
@@ -357,7 +359,7 @@ def third : SourceBody := {
   parameters := [⟨"param-g", 3⟩]
 }
 
-def thirdEvolution : Evolution := {
+abbrev thirdEvolution : Evolution := {
   states := [⟨"state-f", "df", "initial-f"⟩, ⟨"state-v", "dv", "initial-v"⟩,
     ⟨"state-a", "da", "initial-a"⟩]
   initialPorts := [⟨"initial-f", "f0", .initial⟩, ⟨"initial-v", "v0", .initial⟩,

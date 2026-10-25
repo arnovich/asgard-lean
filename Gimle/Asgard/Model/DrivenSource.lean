@@ -88,8 +88,9 @@ theorem Term.readRates_eval (c : Context) (rate : String → Option String)
 
 /-- The same source with every explicit assignment and differential equation read
 through `Term.readRates`. Ports, velocity and integral declarations, parameters
-and observations are unchanged. -/
-def SourceBody.readRates (sb : SourceBody) (axis : String) (rate : String → Option String) :
+and observations are unchanged. Reducible, like `SourceBody.drivenSource`, so
+a driven model's ports and observations are the source's during unification. -/
+abbrev SourceBody.readRates (sb : SourceBody) (axis : String) (rate : String → Option String) :
     SourceBody :=
   { sb with
     assignments := sb.assignments.map fun a => ⟨a.output, a.rhs.readRates axis rate⟩
@@ -98,20 +99,19 @@ def SourceBody.readRates (sb : SourceBody) (axis : String) (rate : String → Op
 
 theorem SourceBody.readRates_outputs (sb : SourceBody) (axis : String)
     (rate : String → Option String) : (sb.readRates axis rate).outputs = sb.outputs := by
-  simp [SourceBody.outputs, SourceBody.equations, SourceBody.readRates, Function.comp_def]
+  simp [SourceBody.outputs, SourceBody.equations, Function.comp_def]
 
 theorem SourceBody.readRates_value {α : Type} (sb : SourceBody) (axis : String)
     (rate : String → Option String) (env : String → Option α) (id : String) :
     (sb.readRates axis rate).value env id = sb.value env id := by
   simp only [SourceBody.value, sb.readRates_outputs]
-  rfl
 
 theorem SourceBody.readRates_equations (sb : SourceBody) (c : Context)
     (rate : String → Option String) (h : ∀ y port, rate y = some port → c.locate y = some port)
     (atoms : Term → Option ℝ) (env : String → Option ℝ) :
     (sb.readRates c.axis rate).Equations c atoms env ↔ sb.Equations c atoms env := by
-  simp only [SourceBody.Equations, SourceBody.equations, SourceBody.readRates,
-    List.forall_mem_append, List.forall_mem_map, Term.readRates_eval c rate h]
+  simp only [SourceBody.Equations, SourceBody.equations, List.forall_mem_append,
+    List.forall_mem_map, Term.readRates_eval c rate h]
 
 theorem SourceBody.readRates_source (sb : SourceBody) (c : Context)
     (rate : String → Option String) (h : ∀ y port, rate y = some port → c.locate y = some port)
@@ -127,7 +127,7 @@ theorem SourceBody.driverRate_located (sb : SourceBody) (e : Evolution)
   simp [SourceBody.drivenContext, h]
 
 /-- The source with its driver atoms read as their ports. -/
-def SourceBody.drivenSource (sb : SourceBody) (e : Evolution) (ds : List DriverBinding) :
+abbrev SourceBody.drivenSource (sb : SourceBody) (e : Evolution) (ds : List DriverBinding) :
     SourceBody :=
   sb.readRates e.axis.name (sb.driverRate ds)
 

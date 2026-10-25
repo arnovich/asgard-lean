@@ -46,9 +46,20 @@ structure DriverBinding where
   deriving Repr, DecidableEq
 
 /-- The driver ports in coordinate order: each driver, then its derivative port
-when it declares one. -/
-def DriverBinding.ports (ds : List DriverBinding) : List String :=
-  ds.flatMap fun d => d.driverId :: d.derivativeId.toList
+when it declares one. Reducible structural recursion, so the port count of a
+concrete binding list reduces to a numeral during unification;
+`ports_eq_flatMap` gives the list form. -/
+@[reducible] def DriverBinding.ports : List DriverBinding → List String
+  | [] => []
+  | d :: ds => d.driverId :: match d.derivativeId with
+    | none => DriverBinding.ports ds
+    | some p => p :: DriverBinding.ports ds
+
+theorem DriverBinding.ports_eq_flatMap (ds : List DriverBinding) :
+    DriverBinding.ports ds = ds.flatMap fun d => d.driverId :: d.derivativeId.toList := by
+  induction ds with
+  | nil => rfl
+  | cons d ds ih => cases h : d.derivativeId <;> simp [DriverBinding.ports, h, ih]
 
 inductive Declaration where
   | polynomial (body : Body)

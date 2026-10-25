@@ -579,7 +579,8 @@ theorem prefix_cannot_certify {d : Nat} (basis : Basis) (a : Stream (d + 1))
     rw [encode_apply_congr basis (g := decode basis a) (Function.update_of_ne ne _ _),
       encode_decode]
   · have h := maj β
-    rw [decode_encode, Function.update_self] at h
+    rw [decode_encode basis (Function.update (decode basis a) β v),
+      Function.update_self β v (decode basis a)] at h
     have nonneg : 0 ≤ m.bound * ∏ i, (m.radius i ^ β i)⁻¹ :=
       mul_nonneg m.bound_nonneg (Finset.prod_nonneg fun i _ =>
         inv_nonneg.mpr (pow_nonneg (m.radius_pos i).le _))
