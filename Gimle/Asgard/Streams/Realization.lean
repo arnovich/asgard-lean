@@ -256,7 +256,9 @@ theorem integral_coe {d : Nat} (i : Fin d) (p b : Poly d) :
       ↑(integralPoly i p b) := by
   classical
   ext n
-  rw [MvPolynomial.coeff_coe, integralPoly, coeff_polyOfCoeffs]
+  -- The table is a stream; name it so the lemma reads it as a function.
+  rw [MvPolynomial.coeff_coe, integralPoly, coeff_polyOfCoeffs
+    (f := integral .ogf i (p : MvPowerSeries (Fin d) ℚ) (b : MvPowerSeries (Fin d) ℚ))]
   · rfl
   intro m hm
   simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_image, MvPolynomial.mem_support_iff]
