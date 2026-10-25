@@ -26,7 +26,8 @@ def body (equations : List DifferentialEquation)
   parameters := [⟨"param-p", 3⟩]
 }
 
-def evolution : Evolution := {
+/-- An `abbrev` so the state count reduces to a numeral during unification. -/
+abbrev evolution : Evolution := {
   states := [⟨"state-a", "da", "initial-a"⟩, ⟨"state-g", "dg", "initial-g"⟩]
   initialPorts := [⟨"initial-a", "a0", .initial⟩, ⟨"initial-g", "g0", .initial⟩]
   initialValues := [⟨"initial-a", 1⟩, ⟨"initial-g", 2⟩]
@@ -75,14 +76,16 @@ example : lowered (body (differentials% { da : diff(a, t) + a = z * p; dg : diff
 example : lowered (body (differentials% { da : diff(a, t) + a = z * p; dg : diff(g, t) = 0; }))
     "da" = some (.add (.mul (.var "z") (.var "p")) (.neg (.var "a"))) := by decide +kernel
 
-/-- The compiled field over `[z, dz, f, a, g]`: `a' = dz`, `g' = f/2`. -/
+/-- The compiled field over `[z, dz, f, a, g]`: `a' = dz`, `g' = f/2`. Its
+expressions are written at the field's own input count, since
+`DriverBinding.width` only reduces to `3` by unfolding. -/
 def forced : SourceDrivenModel
     (body (differentials% { da : diff(a, t) = diff(z, t); dg : f = 2 * diff(g, t); }))
     evolution drivers :=
   (compileSourceDriven _ evolution drivers).toOption.get (by decide +kernel)
 
 example : forced.model.rates.expressions =
-    (![.var 1, .mul (.constant (1 / 2)) (.var 2)] : Fin 2 → Expr 5) := by decide +kernel
+    ![.var ⟨1, by decide⟩, .mul (.constant (1 / 2)) (.var ⟨2, by decide⟩)] := by decide +kernel
 
 /-- The Python outcomes, checked: with `z = t`, `dz = 1` and `f = 3`, the
 compiled model has `a = 1 + t` and `g = 2 + 3t/2`, as Python simulates. -/
@@ -92,8 +95,9 @@ noncomputable def pythonState : Dynamics.Signal 2 := fun t => ![1 + t, 2 + 3 / 2
 theorem python_outcome :
     (body (differentials% { da : diff(a, t) = diff(z, t); dg : f = 2 * diff(g, t); })).SolvesDriven
       evolution drivers pythonDrivers pythonState := by
-  rw [forced.solves_iff_realizes, ← forced.model.solves_iff_realizes,
-    forced.model.solves_iff_field]
+  rw [forced.solves_iff_realizes pythonDrivers pythonState,
+    ← forced.model.solves_iff_realizes pythonDrivers pythonState,
+    forced.model.solves_iff_field pythonDrivers pythonState]
   refine ⟨?_, ?_, fun t _ i => ?_⟩
   · intro d hd
     simp only [drivers, List.mem_cons, List.not_mem_nil, or_false] at hd
@@ -109,7 +113,7 @@ theorem python_outcome :
     ext i
     fin_cases i <;> simp [DrivenModel.initial, this, pythonState, Evolution.time, evolution]
   · have rates : forced.model.rates.expressions =
-        (![.var 1, .mul (.constant (1 / 2)) (.var 2)] : Fin 2 → Expr 5) := by decide +kernel
+        ![.var ⟨1, by decide⟩, .mul (.constant (1 / 2)) (.var ⟨2, by decide⟩)] := by decide +kernel
     rw [rates]
     fin_cases i
     · refine ((hasDerivAt_id' t).const_add 1).hasDerivWithinAt.congr_deriv ?_
