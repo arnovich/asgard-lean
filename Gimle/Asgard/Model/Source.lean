@@ -1368,9 +1368,10 @@ def SourceBody.lower (sb : SourceBody) (c : Context) (declares : sb.Declares c) 
         · rintro ⟨⟨⟨ha, hd⟩, hv⟩, hi⟩
           have hold := velocitiesHold declares hv
           exact ⟨(pas atoms env ⟨hold, hc⟩).mpr ha, ⟨(pds atoms env ⟨hold, hc⟩).mpr hd, hv⟩, hi⟩,
-        fun atoms env h => bis atoms env ((equations_append _ _ env).mp h).2,
-        fun atoms env h => (pvs atoms env trivial).mpr
-          ((equations_append _ _ env).mp ((equations_append _ _ env).mp h).1).2,
+        fun atoms env h => by exact bis atoms env ((equations_append _ _ env).mp h).2,
+        fun atoms env h => by
+          exact (pvs atoms env trivial).mpr
+            ((equations_append _ _ env).mp ((equations_append _ _ env).mp h).1).2,
         states, reads⟩
     else
       -- Each declaration passed `lowerIntegral`, so the context fails to read one
