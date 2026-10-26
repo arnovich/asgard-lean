@@ -1,6 +1,8 @@
 module
 
 public import Gimle.Asgard.Examples.ThreeState
+-- `decide` reads numerals that `toString` prints; core does not expose them.
+import all Init.Data.Repr
 
 /-! Coverage for the coupled three-state model.
 

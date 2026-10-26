@@ -2,6 +2,8 @@ module
 
 public import Gimle.Asgard.Model.Source
 public import Lean
+-- `atomicNamed` builds `RealAtomics.Unary` values while macros expand.
+public meta import Gimle.Asgard.RealAtomics.Circuit
 
 /-! Source notation for `Model.Term`, shaped like the Python source grammar, and
 for the explicit assignments, differential equations, velocity declarations and

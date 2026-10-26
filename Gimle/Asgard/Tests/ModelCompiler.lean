@@ -2,6 +2,8 @@ module
 
 public import Gimle.Asgard.Model.Linear
 public import Gimle.Asgard.Compile.Syntax
+-- `decide` reads numerals that `toString` prints; core does not expose them.
+import all Init.Data.Repr
 
 @[expose] public section
 

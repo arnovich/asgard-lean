@@ -4,6 +4,9 @@ public import Gimle.Asgard.Compile.Syntax
 public import Gimle.Asgard.Compile.Interchange
 meta import Gimle.Asgard.Compile.Syntax
 meta import Gimle.Asgard.Compile.Interchange
+-- `decide` reads numerals that `toString` prints; core does not expose them.
+import all Init.Data.Repr
+import all Init.Data.Int.Repr
 
 @[expose] public section
 
