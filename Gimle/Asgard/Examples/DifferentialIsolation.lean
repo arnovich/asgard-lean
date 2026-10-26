@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! An implicit first-order equation, isolated with its residual and its
 initial condition, and solved.
@@ -12,6 +14,9 @@ binary64 approximation of the scale that is not used here as an oracle.
 The declared initial values stay in the unchanged `Evolution`. The compiled
 field is homogeneous linear, so the source equation has exactly one solution
 on `t ≥ 0`, which is `x(t) = 2 + 3 exp(-t/3)` and `y(t) = 2`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.DifferentialIsolation
 open _root_.Gimle.Asgard.Polynomial Model
 

@@ -1,7 +1,9 @@
-import Gimle.Asgard.Streams.EulerRadius
-import Gimle.Asgard.Streams.Gevrey
-import Gimle.Asgard.Streams.EulerSolution
-import Gimle.Asgard.Examples.EulerThreeMode
+module
+
+public import Gimle.Asgard.Streams.EulerRadius
+public import Gimle.Asgard.Streams.Gevrey
+public import Gimle.Asgard.Streams.EulerSolution
+public import Gimle.Asgard.Examples.EulerThreeMode
 
 /-! # A certified radius, truncation and band for the three-mode Euler stream
 
@@ -31,6 +33,9 @@ pessimistic by nature; evidence about the true radius would come from computed
 norms, not from this proof. For the viscous stream (`ν = 1/10`)
 only Gevrey-1 growth in `t` is certified, `l1 ω_n ≤ 3 · (99/10)ⁿ · n!`
 (`viscous_gevrey`); nothing here claims a radius for it. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.EulerBand
 
 open Gimle.Asgard.Streams.Torus Gimle.Asgard.Streams.TrigStream Gimle.Asgard.Streams.NS

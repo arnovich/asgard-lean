@@ -1,6 +1,11 @@
-import Gimle.Asgard.Examples.AIF
+module
+
+public import Gimle.Asgard.Examples.AIF
 
 /-! Exact source, state-order and fixed-driver regressions for the AIF circuit. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.AIF
 open Gimle.Asgard.Examples.AIF
 

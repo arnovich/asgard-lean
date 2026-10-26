@@ -1,4 +1,8 @@
-import Gimle.Asgard.Dynamics.Linear
+module
+
+public import Gimle.Asgard.Dynamics.Linear
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Linear
 open Gimle.Asgard.Dynamics Gimle.Asgard.Dynamics.Linear

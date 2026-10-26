@@ -1,8 +1,10 @@
-import Gimle.Asgard.Streams.EulerRadius
-import Gimle.Asgard.Streams.Gevrey
-import Mathlib.Analysis.Calculus.SmoothSeries
-import Mathlib.Analysis.Normed.Group.FunctionSeries
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+module
+
+public import Gimle.Asgard.Streams.EulerRadius
+public import Gimle.Asgard.Streams.Gevrey
+public import Mathlib.Analysis.Calculus.SmoothSeries
+public import Mathlib.Analysis.Normed.Group.FunctionSeries
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-! # The analytic field of the Euler stream is a classical solution
 
@@ -40,6 +42,8 @@ pressure, and uniqueness among classical solutions. The reading of a
 `TrigPoly` as `Σ P_k e^{ik·x}`, whose real part `field` is, names the
 coefficients the tables and the Galerkin family use; it plays no part in this
 theorem. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Streams.Torus
 

@@ -1,4 +1,8 @@
-import Gimle.Asgard.Examples.Approximation
+module
+
+public import Gimle.Asgard.Examples.Approximation
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Approximation
 open Gimle.Asgard.Approximation

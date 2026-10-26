@@ -1,6 +1,8 @@
-import Gimle.Asgard.Streams.ExpPoly
-import Gimle.Asgard.Streams.ShiftAxis
-import Gimle.Asgard.Streams.Torus
+module
+
+public import Gimle.Asgard.Streams.ExpPoly
+public import Gimle.Asgard.Streams.ShiftAxis
+public import Gimle.Asgard.Streams.Torus
 
 /-! Exact heat/Duhamel operations and the causal Wild expansion.
 
@@ -8,6 +10,9 @@ The axis counts nonlinear interactions. Its coefficients are functions of
 physical time represented by exact exponential polynomials. No convergence
 or classical-solution assertion belongs to this module.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Causal

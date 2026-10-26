@@ -1,7 +1,12 @@
-import Gimle.Asgard.Compile.Wiring
+module
+
+public import Gimle.Asgard.Compile.Wiring
 
 /-! Total polynomial compilation over arbitrary finite input contexts.
 The independent source evaluator never invokes a circuit. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Polynomial
 
 inductive Expr (n : Nat) where

@@ -1,12 +1,17 @@
-import Gimle.Asgard.Streams.MildDissipation
-import Gimle.Asgard.Streams.MildCircuit
-import Gimle.Asgard.Examples.EulerBand
+module
+
+public import Gimle.Asgard.Streams.MildDissipation
+public import Gimle.Asgard.Streams.MildCircuit
+public import Gimle.Asgard.Examples.EulerBand
 
 /-! Two certified bounds for the three-mode mild interaction series.
 At ν = 1/10 the Catalan bound gives `[0,1/5760]`, the four-term tail
 `21/1024`, and the band ±3.519. The Euler-scale bound works on every
 `[0,T]` with `T < 1/648`, for every ν ≥ 0. Both bounds also certify classical realization, the forward initial derivative,
 and the two infinite Fourier dissipation identities. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.MildBand
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.Mild

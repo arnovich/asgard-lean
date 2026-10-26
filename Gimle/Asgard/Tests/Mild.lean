@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildCircuit
-import Gimle.Asgard.Streams.MildEvaluation
+module
+
+public import Gimle.Asgard.Streams.MildCircuit
+public import Gimle.Asgard.Streams.MildEvaluation
 
 /-! The mild expansion is a unique interaction-degree stream of exact terms. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.Mild
 
 open Gimle.Asgard.Streams

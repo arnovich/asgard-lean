@@ -1,5 +1,7 @@
-import Gimle.Asgard.Examples.EnergyDemo
-import Gimle.Asgard.Examples.Oscillator
+module
+
+public import Gimle.Asgard.Examples.EnergyDemo
+public import Gimle.Asgard.Examples.Oscillator
 
 /-!
 Feasibility example: a compiler proved correct for every polynomial expression
@@ -7,6 +9,9 @@ in the fixed ordered context [x,y]. This uses the existing real feedforward
 Asgard circuit fragment, not the Python equation parser or numerical runtime.
 The source evaluator is defined independently of compilation.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.VerifiedTranslation
 
 /-- Polynomial source expressions. Variables refer to the ordered input [x,y]. -/

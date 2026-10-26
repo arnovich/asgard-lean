@@ -1,7 +1,12 @@
-import Gimle.Asgard.RealAtomics.Compiler
+module
+
+public import Gimle.Asgard.RealAtomics.Compiler
 
 /-! Rewrite laws compare partial operational relations, retaining any domain
 premises. They never equate circuits solely by their auxiliary totalized values. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 def Circuit.EquivalentOn {k n m : Nat} (region : Point k → Point n → Prop)

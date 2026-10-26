@@ -1,8 +1,13 @@
-import Gimle.Asgard.Compile.Polynomial
-import Mathlib.Analysis.Calculus.Deriv.Basic
+module
+
+public import Gimle.Asgard.Compile.Polynomial
+public import Mathlib.Analysis.Calculus.Deriv.Basic
 
 /-! Continuous trajectory circuits have relational semantics, separate from the
 feedforward real-function interpretation. A trace asserts no fixed-point theorem. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics
 
 def fragmentVersion : String := "asgard.real-continuous-feedback/v1"

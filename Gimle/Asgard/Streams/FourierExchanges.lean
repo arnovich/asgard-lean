@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.FourierSequence
+module
+
+public import Gimle.Asgard.Streams.FourierSequence
 
 /-! Absolute exchanges between interaction degree and Fourier mode. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

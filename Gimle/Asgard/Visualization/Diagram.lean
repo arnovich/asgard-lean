@@ -1,7 +1,12 @@
-import Gimle.Asgard.Dynamics.Circuit
+module
+
+public import Gimle.Asgard.Dynamics.Circuit
 
 /-! Optional, computable circuit pictures. Edges retain ordered typed ports;
 layout and SVG carry no proof authority. No UI imports enter the circuit library. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Visualization
 
 structure Endpoint where
@@ -53,7 +58,7 @@ def Operation.label : Operation → String
 
 def Node.width (n : Node) : Nat := max 160 (n.operation.label.length * 9 + 75)
 
-private def checked (g : Diagram) : Except String Diagram :=
+def checked (g : Diagram) : Except String Diagram :=
   if g.nodes.length > 2048 || g.width > 60000 || g.height > 30000 then
     .error "Diagram exceeds display limits (2048 nodes, 60000×30000). Select a smaller circuit."
   else .ok g
@@ -63,7 +68,7 @@ def validText (s : String) : Bool := s.toList.all fun c =>
   c == '\t' || c == '\n' || c == '\r' ||
     (c.toNat >= 32 && c.toNat != 65534 && c.toNat != 65535)
 
-private def atomic (op : Operation) (n m : Nat) : Except String Diagram := do
+def atomic (op : Operation) (n m : Nat) : Except String Diagram := do
   if !validText op.label then throw "Label contains an XML-invalid control character."
   if max n m > 64 || op.label.length > 100 then
     throw "Diagram port or label limit exceeded (64 ports, 100 characters)."
@@ -71,8 +76,8 @@ private def atomic (op : Operation) (n m : Nat) : Except String Diagram := do
     (List.range n).map (⟨0, ·⟩), (List.range m).map (⟨0, ·⟩),
     max 160 (op.label.length * 9 + 75), 40 * (max 1 (max n m) + 1)⟩
 
-private def offset (e : Endpoint) (n : Nat) : Endpoint := ⟨e.node + n, e.port⟩
-private def shifted (g : Diagram) (dx dy dn : Nat) : Diagram :=
+def offset (e : Endpoint) (n : Nat) : Endpoint := ⟨e.node + n, e.port⟩
+def shifted (g : Diagram) (dx dy dn : Nat) : Diagram :=
   { g with
     nodes := g.nodes.map (fun n => { n with x := n.x + dx, y := n.y + dy })
     edges := g.edges.map (fun e =>
@@ -85,7 +90,7 @@ private def shifted (g : Diagram) (dx dy dn : Nat) : Diagram :=
     inputs := g.inputs.map (offset · dn)
     outputs := g.outputs.map (offset · dn) }
 
-private def join (serial : Bool) (a b : Diagram) : Except String Diagram := do
+def join (serial : Bool) (a b : Diagram) : Except String Diagram := do
   let gap := 60 + a.outputs.length * 12
   let c := shifted b (if serial then a.width + gap else 0)
     (if serial then 0 else a.height + 40) a.nodes.length
@@ -97,7 +102,7 @@ private def join (serial : Bool) (a b : Diagram) : Except String Diagram := do
     if serial then a.width + gap + b.width else max a.width b.width,
     if serial then max a.height b.height else a.height + 40 + b.height⟩
 
-private def polynomial : Nat → {n m : Nat} → Gimle.Asgard.Circuit n m → Except String Diagram
+def polynomial : Nat → {n m : Nat} → Gimle.Asgard.Circuit n m → Except String Diagram
   | 0, _, _, _ => .error "Diagram nesting limit exceeded (256). Select a smaller circuit."
   | fuel+1, _, _, circuit => match circuit with
     | .id => atomic .identity 1 1
@@ -111,7 +116,7 @@ private def polynomial : Nat → {n m : Nat} → Gimle.Asgard.Circuit n m → Ex
     | .compose a b => do join true (← polynomial fuel a) (← polynomial fuel b)
     | .parallel a b => do join false (← polynomial fuel a) (← polynomial fuel b)
 
-private def continuous : Nat → {n m : Nat} → Dynamics.Circuit n m → Except String Diagram
+def continuous : Nat → {n m : Nat} → Dynamics.Circuit n m → Except String Diagram
   | 0, _, _, _ => .error "Diagram nesting limit exceeded (256). Select a smaller circuit."
   | fuel+1, _, _, circuit => match circuit with
     | .lift c => polynomial fuel c
@@ -152,7 +157,7 @@ inductive Element where
   | tag (name : String) (attributes : List (String × String)) (children : List Element)
   deriving Inhabited
 
-private def escape (s : String) : String :=
+def escape (s : String) : String :=
   s.replace "&" "&amp;" |>.replace "<" "&lt;" |>.replace ">" "&gt;"
     |>.replace "\"" "&quot;" |>.replace "'" "&apos;"
 
@@ -179,11 +184,11 @@ def box (x y width height : Nat) : Element :=
   .tag "rect" [("x",toString x),("y",toString y),("width",toString width),
     ("height",toString height),("rx","8"),("fill","#edf5f8"),("stroke","#476579")] []
 
-private def coordinate (g : Diagram) (output : Bool) (e : Endpoint) : Nat × Nat :=
+def coordinate (g : Diagram) (output : Bool) (e : Endpoint) : Nat × Nat :=
   let n := g.nodes[e.node]!
   (80 + n.x + if output then n.width else 0, 50 + n.y + 40 * (e.port+1))
 
-private def renderEdge (g : Diagram) (e : Edge) : List Element :=
+def renderEdge (g : Diagram) (e : Edge) : List Element :=
   let (sx,sy) := coordinate g true e.source
   let (tx,ty) := coordinate g false e.target
   let points := if e.feedback then
@@ -197,7 +202,7 @@ private def renderEdge (g : Diagram) (e : Edge) : List Element :=
   [wire, arrow tx ty color] ++ if e.feedback then
     [label (tx+8) (44+e.lane) e.feedbackLabel 12] else []
 
-private def renderNode (n : Node) : List Element := Id.run do
+def renderNode (n : Node) : List Element := Id.run do
   let x := n.x + 80
   let y := n.y + 50
   let height := 40 * (max 1 (max n.inputs n.outputs) + 1)

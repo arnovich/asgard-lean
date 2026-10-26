@@ -1,4 +1,6 @@
-import Gimle.Asgard.Model.Continuous
+module
+
+public import Gimle.Asgard.Model.Continuous
 
 /-! Continuous declarations with declared time-varying drivers.
 
@@ -22,6 +24,9 @@ or uniqueness states whatever further regularity of the drivers it uses.
 `DrivenModel.solves_iff_realizes` is an equivalence for each admitted driver
 signal. It is not an existence or uniqueness claim, and it says nothing about
 any other signal, such as a sampled or held one. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 

@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.ExpHeat
+module
+
+public import Gimle.Asgard.Examples.ExpHeat
 
 /-! Coverage for heat streams of analytic profiles.
 
@@ -9,6 +11,8 @@ profile with a finite radius of convergence has a divergent heat series inside
 every would-be box, so no certificate of any majorant covers that point; boxes
 on or beyond the radii `[ρ², ρ]` are rejected; and a transitive standard-axiom
 audit of every public theorem. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.AnalyticHeat
 
@@ -286,7 +290,6 @@ info: 'Gimle.Asgard.Tests.AnalyticHeat.hostile_not_bounded'
   depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in #print axioms Gimle.Asgard.Tests.AnalyticHeat.hostile_not_bounded
-
 
 /-! ### Exponential sums and root claims -/
 

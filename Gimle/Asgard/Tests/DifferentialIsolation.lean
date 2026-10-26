@@ -1,6 +1,8 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
-import Gimle.Asgard.Examples.DifferentialIsolation
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
+public import Gimle.Asgard.Examples.DifferentialIsolation
 
 /-! Acceptance fixtures for scoped beta normalization and first-order
 differential isolation.
@@ -9,6 +11,9 @@ Each fixture restates a case from the Python implementation's tests.
 Python's accept/reject outcome is recorded beside each one; it is a
 regression reference, not an oracle. Lean's expected values are exact, and
 the cases where the fragments deliberately differ are marked "differs". -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.DifferentialIsolation
 open _root_.Gimle.Asgard.Polynomial Model
 
@@ -222,7 +227,7 @@ example : polynomial.Observes Context.empty polynomialModel.lowered.body.runtime
   fin_cases i
   norm_num [Expr.eval]
 
-private def code {α : Type} : Except Diagnostic α → Option Diagnostic
+def code {α : Type} : Except Diagnostic α → Option Diagnostic
   | .error d => some d
   | .ok _ => none
 

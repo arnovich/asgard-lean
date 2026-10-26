@@ -1,6 +1,11 @@
-import Gimle.Asgard.Tests.MildTable
+module
+
+public import Gimle.Asgard.Tests.MildTable
 
 /-! Degree-three kernel cost is measured separately from the smaller regressions. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.MildDegreeThree
 
 open Gimle.Asgard.Streams

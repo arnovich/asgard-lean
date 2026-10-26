@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildMajorant
-import Mathlib.Combinatorics.Enumerative.Catalan.Basic
+module
+
+public import Gimle.Asgard.Streams.MildMajorant
+public import Mathlib.Combinatorics.Enumerative.Catalan.Basic
 
 /-! Catalan majorants for the actual Wild interaction terms. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus

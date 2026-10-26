@@ -1,4 +1,8 @@
-import Gimle.Asgard.Examples.EnergyDemo
+module
+
+public import Gimle.Asgard.Examples.EnergyDemo
+
+@[expose] public section
 
 namespace Gimle.Asgard.EnergyOptimization
 
@@ -20,7 +24,6 @@ theorem equivalence : GlobalCircuitEquivalence EnergyDemo.energy optimized := by
   subst coordinate
   rw [EnergyDemo.energyIdentity, optimizedIdentity]
   ring
-
 
 def wrongMultiplier : Circuit 2 1 :=
   .compose (.compose EnergyDemo.squareBoth .add) (.scalar 3)

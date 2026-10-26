@@ -1,7 +1,12 @@
-import Gimle.Asgard.Compile.Interchange
+module
+
+public import Gimle.Asgard.Compile.Interchange
 
 /-! V2 exact structural codec. Mathematical round trips are unbounded; protocol
 admission applies separate byte, digit, node, depth and wire limits. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Interchange.RationalWire
 
 structure Literal where

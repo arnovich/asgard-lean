@@ -1,11 +1,16 @@
-import Gimle.Asgard.Dynamics.Circuit
-import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.Analysis.Calculus.Deriv.Prod
-import Mathlib.Analysis.ODE.ExistUnique
-import Mathlib.Analysis.SpecialFunctions.Exponential
+module
+
+public import Gimle.Asgard.Dynamics.Circuit
+public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import Mathlib.Analysis.Calculus.Deriv.Prod
+public import Mathlib.Analysis.ODE.ExistUnique
+public import Mathlib.Analysis.SpecialFunctions.Exponential
 
 /-! Global existence and forward-domain uniqueness for autonomous continuous
 linear fields. These analytic results do not depend on circuit compilation. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics.LinearAnalysis
 
 /-- A rational matrix acts continuously by exact real row sums. -/

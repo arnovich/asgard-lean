@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Lowering
-import Gimle.Asgard.Examples.FormalHeat
+module
+
+public import Gimle.Asgard.Streams.Lowering
+public import Gimle.Asgard.Examples.FormalHeat
 
 /-! Coverage for lowering stream observations.
 
@@ -10,6 +12,8 @@ the formal heat circuit on an input with a coefficient outside the naive
 window; refusal of series substitution even when discarded; and resource
 limits reported apart from unsupported structure.
 -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.StreamLowering
 

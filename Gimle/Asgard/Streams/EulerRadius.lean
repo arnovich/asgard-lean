@@ -1,7 +1,9 @@
-import Gimle.Asgard.Streams.TrigNorm
-import Gimle.Asgard.Streams.TrigField
-import Gimle.Asgard.Streams.Vorticity
-import Mathlib.Analysis.Complex.ExponentialBounds
+module
+
+public import Gimle.Asgard.Streams.TrigNorm
+public import Gimle.Asgard.Streams.TrigField
+public import Gimle.Asgard.Streams.Vorticity
+public import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! # The Euler radius: a Cauchy–Kowalevski induction in a scale
 
@@ -29,6 +31,9 @@ and the abstract Nirenberg–Nishida theorem gives a radius of the same order.
 The Cauchy–Kowalevski device is pessimistic by nature; the radius it certifies
 is small, and honest. Nothing here concerns `ν > 0`, where the viscous term
 costs two derivatives and this induction does not close (`Streams.Gevrey`). -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.NS
 
 open Torus TrigStream Real

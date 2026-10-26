@@ -1,7 +1,9 @@
-import Gimle.Asgard.RealAtomics.Feedback
-import Mathlib.Analysis.Calculus.Deriv.Add
-import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.Analysis.Calculus.Deriv.Pow
+module
+
+public import Gimle.Asgard.RealAtomics.Feedback
+public import Mathlib.Analysis.Calculus.Deriv.Add
+public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import Mathlib.Analysis.Calculus.Deriv.Pow
 
 /-! A continuous model whose field is a partial real function.
 
@@ -15,6 +17,9 @@ leaves the domain at `t > 1` although its zero multiplier discards the root, and
 the constant `x = -1` for growth, where the totalized `sqrt(-1) = 0` makes it a
 fixed point. Neither is an output: `Defined` is required at every time of the
 forward domain. No existence, uniqueness, or numerical claim is made. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.PartialFeedback
 open Gimle.Asgard.RealAtomics
 

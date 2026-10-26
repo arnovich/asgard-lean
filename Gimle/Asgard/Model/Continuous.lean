@@ -1,5 +1,9 @@
-import Gimle.Asgard.Model.Compiler
-import Gimle.Asgard.Dynamics.Linear
+module
+
+public import Gimle.Asgard.Model.Compiler
+public import Gimle.Asgard.Dynamics.Linear
+
+@[expose] public section
 
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial

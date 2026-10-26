@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.GeometricTail
+module
+
+public import Gimle.Asgard.Examples.GeometricTail
 
 /-! Coverage for certified analytic truncation.
 
@@ -8,6 +10,8 @@ the certified box, so it has no certificate; boundary radii `r = R` are rejected
 by the contract and the series really diverges there; zero radius and zero axes;
 the sup-norm combination of output ports; the EGF/OGF transport; and a
 transitive standard-axiom audit of every public theorem. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.StreamTail
 

@@ -1,4 +1,8 @@
-import Gimle.Asgard.Compile.RationalInterchange
+module
+
+public import Gimle.Asgard.Compile.RationalInterchange
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.RationalInterchange
 open Interchange RationalWire

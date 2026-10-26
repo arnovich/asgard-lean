@@ -1,4 +1,8 @@
-import Gimle.Asgard.Semantics.Real
+module
+
+public import Gimle.Asgard.Semantics.Real
+
+@[expose] public section
 
 namespace Gimle.Asgard
 

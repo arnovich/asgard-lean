@@ -1,5 +1,9 @@
-import Gimle.Asgard.Model.Declaration
-import Gimle.Asgard.Compile.Syntax
+module
+
+public import Gimle.Asgard.Model.Declaration
+public import Gimle.Asgard.Compile.Syntax
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Declarations
 open _root_.Gimle.Asgard.Polynomial Model
@@ -18,7 +22,6 @@ def forward : Body := {
 }
 example : (Declaration.polynomial forward).validate = .ok () := by decide
 example : forward.program.resolve = none := by decide
-
 
 /-- Input, derivative, state, IC and observation orders are deliberately different.
 Axis/state display names coincide; explicit roles and IDs keep them separate. -/

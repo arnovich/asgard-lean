@@ -1,5 +1,7 @@
-import Gimle.Asgard.AlgebraicCompiler
-import Gimle.Asgard.Model.Declaration
+module
+
+public import Gimle.Asgard.AlgebraicCompiler
+public import Gimle.Asgard.Model.Declaration
 
 /-! # Declared affine algebraic loops
 
@@ -39,6 +41,9 @@ plain data (`Repr`, `DecidableEq`) whose `Body` is a polynomial `Program` the
 common compiler schedules, rejecting every cycle as `cyclicDependency`, while
 this declaration carries predicates and a proof obligation. Only affine loops
 are declared; nonlinear elimination is out of scope. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Algebraic
 open _root_.Gimle.Asgard.Polynomial Matrix
 
@@ -72,11 +77,11 @@ theorem Declaration.coordinates_external {n d o : Nat} (a : Declaration n d o) (
     a.coordinates (Fin.natAdd n j) = a.external j ∧ pointAppend z u (Fin.natAdd n j) = u j := by
   simp [coordinates]
 
-private def require (condition : Bool) (code : Model.ErrorCode) (site reference : String) :
+def require (condition : Bool) (code : Model.ErrorCode) (site reference : String) :
     Except Model.Diagnostic Unit :=
   if condition then .ok () else .error ⟨code, site, reference⟩
 
-private def checkUnique (values : List String) (code : Model.ErrorCode) (site : String) :
+def checkUnique (values : List String) (code : Model.ErrorCode) (site : String) :
     Except Model.Diagnostic Unit := do
   let mut seen := []
   for value in values do

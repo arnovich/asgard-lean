@@ -1,4 +1,7 @@
-import Gimle.Asgard.Examples.DeclaredAlgebraic
+module
+
+public import Gimle.Asgard.Examples.DeclaredAlgebraic
+meta import Gimle.Asgard.Examples.DeclaredAlgebraic
 
 /-! Regression tests for declared affine algebraic loops.
 
@@ -17,6 +20,9 @@ algebraic elimination to agree with, so every case differs:
 
 Python's multi-equation algebraic layering (`compile/cross_wiring.py`) refuses a
 cycle among algebraic equations outright, so it offers no elimination either. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.AlgebraicDeclarations
 open _root_.Gimle.Asgard.Polynomial Matrix Algebraic
 

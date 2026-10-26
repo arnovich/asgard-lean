@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.SourceIntegrals
+module
+
+public import Gimle.Asgard.Examples.SourceIntegrals
 
 /-! Regression tests for source integrals and their inverse rewrites.
 
@@ -9,6 +11,9 @@ Python outcome and whether Lean agrees ("same") or deliberately differs.
 Every body has states `f` and `g`, with `g' = 0`, and the parameter `p = 3`, on
 the axis `t` from `0`, with `f(0) = 2`. The nonzero initial value makes every
 boundary term visible: `int(diff(f,t),t)` lowers to `f - 2`, never to `f`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.SourceIntegrals
 open _root_.Gimle.Asgard.Polynomial Model
 

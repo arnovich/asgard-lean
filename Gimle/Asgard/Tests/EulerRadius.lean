@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.EulerBand
+module
+
+public import Gimle.Asgard.Examples.EulerBand
 
 /-! Coverage for the Euler radius.
 
@@ -11,6 +13,8 @@ a size bound the start violates, the created mode `(3, 2)` present and within
 the size growth, and the arithmetic facts behind "nothing is claimed beyond the
 radius"; Gevrey-1 for the viscous stream; and a transitive standard-axiom audit
 of every root theorem and example claim. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.EulerRadius
 

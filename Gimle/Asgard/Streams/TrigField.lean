@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.TrigNorm
-import Gimle.Asgard.Streams.TrigStream
+module
+
+public import Gimle.Asgard.Streams.TrigNorm
+public import Gimle.Asgard.Streams.TrigStream
 
 /-! # The field of a trigonometric stream, and a one-axis certified truncation
 
@@ -22,6 +24,9 @@ table and no closed form. Which streams have a geometric bound is the business
 of `EulerRadius`; that the analytic field of the Euler stream from an even,
 mean-zero start is a classical solution of the vorticity equation on
 `|t| < 1/ρ` is `EulerSolution`'s `NS.euler_classical`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Torus
 
 open Real
@@ -55,7 +60,6 @@ theorem abs_field_le_l1 (P : TrigPoly) (x : ℝ × ℝ) : |field P x| ≤ l1 P :
   refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun k _ => ?_)
   rw [abs_mul]
   exact mul_le_of_le_one_right (abs_nonneg _) (abs_cos_le_one _)
-
 
 end Gimle.Asgard.Streams.Torus
 

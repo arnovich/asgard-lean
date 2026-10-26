@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Integral
-import Gimle.Asgard.Model.Continuous
+module
+
+public import Gimle.Asgard.Model.Integral
+public import Gimle.Asgard.Model.Continuous
 
 /-! Common source declarations with applied lambdas, implicit first-order
 differential equations and higher-order equations over declared velocities.
@@ -41,6 +43,9 @@ integral state is not read into `Solves`; in every solution it equals that
 reading of its integral (`Solves.integral_state`). The main
 results are `Lowered.solves_iff` and the composed
 `SourceContinuousModel.solves_iff_realizes`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 
@@ -1158,7 +1163,7 @@ beta-normalize. An atom that is not read, such as one whose state has no
 declared velocity, one on another axis or one inside a lambda application, is
 rejected by beta normalization. As for a differential, the correspondence
 holds wherever the velocity equations hold and the atoms read the rewrites. -/
-private def lowerAssignment (c : Context) (a : SourceAssignment) :
+def lowerAssignment (c : Context) (a : SourceAssignment) :
     Except Diagnostic {out : Assignment // out.output = a.output ∧ ∀ atoms env,
       c.VelocitiesHold env ∧ c.Cancels atoms env →
       ((env a.output.name ≠ none ∧ a.rhs.eval env (c.rates env) atoms = env a.output.name) ↔
@@ -1177,7 +1182,7 @@ private def lowerAssignment (c : Context) (a : SourceAssignment) :
 declared chains, read lower-order atoms as their declared velocities, then
 isolate. The correspondence holds wherever the velocity equations hold and the
 atoms read the rewrites. -/
-private def lowerDifferential (c : Context) (d : DifferentialEquation) :
+def lowerDifferential (c : Context) (d : DifferentialEquation) :
     Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ atoms env,
       c.VelocitiesHold env ∧ c.Cancels atoms env →
       ((env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) atoms = some v ∧
@@ -1201,7 +1206,7 @@ private def lowerDifferential (c : Context) (d : DifferentialEquation) :
 premise. It is kept apart from `lowerDifferential` so that a declaration is
 never read through `Term.readVelocities`: its correspondence must hold in every
 environment, because it is what discharges that reading for the system. -/
-private def lowerVelocity (c : Context) (v : VelocityDeclaration) :
+def lowerVelocity (c : Context) (v : VelocityDeclaration) :
     Except Diagnostic {out : Assignment // out.output = v.output ∧ ∀ (atoms : Term → Option ℝ) env,
       True →
       ((env v.equation.output.name ≠ none ∧
@@ -1219,7 +1224,7 @@ private def lowerVelocity (c : Context) (v : VelocityDeclaration) :
 lowered: the context has an evolution axis and it is the declaration's, the
 declaration does not name its own port, `X` is pointwise, and `F` is a state
 whose declared initial value is `0`. -/
-private def checkIntegral (c : Context) (d : IntegralDeclaration) : Except Diagnostic Unit :=
+def checkIntegral (c : Context) (d : IntegralDeclaration) : Except Diagnostic Unit :=
   match c.boundary with
   | none => .error ⟨.unsupportedIntegral, d.output.id, "integral without an evolution axis"⟩
   | some bd =>
@@ -1239,7 +1244,7 @@ value is `0`. The integrand is lowered by the integral rewrites, which read a
 nested integral through its own declaration, and by `Term.readPorts`, which reads a
 first-order atom as its derivative port. The correspondence holds wherever the
 atoms read the rewrites of shapes no larger than `X`. -/
-private def lowerIntegral (c : Context) (d : IntegralDeclaration) :
+def lowerIntegral (c : Context) (d : IntegralDeclaration) :
     Except Diagnostic {out : Assignment // out.output = d.output ∧ ∀ (atoms : Term → Option ℝ) env,
       c.CancelsUpTo d.integrand.size atoms env →
       ((env d.equation.output.name ≠ none ∧
@@ -1264,7 +1269,7 @@ private def lowerIntegral (c : Context) (d : IntegralDeclaration) :
 /-- Lower the integral declarations. Each one's correspondence holds under the
 full rewrites, for `Lowered.equations`, and needs only the rewrites no larger than
 its integrand in the direction from the lowered body, for `Lowered.integrals`. -/
-private def lowerIntegrals (c : Context) : (ds : List IntegralDeclaration) →
+def lowerIntegrals (c : Context) : (ds : List IntegralDeclaration) →
     Except Diagnostic {out : List Assignment // out.map (·.output) = ds.map (·.output) ∧
       (∀ atoms env, c.Cancels atoms env →
         ((∀ d ∈ ds, env d.equation.output.name ≠ none ∧
@@ -1288,7 +1293,7 @@ private def lowerIntegrals (c : Context) : (ds : List IntegralDeclaration) →
         · exact (px atoms env hc).mpr h.1
         · exact bxs atoms env h.2 d' hd' hc⟩
 
-private def lowerList {α : Type} (H : (Term → Option ℝ) → (String → Option ℝ) → Prop)
+def lowerList {α : Type} (H : (Term → Option ℝ) → (String → Option ℝ) → Prop)
     (P : α → (Term → Option ℝ) → (String → Option ℝ) → Prop) (port : α → Port)
     (f : (a : α) → Except Diagnostic {out : Assignment // out.output = port a ∧ ∀ atoms env,
       H atoms env →

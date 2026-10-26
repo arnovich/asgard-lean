@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.TrigStream
+module
+
+public import Gimle.Asgard.Streams.TrigStream
 
 /-! # The formal vorticity stream on the torus
 
@@ -27,6 +29,9 @@ is exact and unique whatever its radius, and that is all this module claims.
 This module states the equation directly. `Streams.VorticityCircuit` assembles
 its Fourier operators and time integration into a typed feedback circuit, and
 proves that its relation has exactly this stream as output. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.NS
 
 open Torus TrigStream Causal

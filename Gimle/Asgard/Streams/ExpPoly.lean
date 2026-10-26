@@ -1,9 +1,11 @@
-import Mathlib.Algebra.MonoidAlgebra.Basic
-import Mathlib.Algebra.Polynomial.Derivative
-import Mathlib.Analysis.Calculus.Deriv.Polynomial
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
-import Mathlib.Tactic
+module
+
+public import Mathlib.Algebra.MonoidAlgebra.Basic
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.Analysis.Calculus.Deriv.Polynomial
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+public import Mathlib.Tactic
 
 /-! Exact exponential polynomials for the mild vorticity expansion.
 
@@ -12,6 +14,9 @@ polynomial `p`, denoting `p(t) exp(-ν rate t)`. Evaluation is an algebra map.
 Differentiation and Duhamel integration depend on viscosity. These operations
 compute exact expressions; their coefficient sizes are not analytic bounds.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-- Finite sums of rational polynomials times indexed heat exponentials. -/

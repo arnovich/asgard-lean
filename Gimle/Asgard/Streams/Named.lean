@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.Laws
+module
+
+public import Gimle.Asgard.Streams.Laws
 
 /-! Stable axis IDs and ordinary input IDs have separate namespaces. Resolution
 retains declared order; display names never infer a mathematical role. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 structure Axis where

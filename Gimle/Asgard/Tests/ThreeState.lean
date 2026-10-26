@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.ThreeState
+module
+
+public import Gimle.Asgard.Examples.ThreeState
 
 /-! Coverage for the coupled three-state model.
 
@@ -6,6 +8,9 @@ The model itself is in `Examples/ThreeState.lean`. These checks establish that
 its deliberate order mismatches, shared forward auxiliaries, unused parameter
 and reused observation display names are accepted for the stated reasons, and
 that neighbouring invalid bindings are rejected rather than silently repaired. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.ThreeState
 open _root_.Gimle.Asgard.Polynomial Model Examples.ThreeState
 

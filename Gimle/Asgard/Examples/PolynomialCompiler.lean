@@ -1,10 +1,15 @@
-import Gimle.Asgard.Compile.Syntax
-import Gimle.Asgard.Compile.Interchange
-import Gimle.Asgard.Examples.EnergyDemo
-import Gimle.Asgard.Examples.Oscillator
+module
+
+public import Gimle.Asgard.Compile.Syntax
+public import Gimle.Asgard.Compile.Interchange
+public import Gimle.Asgard.Examples.EnergyDemo
+public import Gimle.Asgard.Examples.Oscillator
 
 /-! Editable equations compiled to primitive circuits, with universal real
 correctness proofs. Open this file in VS Code and inspect the AST definitions. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.PolynomialCompiler
 open _root_.Gimle.Asgard.Polynomial
 

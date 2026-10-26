@@ -1,5 +1,9 @@
-import Gimle.Asgard.Model.Driven
-import Gimle.Asgard.Compile.Syntax
+module
+
+public import Gimle.Asgard.Model.Driven
+public import Gimle.Asgard.Compile.Syntax
+
+@[expose] public section
 
 namespace Gimle.Asgard.Examples.RationalModel
 open _root_.Gimle.Asgard.Polynomial Model

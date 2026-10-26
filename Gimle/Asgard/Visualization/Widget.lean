@@ -1,7 +1,14 @@
-import Gimle.Asgard.Visualization.Model
-import ProofWidgets.Component.HtmlDisplay
+module
+
+public import Gimle.Asgard.Visualization.Model
+public import ProofWidgets.Component.HtmlDisplay
+public meta import Gimle.Asgard.Visualization.Model
+public meta import ProofWidgets.Component.HtmlDisplay
 
 /-! Optional Infoview adapter. The same element tree is used by SVG export. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Visualization
 open Lean ProofWidgets
 

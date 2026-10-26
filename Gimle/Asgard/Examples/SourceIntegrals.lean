@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! Source integrals from the declared start, removed by two of the inverse
 rewrites, and solved.
@@ -15,6 +17,9 @@ declared initial value as its boundary term, and is solved by `x = 3 - e^(-t)`.
 Dropping the boundary term would give `D_t(x) + x = 1`, whose solution
 `1 + e^(-t)` from the same initial value does not solve the source
 (`boundary_dropped`). Python rejects this source ("competing derivative"). -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.SourceIntegrals
 open _root_.Gimle.Asgard.Polynomial Model
 

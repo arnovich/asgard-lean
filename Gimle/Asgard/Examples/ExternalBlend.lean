@@ -1,4 +1,6 @@
-import Gimle.Asgard.External.Partition
+module
+
+public import Gimle.Asgard.External.Partition
 
 /-! A pointwise two-model blend, with explicit mathematical providers.
 
@@ -8,6 +10,9 @@ For inputs (x,y,unused), A(x,y)=(x,y), B(x,y)=(y,x), and weights x,1-x:
 On 0≤x≤1 and 0≤y≤1 both outputs stay in [0,1]. The theorem proves the
 actual compiled circuit's contract under the declared environment. It does not
 claim a Python callback or learned model implements these providers. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.ExternalBlend
 open Gimle.Asgard.External
 

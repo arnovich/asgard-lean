@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Isolation
+module
+
+public import Gimle.Asgard.Compile.Isolation
 
 /-! Isolate the middle variable without changing the order of its neighbours.
 The equation is 2*z + u = z + 3*v, so z = 3*v - u.
 For u(t)=t and v(t)=2*t+1, the solution is z(t)=5*t+3, with z(0)=3.
 This is pointwise algebraic elimination, not differentiation or ODE solving. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.VariableIsolation
 open _root_.Gimle.Asgard.Polynomial Normalization Isolation
 

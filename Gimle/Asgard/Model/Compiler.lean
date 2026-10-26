@@ -1,4 +1,8 @@
-import Gimle.Asgard.Model.Resolution
+module
+
+public import Gimle.Asgard.Model.Resolution
+
+@[expose] public section
 
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial

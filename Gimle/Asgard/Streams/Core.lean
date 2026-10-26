@@ -1,5 +1,7 @@
-import Gimle.Asgard.Compile.Named
-import Mathlib.RingTheory.MvPowerSeries.Substitution
+module
+
+public import Gimle.Asgard.Compile.Named
+public import Mathlib.RingTheory.MvPowerSeries.Substitution
 
 /-! Exact formal rational coefficients on an arbitrary finite ordered product
 of axes. No analytic function, numerical truncation or raw shift is implicit.
@@ -10,6 +12,9 @@ so raw EGF coefficients carry binomial weights. The derivative along axis `i` is
 `(α_i + 1) a[α + e_i]` (OGF) or `a[α + e_i]` (EGF); integration reverses that
 shift and keeps the whole boundary slice at axis degree zero, so `D (I a b) = a`
 and `I (D a) a = a`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 abbrev Index (d : Nat) := Fin d →₀ ℕ

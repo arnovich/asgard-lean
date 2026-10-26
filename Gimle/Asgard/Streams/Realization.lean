@@ -1,9 +1,11 @@
-import Gimle.Asgard.Streams.Laws
-import Mathlib.Algebra.MvPolynomial.Funext
-import Mathlib.Algebra.MvPolynomial.Monad
-import Mathlib.Algebra.MvPolynomial.PDeriv
-import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+module
+
+public import Gimle.Asgard.Streams.Laws
+public import Mathlib.Algebra.MvPolynomial.Funext
+public import Mathlib.Algebra.MvPolynomial.Monad
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.Analysis.Calculus.Deriv.Mul
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-! # Finite polynomial streams and their real fields
 
@@ -22,6 +24,9 @@ are those of the evaluated real function, not coefficient shifts; the shifts
 are proved to agree with them.
 
 No convergence of infinite series is used or claimed. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-- Finite rational polynomials on `d` ordered axes. -/

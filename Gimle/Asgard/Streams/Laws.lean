@@ -1,4 +1,8 @@
-import Gimle.Asgard.Streams.Compiler
+module
+
+public import Gimle.Asgard.Streams.Compiler
+
+@[expose] public section
 
 namespace Gimle.Asgard.Streams
 
@@ -26,7 +30,6 @@ theorem derivative_encode {d : Nat} (basis : Basis) (axis : Fin d) (a : Stream d
       rw [factorial_update]
       ring
 
-
 /-- Integration and its entire boundary profile use the same basis conversion. -/
 theorem integral_encode {d : Nat} (basis : Basis) (axis : Fin d) (a boundary : Stream d) :
     integral basis axis (encode basis a) (encode basis boundary) =
@@ -45,7 +48,6 @@ theorem integral_encode {d : Nat} (basis : Basis) (axis : Fin d) (a boundary : S
         simp [integral, encode, zero, step]
         have nonzero : (n axis : ℚ) ≠ 0 := by exact_mod_cast zero
         field_simp
-
 
 theorem substitution_valid {d : Nat} (basis : Basis) (axis : Fin d) (inner : Stream d)
     (valid : CanCompose basis inner) :

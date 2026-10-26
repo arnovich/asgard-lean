@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Polynomial
-import Mathlib.Data.Matrix.Basic
+module
+
+public import Gimle.Asgard.Compile.Polynomial
+public import Mathlib.Data.Matrix.Basic
 
 /-! Stateless real algebraic feedback. No time, delay, iteration or integrator.
 The finite coordinate order is [loop, external]; external may pack inputs and
 fixed parameters. Exact rational affine compilation preserves solution sets. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Algebraic
 open _root_.Gimle.Asgard.Polynomial Matrix
 
@@ -40,7 +45,7 @@ structure Affine (d n : Nat) where
   coefficients : RationalMatrix n d
   constant : Fin n → ℚ
 
-private def sumExpr {d : Nat} : List (Expr d) → Expr d
+def sumExpr {d : Nat} : List (Expr d) → Expr d
   | [] => .constant 0
   | e :: es => .add e (sumExpr es)
 

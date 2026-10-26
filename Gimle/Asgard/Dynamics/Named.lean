@@ -1,9 +1,14 @@
-import Gimle.Asgard.Dynamics.Feedback
-import Gimle.Asgard.Compile.Named
+module
+
+public import Gimle.Asgard.Dynamics.Feedback
+public import Gimle.Asgard.Compile.Named
 
 /-! Checked named interfaces for continuous feedback. The source Program may
 interleave states and external inputs, and retain intermediate assignments.
 Every state explicitly names its derivative output and its initial-value port. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics
 open _root_.Gimle.Asgard.Polynomial
 
@@ -166,8 +171,6 @@ def Prepared.circuit {s : System} (p : Prepared s) :
     Circuit (s.externalIds.length + s.initialPorts.length) s.states.length :=
   .compose (.lift (.parallel (Wiring.identity s.externalIds.length)
     (Polynomial.route p.initialRoute))) (close s.evolveAlong p.field)
-
-
 
 noncomputable def System.environment (s : System) (external : Point s.externalIds.length)
     (state : Point s.states.length) : Point s.inputIds.length :=

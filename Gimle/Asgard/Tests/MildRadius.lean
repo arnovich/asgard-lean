@@ -1,6 +1,11 @@
-import Gimle.Asgard.Examples.MildBand
+module
+
+public import Gimle.Asgard.Examples.MildBand
 
 /-! Boundary and output-binding regressions for both physical mild bounds. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.MildRadius
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.Torus Gimle.Asgard.Streams.Mild

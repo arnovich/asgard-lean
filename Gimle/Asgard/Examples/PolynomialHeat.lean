@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Heat
-import Gimle.Asgard.Examples.FormalHeat
+module
+
+public import Gimle.Asgard.Streams.Heat
+public import Gimle.Asgard.Examples.FormalHeat
 
 /-! # Polynomial heat fixtures
 
@@ -13,6 +15,9 @@ Worked instances of `Streams.Heat` on axes `[t, x]`:
 * Both bases, axis transport, and three invalidations: a changed boundary, a
   changed coefficient, and a same-prefix/different-tail stream that no finite
   window can certify as polynomial. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.PolynomialHeat
 
 open Gimle.Asgard.Streams
@@ -53,7 +58,6 @@ theorem square_field (t x : ℝ) :
     field (solution (_root_.Polynomial.X ^ 2)) ![t, x] = x ^ 2 + 2 * t := by
   rw [square]
   simp
-
 
 /-- A polynomial field satisfying the heat equation with profile `x²` is `x² + 2t`. -/
 theorem square_unique (q : Poly 2)

@@ -1,12 +1,17 @@
-import Gimle.Asgard.Streams.Mild
-import Gimle.Asgard.Streams.Vorticity
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+module
+
+public import Gimle.Asgard.Streams.Mild
+public import Gimle.Asgard.Streams.Vorticity
+public import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 /-! Physical evaluation of the mild stream and its zero-viscosity agreement.
 
 Evaluation forgets the redundant exponential indices at ν = 0. Statements
 compare evaluated Fourier coefficients, never the redundant exact carriers.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus

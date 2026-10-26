@@ -1,7 +1,9 @@
-import Gimle.Asgard.Streams.Tail
-import Gimle.Asgard.Streams.Grid
-import Mathlib.RingTheory.MvPowerSeries.Inverse
-import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
+module
+
+public import Gimle.Asgard.Streams.Tail
+public import Gimle.Asgard.Streams.Grid
+public import Mathlib.RingTheory.MvPowerSeries.Inverse
+public import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
 
 /-! # A calculus for coefficient majorants
 
@@ -14,6 +16,9 @@ of a stream with nonzero constant term (bound `1/|c|`, radii shrunk until the
 tail of the rest is small). It also gives the ordinary derivative its
 algebra: additivity, the Leibniz rule and commutation of axes, so that
 formal identities between quotients close by `ring`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 open MvPowerSeries Lowering
@@ -269,7 +274,6 @@ theorem majorizes_mul {d : Nat} {a b : Stream d} {ma mb : Majorant d} (R : Fin d
         congr 1
         refine Finset.prod_congr rfl fun i _ => ?_
         rw [div_pow, inv_div, div_eq_mul_inv, mul_comm]
-
 
 /-! ## The inverse -/
 

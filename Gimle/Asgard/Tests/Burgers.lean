@@ -1,5 +1,7 @@
-import Gimle.Asgard.Examples.BurgersSquare
-import Gimle.Asgard.Examples.PolynomialHeat
+module
+
+public import Gimle.Asgard.Examples.BurgersSquare
+public import Gimle.Asgard.Examples.PolynomialHeat
 
 /-! Coverage for the formal Burgers stream.
 
@@ -12,6 +14,8 @@ constructed stream and refuses the heat stream; the low coefficients from
 only the viscous term contributes (zero without viscosity) and one where only
 the nonlinearity does; and a transitive standard-axiom audit of the root
 theorems and every example claim. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Burgers
 

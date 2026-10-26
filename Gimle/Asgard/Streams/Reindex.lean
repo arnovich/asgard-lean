@@ -1,4 +1,8 @@
-import Gimle.Asgard.Streams.Core
+module
+
+public import Gimle.Asgard.Streams.Core
+
+@[expose] public section
 
 namespace Gimle.Asgard.Streams
 

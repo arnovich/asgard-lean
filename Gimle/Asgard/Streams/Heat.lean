@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Realization
-import Mathlib.Algebra.Polynomial.Derivation
+module
+
+public import Gimle.Asgard.Streams.Realization
+public import Mathlib.Algebra.Polynomial.Derivation
 
 /-! # Heat evolution of a finite polynomial profile
 
@@ -26,6 +28,9 @@ What is proved, and for which object:
 * **Supplied candidate polynomial field** `q`: if the real field of `q`
   satisfies the PDE and the initial profile everywhere, then `q = solution p`
   (`field_unique`). Nothing is claimed about arbitrary smooth real fields. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Heat
 
 /-- A rational spatial profile `p(x)`. -/

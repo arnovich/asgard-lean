@@ -1,6 +1,11 @@
-import Gimle.Asgard.Dynamics.Linear
+module
+
+public import Gimle.Asgard.Dynamics.Linear
 
 /-! Exact rational data for a linear initial-value problem. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics.Linear
 
 /-- An executable exact subset of the real-valued initial-value problem. -/

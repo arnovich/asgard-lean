@@ -1,4 +1,8 @@
-import Gimle.Asgard
+module
+
+public import Gimle.Asgard
+
+@[expose] public section
 
 namespace Gimle.Asgard.EnergyDemo
 
@@ -38,7 +42,6 @@ theorem energyIdentity (input : Point 2) :
     energy.run input 0 = 2 * (input 0)^2 + 2 * (input 1)^2 := by
   norm_num [energy, duplicate, interleave, sumAndDifference, difference, squareBoth, square]
   ring
-
 
 #print axioms energyIdentity
 

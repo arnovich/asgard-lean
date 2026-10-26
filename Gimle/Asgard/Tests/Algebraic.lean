@@ -1,4 +1,8 @@
-import Gimle.Asgard.AlgebraicCompiler
+module
+
+public import Gimle.Asgard.AlgebraicCompiler
+
+@[expose] public section
 
 namespace Gimle.Asgard.Algebraic.Tests
 

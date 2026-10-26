@@ -1,4 +1,8 @@
-import Gimle.Asgard
+module
+
+public import Gimle.Asgard
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests
 

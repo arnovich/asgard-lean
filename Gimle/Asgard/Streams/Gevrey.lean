@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.TrigNorm
-import Gimle.Asgard.Streams.Vorticity
+module
+
+public import Gimle.Asgard.Streams.TrigNorm
+public import Gimle.Asgard.Streams.Vorticity
 
 /-! # Gevrey-1 growth for the viscous stream
 
@@ -18,6 +20,9 @@ the induction with `Σ_{m ≤ n} (n−m+1) = (n+1)(n+2)/2 ≤ (n+1)²`. "Gevrey-
 meant for the formal series in `t`: a radius for its Borel transform, not for
 the series itself. The docs record the Tonelli computation that makes radius
 zero exact for viscous Burgers. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Torus
 
 /-! ## ℓ¹ bounds with the size -/

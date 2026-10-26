@@ -1,6 +1,10 @@
-import Gimle.Asgard.Compile.Normalization
-import Gimle.Asgard.Compile.Isolation
-import Gimle.Asgard.Examples.VariableIsolation
+module
+
+public import Gimle.Asgard.Compile.Normalization
+public import Gimle.Asgard.Compile.Isolation
+public import Gimle.Asgard.Examples.VariableIsolation
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Normalization
 open _root_.Gimle.Asgard.Polynomial Gimle.Asgard.Normalization Isolation
@@ -109,11 +113,9 @@ theorem variable_coefficient (u : ℝ) : variablePrepared.coefficient.eval ![u] 
   rw [Decomposition.coefficient_correct, Equation.residual_correct, Equation.residual_correct]
   simp [variableCoefficient, Source.eval]
 
-
 theorem variable_offset (u : ℝ) : variablePrepared.offset.eval ![u] = -1 := by
   rw [Decomposition.offset_correct, Equation.residual_correct]
   simp [variableCoefficient, Source.eval]
-
 
 example (u z : ℝ) (domain : u*u=1) :
     variableCoefficient.Satisfies (reconstruct (select 0) ![u] z) ↔ z = u := by

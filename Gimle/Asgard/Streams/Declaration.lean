@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Declaration
-import Gimle.Asgard.Streams.Named
+module
+
+public import Gimle.Asgard.Model.Declaration
+public import Gimle.Asgard.Streams.Named
 
 /-! # Declared stream equations
 
@@ -48,6 +50,9 @@ equation's own unknown: another unknown's derivative on the same axis is
 allowed, so a system such as `D_t u = D_t v`, `D_t v = D_t u + 1` is accepted
 and may be implicit or have no solution; nothing here claims existence.
 Isolating a scaled derivative from a source equation is `Streams.Isolation`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-! ## Constant coefficients -/
@@ -324,18 +329,18 @@ def NamedExpr.selfDerivative (along unknown : String) : NamedExpr → Option Mod
     | some code => some code
     | none => b.selfDerivative along unknown
 
-private def require (condition : Bool) (code : Model.ErrorCode) (site reference : String) :
+def require (condition : Bool) (code : Model.ErrorCode) (site reference : String) :
     Except Model.Diagnostic Unit :=
   if condition then .ok () else .error ⟨code, site, reference⟩
 
-private def checkUnique (values : List String) (code : Model.ErrorCode) (site : String) :
+def checkUnique (values : List String) (code : Model.ErrorCode) (site : String) :
     Except Model.Diagnostic Unit := do
   let mut seen := []
   for value in values do
     require (!seen.contains value) code site value
     seen := value :: seen
 
-private def checkInput (s : Declaration) (site id : String) (role : Polynomial.PortRole) :
+def checkInput (s : Declaration) (site id : String) (role : Polynomial.PortRole) :
     Except Model.Diagnostic Unit :=
   match s.inputs.find? (·.id == id) with
   | none => .error ⟨.unknownReference, site, id⟩

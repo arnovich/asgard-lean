@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.ColeHopf
+module
+
+public import Gimle.Asgard.Streams.ColeHopf
 
 /-! # The viscous Burgers front, certified
 
@@ -16,6 +18,9 @@ smaller. The last section identifies the analytic field on the box with the
 classical front `1/(1 + e^(x − t/2))` (`front_field_eq`), and proves the band
 `2/5 ≤ u ≤ 3/5` there for every stream the circuit reconstructs from the
 front's slice, while `u ≤ 27/50` fails at the corner `(1/6, −1/8)`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.BurgersFront
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.ColeHopf

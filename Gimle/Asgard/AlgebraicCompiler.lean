@@ -1,7 +1,12 @@
-import Gimle.Asgard.Algebraic
+module
+
+public import Gimle.Asgard.Algebraic
 
 /-! Executable construction of the eliminated typed circuits from exact rational
 source equations. The supplied inverse must carry checked product equations. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Algebraic
 open _root_.Gimle.Asgard.Polynomial Matrix
 
@@ -30,7 +35,7 @@ def Problem.loopAffine {n d o : Nat} (p : Problem n d o) : Affine (n + d) n wher
     Fin.sum_univ_add, pointAppend]
   ring
 
-private def sumExpressions {d : Nat} : List (Expr d) → Expr d
+def sumExpressions {d : Nat} : List (Expr d) → Expr d
   | [] => .constant 0
   | e :: es => .add e (sumExpressions es)
 

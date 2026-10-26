@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.AIF
+module
+
+public import Gimle.Asgard.Examples.AIF
 -- Gimle/Asgard/Examples/CircuitGallery.lean is deliberately NOT imported here.
 -- It pulls in Visualization.Widget, the only ProofWidgets consumer in this
 -- repository; importing it would make an Infoview UI dependency mandatory for

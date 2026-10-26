@@ -1,9 +1,16 @@
-import Gimle.Asgard.AlgebraicDeclaration
-import Gimle.Asgard.Examples.AlgebraicFeedback
+module
+
+public import Gimle.Asgard.AlgebraicDeclaration
+public import Gimle.Asgard.Examples.AlgebraicFeedback
+meta import Gimle.Asgard.AlgebraicDeclaration
+meta import Gimle.Asgard.Examples.AlgebraicFeedback
 
 /-! The source equations `z = z/2 + u` and `y = z`, declared with the loop domain
 `z ∈ [-2, 2]`, the admitted inputs `u ∈ [-1, 1]` and the supplied inverse `2` of
 `1 - 1/2`. The membership obligation is `half_membership`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Algebraic.Examples
 open _root_.Gimle.Asgard.Polynomial Matrix
 

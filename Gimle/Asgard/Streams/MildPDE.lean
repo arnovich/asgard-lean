@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildTimeDerivatives
+module
+
+public import Gimle.Asgard.Streams.MildTimeDerivatives
 
 /-! The convergent physical mild series satisfies the vorticity PDE and the
 stream-function Laplacian. These identities refer to the actual Wild output. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

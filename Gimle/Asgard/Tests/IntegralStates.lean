@@ -1,5 +1,7 @@
-import Gimle.Asgard.Examples.IntegralStates
-import Gimle.Asgard.Examples.NestedIntegralStates
+module
+
+public import Gimle.Asgard.Examples.IntegralStates
+public import Gimle.Asgard.Examples.NestedIntegralStates
 
 /-! Regression tests for declared integral states.
 
@@ -14,6 +16,9 @@ declaration Python infers; with it, Lean lowers to the rates noted.
 Every body has states `f`, `g` and `F`, with `g' = 0`, and the parameter `p = 3`,
 on the axis `t` from `0`, with `f(0) = 2`, `g(0) = 1` and, unless stated,
 `F(0) = 0`. The nested section uses its own states `f`, `F` and `G`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.IntegralStates
 open _root_.Gimle.Asgard.Polynomial Model
 

@@ -1,4 +1,8 @@
-import Gimle.Asgard.Examples.ExternalBlend
+module
+
+public import Gimle.Asgard.Examples.ExternalBlend
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.External
 open Gimle.Asgard.External

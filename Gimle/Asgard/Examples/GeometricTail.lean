@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Tail
+module
+
+public import Gimle.Asgard.Streams.Tail
 
 /-! # Certified truncation of the two-axis geometric stream
 
@@ -14,6 +16,9 @@ sums (`windowField_ones`), and at the corner `(1/2, 1/2)` the true error is
 the doubly omitted corner block. The same series stored as EGF has raw
 coefficients `m!·n!` yet carries the same certificate, because majorants are
 stated on decoded coefficients. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.GeometricTail
 
 open Gimle.Asgard.Streams

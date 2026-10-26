@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.AnalyticHeat
-import Mathlib.Analysis.SpecialFunctions.Exponential
+module
+
+public import Gimle.Asgard.Streams.AnalyticHeat
+public import Mathlib.Analysis.SpecialFunctions.Exponential
 
 /-! # Heat evolution of the profile `e^x`, with a certified truncation
 
@@ -17,6 +19,9 @@ The analytic field is `exp (x + t)` at every real point (`analyticField_eq`), so
 on the box `|exp (x + t) − W| ≤ 1/12288`, where `W` is the window field, the
 real field of the window polynomial (`exp_bound`). The majorant drops the
 factorials, so this bound is conservative. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.ExpHeat
 
 open Gimle.Asgard.Streams

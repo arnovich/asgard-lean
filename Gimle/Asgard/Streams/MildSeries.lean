@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.MildDerivativeBounds
+module
+
+public import Gimle.Asgard.Streams.MildDerivativeBounds
 
 /-! Spatial and time differentiation of convergent physical interaction series. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

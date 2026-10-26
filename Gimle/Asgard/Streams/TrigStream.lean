@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Causal
-import Gimle.Asgard.Streams.Torus
+module
+
+public import Gimle.Asgard.Streams.Causal
+public import Gimle.Asgard.Streams.Torus
 
 /-! # Streams of trigonometric polynomials
 
@@ -12,6 +14,9 @@ formal Cauchy–Kowalevski lemma applies to any causal right-hand side here.
 Coefficientwise operators are causal trivially, and `convolve` is the Cauchy
 product in `t` of a bilinear operator on the coefficients, factorial-conjugated
 in EGF as `Streams.product` is. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 open Torus

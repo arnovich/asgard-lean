@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Polynomial
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+module
+
+public import Gimle.Asgard.Compile.Polynomial
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 
 /-! A separate pointwise partial-real circuit interpretation. Values outside a
 domain are auxiliary totalized mathlib expressions, never admitted behavior. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 def semanticVersion : String := "asgard.partial-real-atomics/v1"

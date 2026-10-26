@@ -1,7 +1,11 @@
-import Mathlib.Data.Rat.Defs
+module
+
+public import Mathlib.Data.Rat.Defs
 
 /-! Typed syntax for the real polynomial feedforward fragment. No interpretation
 or property logic is imported here. Composition runs its left argument first. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard
 

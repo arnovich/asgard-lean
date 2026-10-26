@@ -1,8 +1,13 @@
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! A checked, deliberately syntactic homogeneous linear fragment. Acceptance
 extracts exact rational coefficients; rejection makes no claim of nonlinearity
 or insolubility. No ODE existence theorem follows from polynomial compilation. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics.LinearSyntax
 open _root_.Gimle.Asgard.Polynomial
 

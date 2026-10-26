@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Isolation
-import Gimle.Asgard.Examples.DeclaredHeat
+module
+
+public import Gimle.Asgard.Streams.Isolation
+public import Gimle.Asgard.Examples.DeclaredHeat
 
 /-! Heat, written as source equations and isolated along `time`.
 
@@ -15,6 +17,9 @@ the four isolates to a declared equation `D_t u = (…)/2`; the plain and revers
 ones to exactly `D_t u = 1/2 · D_x(D_x(u))`. With the EGF boundary `x²` each has
 the single solution `x² + t` (`fixture_solutions`). Outcome: **same**. These
 are formal coefficient statements; the Python test samples a simulated field. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.HeatIsolation
 open Gimle.Asgard.Streams
 

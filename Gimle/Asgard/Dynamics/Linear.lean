@@ -1,11 +1,16 @@
-import Gimle.Asgard.Dynamics.Feedback
-import Gimle.Asgard.Dynamics.LinearAnalysis
-import Gimle.Asgard.Dynamics.LinearSyntax
-import Mathlib.Algebra.BigOperators.Fin
+module
+
+public import Gimle.Asgard.Dynamics.Feedback
+public import Gimle.Asgard.Dynamics.LinearAnalysis
+public import Gimle.Asgard.Dynamics.LinearSyntax
+public import Mathlib.Algebra.BigOperators.Fin
 
 /-! Explicit autonomous homogeneous rational linear ODE problems.
 State coordinates and their initial values use the same finite ordered context.
 Compilation and existence are separate statements. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Dynamics.Linear
 
 open _root_.Gimle.Asgard.Polynomial
@@ -23,7 +28,7 @@ structure Problem (n : Nat) where
 noncomputable def Matrix.eval {n : Nat} (a : Matrix n) (x : Point n) : Point n :=
   fun i => ∑ j, (a i j : ℝ) * x j
 
-private def sumExpressions {n : Nat} : List (Expr n) → Expr n
+def sumExpressions {n : Nat} : List (Expr n) → Expr n
   | [] => .constant 0
   | e :: es => .add e (sumExpressions es)
 
@@ -67,7 +72,7 @@ def Problem.Solves {n : Nat} (p : Problem n) (state : Signal n) : Prop :=
   ∀ t ∈ p.time.domain, ∀ i,
     HasDerivWithinAt (fun t => state t i) (p.matrix.eval (state t) i) p.time.domain t
 
-private def noDrivers : Signal 0 := fun _ i => Fin.elim0 i
+def noDrivers : Signal 0 := fun _ i => Fin.elim0 i
 
 /-- Target semantics include the same time axis, start and ordered initial data. -/
 def Problem.Realizes {n : Nat} (p : Problem n) (state : Signal n) : Prop :=

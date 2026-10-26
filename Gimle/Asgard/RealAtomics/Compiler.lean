@@ -1,7 +1,12 @@
-import Gimle.Asgard.RealAtomics.Circuit
+module
+
+public import Gimle.Asgard.RealAtomics.Circuit
 
 /-! Independent scalar source expressions and compilation with explicit shared
 input wiring. Definedness is strict in all children, even for zero multipliers. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 inductive Expr (axes inputs : Nat) where

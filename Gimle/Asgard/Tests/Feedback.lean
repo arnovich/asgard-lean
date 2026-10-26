@@ -1,7 +1,15 @@
-import Gimle.Asgard.Dynamics.Trace
-import Gimle.Asgard.Dynamics.Named
-import Gimle.Asgard.Compile.Syntax
-import Gimle.Asgard.Examples.Feedback
+module
+
+public import Gimle.Asgard.Dynamics.Trace
+public import Gimle.Asgard.Dynamics.Named
+public import Gimle.Asgard.Compile.Syntax
+public import Gimle.Asgard.Examples.Feedback
+meta import Gimle.Asgard.Dynamics.Trace
+meta import Gimle.Asgard.Dynamics.Named
+meta import Gimle.Asgard.Compile.Syntax
+meta import Gimle.Asgard.Examples.Feedback
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Feedback
 open _root_.Gimle.Asgard.Polynomial Dynamics

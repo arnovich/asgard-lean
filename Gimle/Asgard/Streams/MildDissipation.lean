@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildFourierPDE
-import Gimle.Asgard.Streams.SpectralDissipation
+module
+
+public import Gimle.Asgard.Streams.MildFourierPDE
+public import Gimle.Asgard.Streams.SpectralDissipation
 
 /-! Both dissipation identities for the actual mild circuit stream, on the
 closed interval certified by either physical bound. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 open Torus Real Set
 

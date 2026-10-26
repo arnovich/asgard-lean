@@ -1,8 +1,10 @@
-import Gimle.Asgard.Model.Differential
-import Gimle.Asgard.Model.Resolution
-import Mathlib.Analysis.Calculus.MeanValue
-import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+module
+
+public import Gimle.Asgard.Model.Differential
+public import Gimle.Asgard.Model.Resolution
+public import Mathlib.Analysis.Calculus.MeanValue
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
 /-! Source integrals over the evolution axis, from the declared start, the inverse
 rewrites between integrals and derivatives, and the reading of declared integral
@@ -73,6 +75,9 @@ derivatives, whose declared initial values hold, whose declared integral states 
 antiderivatives of their integrands, whose bound parameters are constant and whose
 declared velocities are the derivatives of their states: in particular, at every
 time of a solution of the source or of the lowered body. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial Set
 

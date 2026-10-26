@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildCalculus
-import Gimle.Asgard.Streams.MildRadius
+module
+
+public import Gimle.Asgard.Streams.MildCalculus
+public import Gimle.Asgard.Streams.MildRadius
 
 /-! Uniform physical-time derivative bounds from either certified geometric
 bound. Polynomial losses in interaction degree remain summable. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.RealTrigCalculus
+module
+
+public import Gimle.Asgard.Streams.RealTrigCalculus
 
 /-! Finite Fourier cancellations behind enstrophy and energy dissipation.
 The pairing uses the opposite Fourier mode. Even real data specialize it to
 squares, but the algebraic transport cancellations do not require evenness. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild.RealPoly
 
 open Torus

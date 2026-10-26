@@ -1,10 +1,15 @@
-import Gimle.Asgard.Approximation
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Approximation
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! The secant x approximates x² on [0,1] with sharp error 1/4.
 Composing the source with 3z and the target with 3z+1/10 amplifies the
 upstream error: 3*(1/4)+1/10 = 17/20, attained at x=1/2.
 These are universal circuit facts; the endpoint sample record is only data. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.Approximation
 open Gimle.Asgard.Approximation
 

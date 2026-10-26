@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Polynomial
-import Mathlib.Topology.Order.LeftRightLim
+module
+
+public import Gimle.Asgard.Compile.Polynomial
+public import Mathlib.Topology.Order.LeftRightLim
 
 /-! Conditional physical-time process circuits. Integral relations are explicit
 parameters, not axioms implementing stochastic calculus. No Brownian law,
 existence theorem, probability bound or numerical accuracy follows from this API. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Stochastic
 open scoped BigOperators Topology
 

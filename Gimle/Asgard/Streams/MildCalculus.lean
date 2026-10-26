@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.RealTrigCalculus
+module
+
+public import Gimle.Asgard.Streams.RealTrigCalculus
 
 /-! Physical derivatives and continuity of finite mild Fourier terms. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

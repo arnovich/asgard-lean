@@ -1,5 +1,9 @@
-import Gimle.Asgard.RealAtomics.Laws
-import Gimle.Asgard.Examples.RealAtomics
+module
+
+public import Gimle.Asgard.RealAtomics.Laws
+public import Gimle.Asgard.Examples.RealAtomics
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.RealAtomics
 open Gimle.Asgard.RealAtomics

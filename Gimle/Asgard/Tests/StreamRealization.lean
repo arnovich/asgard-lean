@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.PolynomialHeat
+module
+
+public import Gimle.Asgard.Examples.PolynomialHeat
 
 /-! Coverage for finite polynomial streams, their real fields and polynomial
 heat evolution.
@@ -8,6 +10,8 @@ mixed circuit whose realized output is read off its polynomial semantics; the
 substitution side condition on realized inputs; the analytic meaning of a
 selected-axis derivative and of an integral carrying a nonconstant boundary;
 and a transitive standard-axiom audit of every public theorem. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.StreamRealization
 

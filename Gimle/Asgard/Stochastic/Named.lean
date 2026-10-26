@@ -1,8 +1,13 @@
-import Gimle.Asgard.Stochastic.Circuit
-import Gimle.Asgard.Dynamics.Named
+module
+
+public import Gimle.Asgard.Stochastic.Circuit
+public import Gimle.Asgard.Dynamics.Named
 
 /-! Named polynomial coefficient source, checked resolution, and compilation to
 process integral banks. Source evaluation never runs a target circuit. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Stochastic
 open _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators

@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.Core
+module
+
+public import Gimle.Asgard.Streams.Core
 
 /-! Independent coefficient expressions compile through typed stream wiring.
 Substitution domains remain strict even when a later operation discards data. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 inductive Unary (d : Nat) where

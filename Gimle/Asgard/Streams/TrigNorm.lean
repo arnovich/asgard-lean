@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Torus
+module
+
+public import Gimle.Asgard.Streams.Torus
 
 /-! # Norms on trigonometric polynomials
 
@@ -21,6 +23,9 @@ derivative. Three estimates carry the induction:
 
 `SizeLE` and `size` live in `Torus`. Nothing here is a function on the torus;
 `TrigField` evaluates. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Torus
 
 open Real

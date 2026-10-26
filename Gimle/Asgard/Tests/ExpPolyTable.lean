@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.ExpPolyTable
+module
+
+public import Gimle.Asgard.Streams.ExpPolyTable
 
 /-! Kernel computations cover every resonance branch, including negative c. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.ExpPolyTable
 
 open Gimle.Asgard.Streams

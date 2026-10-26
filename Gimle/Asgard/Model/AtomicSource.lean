@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Source
-import Gimle.Asgard.RealAtomics.Feedback
+module
+
+public import Gimle.Asgard.Model.Source
+public import Gimle.Asgard.RealAtomics.Feedback
 
 /-! Source declarations with real atomics and partial division, compiled to
 `RealAtomics` circuits with every domain kept.
@@ -46,6 +48,9 @@ atomic or a non-literal division,
 even one that `Term.readVelocities` would read at top level. The `Laws.lean`
 rewrites are not applied: nothing is simplified, so `log(exp(x))` keeps both
 nodes, and `0 * log(x)` keeps the domain of `log`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 @[simp] theorem Unary.partial_neg (x : ℝ) : Unary.neg.partial x = some (-x) :=
@@ -277,11 +282,11 @@ noncomputable def PartialAffine.value (p : PartialAffine) (env : String → Opti
   | none => some (p.scale * rate)
   | some r => (r.eval env).map (fun y => p.scale * rate + y)
 
-private def plusLeft (l : PartialExpr) : Option PartialExpr → PartialExpr
+def plusLeftPartial (l : PartialExpr) : Option PartialExpr → PartialExpr
   | none => l
   | some r => .binary .add l r
 
-private def plusRight (r : PartialExpr) : Option PartialExpr → PartialExpr
+def plusRightPartial (r : PartialExpr) : Option PartialExpr → PartialExpr
   | none => r
   | some l => .binary .add l r
 
@@ -301,13 +306,13 @@ def Term.partialAffine : Term → Except ErrorCode PartialAffine
         | none => .error .unsupportedDerivative
         | some l => do
             let p ← b.partialAffine
-            return ⟨p.axis, p.state, p.scale, some (plusLeft l p.remainder)⟩
+            return ⟨p.axis, p.state, p.scale, some (plusLeftPartial l p.remainder)⟩
       else if b.derivatives = 0 then
         match b.betaPartial with
         | none => .error .unsupportedDerivative
         | some r => do
             let p ← a.partialAffine
-            return ⟨p.axis, p.state, p.scale, some (plusRight r p.remainder)⟩
+            return ⟨p.axis, p.state, p.scale, some (plusRightPartial r p.remainder)⟩
       else .error .repeatedDerivative
   | .mul a b =>
       match a.literal, b.literal with
@@ -371,11 +376,11 @@ theorem Term.partialAffine_correct (t : Term) (p : PartialAffine) (h : t.partial
             simp only [Term.eval, ← a.betaPartial_correct l hl env rates atoms, hb q hB hrate]
             cases hr : q.remainder with
             | none =>
-                cases hv : l.eval env <;> simp [PartialAffine.value, hr, plusLeft, hv]
+                cases hv : l.eval env <;> simp [PartialAffine.value, hr, plusLeftPartial, hv]
                 ring
             | some r =>
                 cases hv : l.eval env <;> cases hw : r.eval env <;>
-                  simp [PartialAffine.value, hr, plusLeft, PartialExpr.eval, hv, hw]
+                  simp [PartialAffine.value, hr, plusLeftPartial, PartialExpr.eval, hv, hw]
                 ring
       · by_cases zb : b.derivatives = 0
         · cases hr' : b.betaPartial with
@@ -390,10 +395,10 @@ theorem Term.partialAffine_correct (t : Term) (p : PartialAffine) (h : t.partial
                 ha q hA hrate]
               cases hq : q.remainder with
               | none =>
-                  cases hv : r.eval env <;> simp [PartialAffine.value, hq, plusRight, hv]
+                  cases hv : r.eval env <;> simp [PartialAffine.value, hq, plusRightPartial, hv]
               | some l =>
                   cases hv : r.eval env <;> cases hw : l.eval env <;>
-                    simp [PartialAffine.value, hq, plusRight, PartialExpr.eval, hv, hw]
+                    simp [PartialAffine.value, hq, plusRightPartial, PartialExpr.eval, hv, hw]
                   ring
         · simp [partialAffine, za, zb] at h
   | mul a b ha hb =>
@@ -476,7 +481,7 @@ def PartialIsolated.expr {c : Context} {output : String} {lhs rhs : Term}
     (i : PartialIsolated c output lhs rhs) : PartialExpr :=
   isolatedPartialRhs i.affine.scale i.other i.affine.remainder
 
-private def orient (lhs rhs : Term) :
+def orientPartial (lhs rhs : Term) :
     Except ErrorCode {sides : Term × Term //
       (sides.1 = lhs ∧ sides.2 = rhs) ∨ (sides.1 = rhs ∧ sides.2 = lhs)} :=
   match lhs.derivatives, rhs.derivatives with
@@ -492,7 +497,7 @@ def isolatePartial (c : Context) (output : String) (lhs rhs : Term) :
     Except ErrorCode (PartialIsolated c output lhs rhs) := do
   (lhs.collapse c).checkDerivatives c
   (rhs.collapse c).checkDerivatives c
-  let ⟨(side, opposite), sides⟩ ← orient (lhs.collapse c) (rhs.collapse c)
+  let ⟨(side, opposite), sides⟩ ← orientPartial (lhs.collapse c) (rhs.collapse c)
   match hp : side.partialAffine with
   | .error e => .error e
   | .ok p =>
@@ -600,7 +605,7 @@ structure AtomicLowered (sb : SourceBody) (c : Context) where
 
 /-- The diagnostic of a term that `Term.betaPartial` does not normalize: a
 derivative under an atomic or in a denominator, or any other atom left. -/
-private def derivativeCode (c : Context) (t : Term) : ErrorCode :=
+def derivativeCode (c : Context) (t : Term) : ErrorCode :=
   match t.checkDerivatives c with
   | .error .atomicDerivative => .atomicDerivative
   | _ => .unsupportedDerivative
@@ -608,7 +613,7 @@ private def derivativeCode (c : Context) (t : Term) : ErrorCode :=
 /-- Lower an explicit assignment: collapse declared chains, read top-level atoms
 as declared velocities, then beta-normalize keeping atomics. An atom that is not
 read, including every atom under an atomic, is rejected. -/
-private def lowerPartialAssignment (c : Context) (a : SourceAssignment) :
+def lowerPartialAssignment (c : Context) (a : SourceAssignment) :
     Except Diagnostic {out : PartialAssignment // out.output = a.output ∧ ∀ atoms env,
       c.VelocitiesHold env →
       ((env a.output.name ≠ none ∧ a.rhs.eval env (c.rates env) atoms = env a.output.name) ↔
@@ -624,7 +629,7 @@ private def lowerPartialAssignment (c : Context) (a : SourceAssignment) :
 
 /-- Lower a differential equation: collapse declared chains, read lower-order
 atoms as declared velocities, then isolate with partial residuals. -/
-private def lowerPartialDifferential (c : Context) (d : DifferentialEquation) :
+def lowerPartialDifferential (c : Context) (d : DifferentialEquation) :
     Except Diagnostic {out : PartialAssignment // out.output = d.output ∧ ∀ atoms env,
       c.VelocitiesHold env →
       ((env d.output.name ≠ none ∧ ∃ v, d.lhs.eval env (c.rates env) atoms = some v ∧
@@ -643,7 +648,7 @@ private def lowerPartialDifferential (c : Context) (d : DifferentialEquation) :
 
 /-- Lower a velocity declaration as the first-order equation it states, with no
 premise, as in `Model.Source`. -/
-private def lowerPartialVelocity (c : Context) (v : VelocityDeclaration) :
+def lowerPartialVelocity (c : Context) (v : VelocityDeclaration) :
     Except Diagnostic {out : PartialAssignment // out.output = v.output ∧
       ∀ (atoms : Term → Option ℝ) env, True →
       ((env v.equation.output.name ≠ none ∧
@@ -657,7 +662,7 @@ private def lowerPartialVelocity (c : Context) (v : VelocityDeclaration) :
   | .error code => .error ⟨code, d.output.id, d.output.name⟩
   | .ok i => .ok ⟨⟨d.output, i.expr⟩, rfl, fun atoms env _ => i.correct env atoms⟩
 
-private def lowerPartialList {α : Type}
+def lowerPartialList {α : Type}
     (H : (Term → Option ℝ) → (String → Option ℝ) → Prop)
     (P : α → (Term → Option ℝ) → (String → Option ℝ) → Prop) (port : α → Port)
     (f : (a : α) → Except Diagnostic {out : PartialAssignment // out.output = port a ∧

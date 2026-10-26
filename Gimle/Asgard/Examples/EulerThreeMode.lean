@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.VorticityTable
+module
+
+public import Gimle.Asgard.Streams.VorticityTable
 
 /-! # The vorticity stream from three cosine modes
 
@@ -22,6 +24,9 @@ is the Euler coefficient plus the decay `−ν|k|² ω₀_k` of each initial mod
 the `(2,1)` coefficient moves from `−1/8` to `−1/8 − ν·5·(1/2) = −3/8`, and a
 mode absent from `ω₀` has no decay term at `t¹`. From `t²` on the values
 differ non-additively. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.EulerThreeMode
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.Torus Gimle.Asgard.Streams.NS

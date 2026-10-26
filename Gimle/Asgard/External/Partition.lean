@@ -1,7 +1,12 @@
-import Gimle.Asgard.External.Compiler
+module
+
+public import Gimle.Asgard.External.Compiler
 
 /-! Finite pointwise partitions. Nonzero weight is algebraic support; no
 smoothness, analytic support or numerical execution theorem is implicit. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.External
 
 noncomputable def blendValue {k m : Nat} (weights : Fin k → ℝ) (branches : Fin k → Point m) : Point m :=

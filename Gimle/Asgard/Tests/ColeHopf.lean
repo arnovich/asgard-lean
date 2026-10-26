@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.BurgersFront
+module
+
+public import Gimle.Asgard.Examples.BurgersFront
 
 /-! Coverage for the majorant calculus and the Cole–Hopf front.
 
@@ -15,6 +17,8 @@ the same band and refutation follow from a checked window table with no
 closed form, and a wrong table is refused by the identity; and a
 transitive standard-axiom audit of the root theorems and every example
 claim. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.ColeHopf
 

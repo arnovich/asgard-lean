@@ -1,4 +1,8 @@
-import Gimle.Asgard.Examples.EquationModels
+module
+
+public import Gimle.Asgard.Examples.EquationModels
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.EquationModels
 open Examples.EquationModels

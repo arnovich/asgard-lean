@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.TrigNorm
-import Gimle.Asgard.Streams.Vorticity
+module
+
+public import Gimle.Asgard.Streams.TrigNorm
+public import Gimle.Asgard.Streams.Vorticity
 
 /-! # Computing the vorticity stream's coefficients
 
@@ -18,6 +20,9 @@ coefficient of the stream at `t`-degree `n` and mode `k` is the rational the
 kernel reads off the table, so a claimed value is checked by `decide +kernel`
 and a wrong one is refuted the same way. Nothing is trusted from outside: the
 table is computed inside the proof. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Torus
 
 /-- A finite sum of single modes, as a list of `(mode, coefficient)` pairs. -/

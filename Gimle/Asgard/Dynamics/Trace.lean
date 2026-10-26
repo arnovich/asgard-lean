@@ -1,4 +1,8 @@
-import Gimle.Asgard.Dynamics.Feedback
+module
+
+public import Gimle.Asgard.Dynamics.Feedback
+
+@[expose] public section
 
 namespace Gimle.Asgard.Dynamics
 

@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Core
+module
+
+public import Gimle.Asgard.Streams.Core
 
 /-! Degree vectors and the grid below one.
 
@@ -7,6 +9,8 @@ finitely supported counterpart, and the list of every degree vector
 coordinatewise at most a given one, in a fixed order. A sum over the
 antidiagonal of an index is a sum over that grid. The lowering pass builds on
 this; so does the majorant calculus, which must not depend on the lowering. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Streams.Lowering
 
