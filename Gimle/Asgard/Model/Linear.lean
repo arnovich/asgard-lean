@@ -1,19 +1,24 @@
-import Gimle.Asgard.Model.Continuous
+module
+
+public import Gimle.Asgard.Model.Continuous
 
 /-! Optional homogeneous-linear analysis of the ORIGINAL compiled RHS. Exact
 constant arithmetic is folded for recognition, with its own preservation lemma. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 
-private def constantAdd {n : Nat} (a b : Expr n) : Expr n :=
+def constantAdd {n : Nat} (a b : Expr n) : Expr n :=
   match a, b with
   | .constant q, .constant r => .constant (q + r)
   | _, _ => .add a b
-private def constantMul {n : Nat} (a b : Expr n) : Expr n :=
+def constantMul {n : Nat} (a b : Expr n) : Expr n :=
   match a, b with
   | .constant q, .constant r => .constant (q * r)
   | _, _ => .mul a b
-private def constantNeg {n : Nat} (a : Expr n) : Expr n :=
+def constantNeg {n : Nat} (a : Expr n) : Expr n :=
   match a with
   | .constant q => .constant (-q)
   | _ => .neg a

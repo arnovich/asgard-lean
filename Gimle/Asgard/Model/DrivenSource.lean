@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Driven
-import Gimle.Asgard.Model.Source
+module
+
+public import Gimle.Asgard.Model.Driven
+public import Gimle.Asgard.Model.Source
 
 /-! Source declarations with declared time-varying drivers.
 
@@ -27,6 +29,9 @@ declaration or an integral anywhere is rejected, and the relation reads every
 non-local atom as undefined. Velocity declarations and higher-order chains of
 states are lowered as in `Model.Source`; a chain of a driver is rejected. The
 main result is `SourceDrivenModel.solves_iff_realizes`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 

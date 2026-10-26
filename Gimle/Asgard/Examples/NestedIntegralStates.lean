@@ -1,6 +1,8 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-! A nested integral kept through two declared integral states, and solved.
 
@@ -25,6 +27,9 @@ an antiderivative from the start, are the states `F` and `G`
 The pinned Python compiler accepts the same source as Form-A
 `f = int(int(int(f,t),t),t) + f0`, with two hidden states starting at zero; Lean
 requires both declared, with their initial values written in the evolution. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.NestedIntegralStates
 open _root_.Gimle.Asgard.Polynomial Model
 

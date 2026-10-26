@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.EulerBand
+module
+
+public import Gimle.Asgard.Examples.EulerBand
 
 /-! Coverage for the classical-solution theorem.
 
@@ -12,6 +14,8 @@ value; hostile checks — the Jacobian identity fails for an odd `Q`, the open
 disc stops at the radius, and the derivative of a constant mode vanishes; and
 a transitive standard-axiom check of every root theorem that fails on any
 other axiom. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.EulerSolution
 

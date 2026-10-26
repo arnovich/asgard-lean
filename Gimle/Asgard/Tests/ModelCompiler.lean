@@ -1,5 +1,11 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Compile.Syntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Compile.Syntax
+-- `decide` reads numerals that `toString` prints; core does not expose them.
+import all Init.Data.Repr
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.ModelCompiler
 open _root_.Gimle.Asgard.Polynomial Model
@@ -19,7 +25,6 @@ abbrev forward : Body := {
 example : (compilePolynomial forward).isOk = true := by decide +kernel
 example : (compilePolynomial { forward with program :=
     { forward.program with assignments := equations% { z := y; y := z; } } }).isOk = false := by decide +kernel
-
 
 def polynomial : PolynomialModel forward :=
   (compilePolynomial forward).toOption.get (by decide +kernel)

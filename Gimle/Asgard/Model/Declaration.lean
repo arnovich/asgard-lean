@@ -1,8 +1,13 @@
-import Gimle.Asgard.Dynamics.Named
+module
+
+public import Gimle.Asgard.Dynamics.Named
 
 /-! Common deterministic declarations. Validation checks metadata and references,
 not dependency order, solvability or compilation. The original AST is retained.
 The polynomial and continuous interpretations remain distinct. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 
@@ -141,35 +146,35 @@ structure Diagnostic where
   reference : String
   deriving Repr, DecidableEq, BEq
 
-private def require (condition : Bool) (code : ErrorCode) (site reference : String) :
+def require (condition : Bool) (code : ErrorCode) (site reference : String) :
     Except Diagnostic Unit :=
   if condition then .ok () else .error ⟨code, site, reference⟩
 
-private def checkUnique (values : List String) (code : ErrorCode) (site : String) :
+def checkUnique (values : List String) (code : ErrorCode) (site : String) :
     Except Diagnostic Unit := do
   let mut seen := []
   for value in values do
     require (!seen.contains value) code site value
     seen := value :: seen
 
-private def checkPorts (ports : List Port) (site : String) : Except Diagnostic Unit := do
+def checkPorts (ports : List Port) (site : String) : Except Diagnostic Unit := do
   for p in ports do
     require (!p.id.isEmpty) .emptyId site p.name
     require (!p.name.isEmpty) .emptyName site p.id
   checkUnique (ports.map Port.id) .duplicateId site
   checkUnique (ports.map Port.name) .duplicateName site
 
-private def checkRole (p : Port) (allowed : List PortRole) : Except Diagnostic Unit :=
+def checkRole (p : Port) (allowed : List PortRole) : Except Diagnostic Unit :=
   require (allowed.contains p.role) .unsupportedRole p.id p.name
 
-private def checkExpr (names : List String) (site : String) : NamedExpr → Except Diagnostic Unit
+def checkExpr (names : List String) (site : String) : NamedExpr → Except Diagnostic Unit
   | .var name => require (names.contains name) .unknownReference site name
   | .constant _ => .ok ()
   | .add a b | .mul a b => do checkExpr names site a; checkExpr names site b
   | .neg a => checkExpr names site a
 
 /-- Bindings must cover exactly the declared IDs, including unused parameters. -/
-private def checkValues (ports : List Port) (values : List RationalBinding)
+def checkValues (ports : List Port) (values : List RationalBinding)
     (site : String) : Except Diagnostic Unit := do
   checkUnique (values.map RationalBinding.id) .duplicateBinding site
   for v in values do
@@ -177,7 +182,7 @@ private def checkValues (ports : List Port) (values : List RationalBinding)
   for p in ports do
     require (values.any (·.id == p.id)) .missingBinding site p.id
 
-private def checkBody (b : Body) (inputRoles : List PortRole) (initials : List Port) :
+def checkBody (b : Body) (inputRoles : List PortRole) (initials : List Port) :
     Except Diagnostic Unit := do
   let sourcePorts := b.program.inputs ++ b.program.assignments.map Assignment.output
   checkPorts (sourcePorts ++ initials) "source"
@@ -193,7 +198,7 @@ private def checkBody (b : Body) (inputRoles : List PortRole) (initials : List P
     checkRole o.port [.output]
     require (sourcePorts.any (·.id == o.sourceId)) .unknownReference o.port.id o.sourceId
 
-private def checkEvolution (b : Body) (e : Evolution) : Except Diagnostic Unit := do
+def checkEvolution (b : Body) (e : Evolution) : Except Diagnostic Unit := do
   require (!e.axis.id.isEmpty) .emptyId "axis" e.axis.name
   require (!e.axis.name.isEmpty) .emptyName "axis" e.axis.id
   require (e.evolveAlong == e.axis.id) .wrongAxis "evolveAlong" e.evolveAlong
@@ -216,7 +221,7 @@ private def checkEvolution (b : Body) (e : Evolution) : Except Diagnostic Unit :
 
 /-- Every declared driver port is a `.driver` input, declared once, and every
 `.driver` input is declared, as a driver or as a driver's derivative. -/
-private def checkDrivers (b : Body) (ds : List DriverBinding) : Except Diagnostic Unit := do
+def checkDrivers (b : Body) (ds : List DriverBinding) : Except Diagnostic Unit := do
   checkUnique (DriverBinding.ports ds) .duplicateBinding "drivers"
   for id in DriverBinding.ports ds do
     require (b.program.inputs.any (fun p => p.id == id && p.role == .driver))

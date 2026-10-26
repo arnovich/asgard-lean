@@ -1,5 +1,11 @@
-import Gimle.Asgard.Visualization.Model
-import Gimle.Asgard.Compile.Syntax
+module
+
+public import Gimle.Asgard.Visualization.Model
+public import Gimle.Asgard.Compile.Syntax
+meta import Gimle.Asgard.Visualization.Model
+meta import Gimle.Asgard.Compile.Syntax
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Visualization
 open Gimle.Asgard Visualization

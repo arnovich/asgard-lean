@@ -1,9 +1,14 @@
-import Gimle.Asgard.Examples.PolynomialCompiler
-import Gimle.Asgard.Examples.LinearDiagram
+module
+
+public import Gimle.Asgard.Examples.PolynomialCompiler
+public import Gimle.Asgard.Examples.LinearDiagram
 
 /-! A single equation source for compilation, properties and optional execution.
 The readable `energyProgram` and `oscillatorProgram` live in PolynomialCompiler.
 No numerical settings or Python imports participate in these definitions. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.EquationModels
 open _root_.Gimle.Asgard.Polynomial
 

@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Mild
+module
+
+public import Gimle.Asgard.Streams.Mild
 
 /-! Typed circuits on the exact mild interaction stream.
 
@@ -6,6 +8,9 @@ Heat, Duhamel integration and the degree shift are explicit primitives.
 Relational trace asserts a fixed point; the specific circuit theorem proves
 existence and uniqueness from the boundary's initial slice.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 /-- The unweighted convolution in interaction degree. -/

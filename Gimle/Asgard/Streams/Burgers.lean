@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Causal
-import Gimle.Asgard.Streams.Heat
+module
+
+public import Gimle.Asgard.Streams.Causal
+public import Gimle.Asgard.Streams.Heat
 
 /-! # The formal Burgers stream
 
@@ -16,6 +18,9 @@ convergent Cole–Hopf quotient is `Streams.ColeHopf`); the
 coefficients are exact and unique regardless, and that is all this module
 claims. `rhs` is the right-hand side as a function on streams and `rhsExpr`
 the same expression for the compiler. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Burgers
 
 open Causal

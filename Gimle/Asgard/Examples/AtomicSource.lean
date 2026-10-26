@@ -1,7 +1,9 @@
-import Gimle.Asgard.Model.AtomicSource
-import Gimle.Asgard.Model.SourceSyntax
-import Mathlib.Analysis.SpecialFunctions.Sqrt
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+module
+
+public import Gimle.Asgard.Model.AtomicSource
+public import Gimle.Asgard.Model.SourceSyntax
+public import Mathlib.Analysis.SpecialFunctions.Sqrt
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-! Source declarations with real atomics and division by expressions.
 
@@ -18,6 +20,9 @@ solved by `x = sqrt(1 + t)`, which stays where `1 / x` is defined. `guarded` has
 no solution on `t ≥ 0` at all: the unused `log(x)` must be defined at every
 time, and the only solution of `x' = -1` from `1` reaches `x = -1` at `t = 2`.
 No existence, uniqueness or numerical claim is made beyond these. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.AtomicSource
 open Gimle.Asgard Model RealAtomics
 

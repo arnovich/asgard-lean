@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Declaration
-import Gimle.Asgard.RealAtomics.Circuit
+module
+
+public import Gimle.Asgard.Model.Declaration
+public import Gimle.Asgard.RealAtomics.Circuit
 
 /-! Source terms of common declarations: named polynomial expressions, applied
 scalar lambdas, derivative atoms and integrals from the declared start.
@@ -22,6 +24,9 @@ caller supplies it through `atoms`. `Model.Integral` gives the trajectory
 reading (`Term.along`), where an integral is the antiderivative from the
 declared start and a derivative of a non-chain is the actual derivative; under a
 lambda binder, an atom mentioning the binder has no value. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 /-- A unary operation as a partial function: its value inside its domain, and

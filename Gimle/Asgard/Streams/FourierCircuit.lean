@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.TrigStream
+module
+
+public import Gimle.Asgard.Streams.TrigStream
 
 /-! Typed circuits on formal time streams of Fourier polynomials.
 
@@ -12,6 +14,9 @@ Feedback is relational: it asserts a fixed point without assuming existence
 or uniqueness. Only the vorticity circuit's subsequent theorem provides those.
 There is no opaque primitive for the Euler solution.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Fourier
 
 /-- A bank of Fourier time streams. -/

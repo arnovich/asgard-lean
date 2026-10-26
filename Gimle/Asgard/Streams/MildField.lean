@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildNorm
-import Mathlib.Analysis.SpecificLimits.Normed
+module
+
+public import Gimle.Asgard.Streams.MildNorm
+public import Mathlib.Analysis.SpecificLimits.Normed
 
 /-! Fields and certified interaction windows for mild streams. A physical
 term already depends on time; no additional Taylor power multiplies it. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

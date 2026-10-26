@@ -1,12 +1,17 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Visualization.Model
-import Gimle.Asgard.Compile.Syntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Visualization.Model
+public import Gimle.Asgard.Compile.Syntax
 
 /-! A coupled three-state model with exact field and observation checks.
 
 One declaration is the single source for the compiled field, its initialization,
 and its observations. The definitions support downstream trajectory proofs;
 no floating-point result appears among the theorems. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.ThreeState
 open _root_.Gimle.Asgard.Polynomial Model
 

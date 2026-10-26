@@ -1,9 +1,11 @@
-import Gimle.Asgard.Streams.Majorant
-import Gimle.Asgard.Streams.AnalyticField
-import Gimle.Asgard.Streams.Window
-import Gimle.Asgard.Streams.Burgers
-import Gimle.Asgard.Streams.AnalyticHeat
-import Mathlib.Analysis.SpecialFunctions.Exponential
+module
+
+public import Gimle.Asgard.Streams.Majorant
+public import Gimle.Asgard.Streams.AnalyticField
+public import Gimle.Asgard.Streams.Window
+public import Gimle.Asgard.Streams.Burgers
+public import Gimle.Asgard.Streams.AnalyticHeat
+public import Mathlib.Analysis.SpecialFunctions.Exponential
 
 /-! # Cole–Hopf: a certified truncation of a Burgers stream
 
@@ -23,6 +25,9 @@ The last section identifies that field: the heat stream of an exponential sum
 sums to `Σ cᵢ e^(ν aᵢ² t + aᵢ x)` everywhere, and on a box inside the front's
 radii the front's field is `−2ν (Σ cᵢ aᵢ e^(…)) / (Σ cᵢ e^(…))`
 (`analyticField_front`), by `AnalyticField.lean`'s product and inverse rules. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.ColeHopf
 
 open MvPowerSeries

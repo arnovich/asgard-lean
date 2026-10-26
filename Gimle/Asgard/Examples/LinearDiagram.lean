@@ -1,5 +1,9 @@
-import Gimle.Asgard.Dynamics.Diagram
-import Gimle.Asgard.Examples.LinearOscillator
+module
+
+public import Gimle.Asgard.Dynamics.Diagram
+public import Gimle.Asgard.Examples.LinearOscillator
+
+@[expose] public section
 
 namespace Gimle.Asgard.Examples.LinearOscillator
 

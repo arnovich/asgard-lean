@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildSeries
-import Mathlib.Analysis.Calculus.FDeriv.Extend
+module
+
+public import Gimle.Asgard.Streams.MildSeries
+public import Mathlib.Analysis.Calculus.FDeriv.Extend
 
 /-! Physical-time differentiation on the open forward interval, and continuity
 of the derivative series up to its closed endpoints. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

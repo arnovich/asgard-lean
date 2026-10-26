@@ -1,5 +1,9 @@
-import Gimle.Asgard.Visualization.Diagram
-import Gimle.Asgard.Model.Continuous
+module
+
+public import Gimle.Asgard.Visualization.Diagram
+public import Gimle.Asgard.Model.Continuous
+
+@[expose] public section
 
 namespace Gimle.Asgard.Visualization
 open _root_.Gimle.Asgard.Polynomial Model
@@ -35,7 +39,7 @@ structure ModelOverview where
   observations : List (String × String)
   deriving Repr, BEq
 
-private def displayName (name : String) : String :=
+def displayName (name : String) : String :=
   if name.toList.all (fun c => c.isAlphanum || c == '_') &&
       (name.toList.head?.any (fun c => c.isAlpha || c == '_')) then name
   else s!"‘{name}’"

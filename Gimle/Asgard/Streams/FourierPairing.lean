@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.FourierSequence
+module
+
+public import Gimle.Asgard.Streams.FourierSequence
 
 /-! Pairing the infinite Fourier transport against a summable coefficient
 sequence. Absolute triad convergence justifies the mode exchanges. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 open Torus Real
 

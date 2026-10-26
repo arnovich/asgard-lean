@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Tail
-import Gimle.Asgard.Streams.Majorant
+module
+
+public import Gimle.Asgard.Streams.Tail
+public import Gimle.Asgard.Streams.Majorant
 
 /-! # The analytic field of a product and an inverse
 
@@ -20,6 +22,9 @@ where both factors are majorized:
 
 Everything is about the OGF reading: the decoded coefficient of an OGF stream
 is the coefficient itself (`decode .ogf a = a`, definitionally). -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 open MvPowerSeries

@@ -1,5 +1,7 @@
-import Gimle.Asgard.Dynamics.Circuit
-import Gimle.Asgard.Dynamics.Feedback
-import Gimle.Asgard.Dynamics.Trace
-import Gimle.Asgard.Dynamics.Named
-import Gimle.Asgard.Dynamics.Linear
+module
+
+public import Gimle.Asgard.Dynamics.Circuit
+public import Gimle.Asgard.Dynamics.Feedback
+public import Gimle.Asgard.Dynamics.Trace
+public import Gimle.Asgard.Dynamics.Named
+public import Gimle.Asgard.Dynamics.Linear

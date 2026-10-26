@@ -1,9 +1,14 @@
-import Gimle.Asgard.Streams.MildEvaluation
-import Gimle.Asgard.Streams.TrigNorm
+module
+
+public import Gimle.Asgard.Streams.MildEvaluation
+public import Gimle.Asgard.Streams.TrigNorm
 
 /-! Weighted norms on real Fourier coefficients. These estimates apply after
 physical evaluation of the exponential-polynomial carrier. In particular,
 no estimate takes absolute values of the redundant carrier coefficients. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild.RealPoly
 
 open Torus Real

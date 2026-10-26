@@ -1,10 +1,15 @@
-import Gimle.Asgard.Streams.ExpPoly
+module
+
+public import Gimle.Asgard.Streams.ExpPoly
 
 /-! Computable lists for exact exponential polynomials.
 
 Tables may contain repeated entries. Their meaning is the exact sum, so
 normalization combines coefficients without changing the represented term.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.ExpPoly
 
 open Polynomial

@@ -1,6 +1,8 @@
-import Gimle.Asgard.Streams.Declaration
-import Gimle.Asgard.Streams.Heat
-import Gimle.Asgard.Examples.FormalHeat
+module
+
+public import Gimle.Asgard.Streams.Declaration
+public import Gimle.Asgard.Streams.Heat
+public import Gimle.Asgard.Examples.FormalHeat
 
 /-! Formal heat, declared rather than hand-built.
 
@@ -11,6 +13,9 @@ and circuit of `FormalHeat`, and its solution set with boundary `x²` is exactly
 `u = x² + 2t` (`solutions`). With the axes declared in the other order the
 solution set is the permuted stream (`swapped_solutions`). These are formal
 coefficient statements, not an analytic PDE existence or numerical claim. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.DeclaredHeat
 open Gimle.Asgard.Streams
 open Gimle.Asgard.Examples.FormalHeat (heat boundary heat_time heat_space heat_boundary)

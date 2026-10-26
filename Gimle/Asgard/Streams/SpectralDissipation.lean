@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.FourierPairing
-import Gimle.Asgard.Streams.MildModeCalculus
+module
+
+public import Gimle.Asgard.Streams.FourierPairing
+public import Gimle.Asgard.Streams.MildModeCalculus
 
 /-! Enstrophy and energy dissipation for the infinite Fourier equation.
 The square sums are differentiated under their own uniform mode envelopes. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 open Torus Real Set
 

@@ -1,4 +1,6 @@
-import Gimle.Asgard.RealAtomics.Laws
+module
+
+public import Gimle.Asgard.RealAtomics.Laws
 
 /-! Two ordinary inputs [x,y] and one explicit axis [t].
 
@@ -10,6 +12,9 @@ The circuit returns [wave,magnitude]. We prove every intermediate operation is
 defined and 0 ≤ magnitude < 1 for every real x,y. The sine generator reads t
 from the axis context and consumes zero ordinary wires. No numerical or series
 approximation is used. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.RealAtomics
 open Gimle.Asgard.RealAtomics
 

@@ -1,5 +1,9 @@
-import Gimle.Asgard.Model.Source
-import Lean
+module
+
+public import Gimle.Asgard.Model.Source
+public import Lean
+-- `atomicNamed` builds `RealAtomics.Unary` values while macros expand.
+public meta import Gimle.Asgard.RealAtomics.Circuit
 
 /-! Source notation for `Model.Term`, shaped like the Python source grammar, and
 for the explicit assignments, differential equations, velocity declarations and
@@ -20,6 +24,9 @@ multiplication when `p` writes a positive natural number (`2`, `(2)`, `2.0`), an
 otherwise, `-1` and `1/2` included, the real power with a positive base. Each is
 defined only inside its `RealAtomics` domain. The guarantees start at the
 resulting `Term` AST; this macro is tested, not a verified parser. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 
 def Term.pow (e : Term) : Nat → Term
@@ -49,7 +56,7 @@ syntax "term% " asgardTerm : term
 scientific literal with an integral value such as `2.0`, or one of these in
 parentheses. Such a power is repeated multiplication, defined everywhere; any
 other exponent, `-1` and `1/2` included, is the real power with a positive base. -/
-partial def naturalExponent? (p : Lean.TSyntax `asgardTerm) : Option Nat :=
+meta partial def naturalExponent? (p : Lean.TSyntax `asgardTerm) : Option Nat :=
   match p with
   | `(asgardTerm| $n:num) => some n.getNat
   | `(asgardTerm| $s:scientific) => do
@@ -61,7 +68,7 @@ partial def naturalExponent? (p : Lean.TSyntax `asgardTerm) : Option Nat :=
   | _ => none
 
 /-- The real atomic a function name writes, if any. -/
-def atomicNamed : String → Option RealAtomics.Unary
+meta def atomicNamed : String → Option RealAtomics.Unary
   | "sqrt" => some .sqrt
   | "log" => some .log
   | "exp" => some .exp

@@ -1,7 +1,12 @@
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! Scoped polynomial normalization. A lambda occurs at its unary application
 site; first-class/higher-order functions are outside this source fragment. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Normalization
 open _root_.Gimle.Asgard.Polynomial
 

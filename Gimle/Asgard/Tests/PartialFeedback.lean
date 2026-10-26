@@ -1,12 +1,17 @@
-import Gimle.Asgard.Examples.PartialFeedback
-import Mathlib.Analysis.Real.Pi.Bounds
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+module
+
+public import Gimle.Asgard.Examples.PartialFeedback
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-! Regression tests for continuous feedback over a partial real field.
 
 The field's generators read the time of the forward domain, drivers feed the
 field beside the state, and a domain violation at a single time, including one
 caused by a driver, removes every relation output. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.PartialFeedback
 open Gimle.Asgard.RealAtomics Gimle.Asgard.Examples.PartialFeedback
 

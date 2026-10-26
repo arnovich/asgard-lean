@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.HeatIsolation
+module
+
+public import Gimle.Asgard.Examples.HeatIsolation
 
 /-! Coverage for isolating a scaled derivative in stream equations.
 
@@ -10,6 +12,8 @@ stay rejected: a mixed derivative on the isolated side, the unknown's own
 derivative on the right-hand side, and a scaled second time derivative. A
 stream declaration that states the unknown's derivative on its right-hand side
 is refused by `Declaration.validate` as well. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.StreamIsolation
 

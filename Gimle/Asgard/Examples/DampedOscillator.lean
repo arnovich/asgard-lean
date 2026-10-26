@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! A damped oscillator with a lower-order atom beside its declared chain, lowered
 and solved.
@@ -18,6 +20,9 @@ system have the same solutions, and the compiled field is homogeneous linear:
 the source has exactly one solution on `t ≥ 0`, `x(t) = 2e^(-t) - e^(-2t)`.
 
 The pinned Python compiler rejects this form; see the regression file. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.DampedOscillator
 open _root_.Gimle.Asgard.Polynomial Model
 

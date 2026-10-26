@@ -1,10 +1,15 @@
-import Gimle.Asgard.Streams.MildCatalan
-import Gimle.Asgard.Streams.MildEulerRadius
-import Gimle.Asgard.Streams.MildField
+module
+
+public import Gimle.Asgard.Streams.MildCatalan
+public import Gimle.Asgard.Streams.MildEulerRadius
+public import Gimle.Asgard.Streams.MildField
 
 /-! Two certified convergence/tail/band bounds on the actual mild stream.
 The Wiener bound uses positive viscosity; the Euler scale works for every
 nonnegative viscosity. Both concern the series, not yet a classical PDE. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus

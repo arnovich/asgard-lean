@@ -1,5 +1,7 @@
-import Gimle.Asgard.RealAtomics.Compiler
-import Gimle.Asgard.Dynamics.Circuit
+module
+
+public import Gimle.Asgard.RealAtomics.Compiler
+public import Gimle.Asgard.Dynamics.Circuit
 
 /-! Continuous feedback over a partial real vector field.
 
@@ -13,6 +15,9 @@ forward domain, and the resulting rates enter the unchanged
 totalized `value`, `Defined` is part of the relation at every such time. The
 field's single axis is the time of the continuous domain, so a generator reads
 `t`. As with `Dynamics.close`, the trace asserts no existence or uniqueness. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.RealAtomics
 
 /-- The axis point of a field evaluated at time `t`: the only axis is time. -/

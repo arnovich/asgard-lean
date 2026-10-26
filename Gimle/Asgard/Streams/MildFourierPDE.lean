@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.FourierExchanges
-import Gimle.Asgard.Streams.MildModeCalculus
+module
+
+public import Gimle.Asgard.Streams.FourierExchanges
+public import Gimle.Asgard.Streams.MildModeCalculus
 
 /-! The coefficient equation for the actual summed mild circuit output. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Finset

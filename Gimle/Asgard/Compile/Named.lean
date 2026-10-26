@@ -1,7 +1,12 @@
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! Named source semantics and checked resolution. Assignments are explicit and
 ordered: a right-hand side can use inputs and preceding assignments only. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Polynomial
 
 inductive PortRole where

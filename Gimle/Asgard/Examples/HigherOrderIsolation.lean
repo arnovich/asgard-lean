@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! A second-order equation, lowered by an explicitly declared velocity state,
 and solved.
@@ -15,6 +17,9 @@ The pinned Python compiler rejects the scaled form `2 * diff(diff(f,t),t) = f`,
 and accepts only the bare chain, whose velocity initial value it fixes to zero
 without declaring it; see the regression file. Python is not used here as an
 oracle. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.HigherOrderIsolation
 open _root_.Gimle.Asgard.Polynomial Model
 

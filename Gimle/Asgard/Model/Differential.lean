@@ -1,4 +1,6 @@
-import Gimle.Asgard.Model.Term
+module
+
+public import Gimle.Asgard.Model.Term
 
 /-! Bounded affine differential isolation, with declared velocity states for
 higher-order chains.
@@ -44,6 +46,9 @@ inside lambda applications, and
 integrals that no inverse rewrite removed and no declared integral state reads
 (`unsupportedIntegral`). An explicit assignment is not isolated; its atoms are read
 as declared velocities, and an atom that is not read is rejected. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 
@@ -289,11 +294,11 @@ noncomputable def Affine.value (p : Affine) (env : String → Option ℝ) (rate 
   | none => some (p.scale * rate)
   | some r => (r.eval env).map (fun y => p.scale * rate + y)
 
-private def plusLeft (l : NamedExpr) : Option NamedExpr → NamedExpr
+def plusLeft (l : NamedExpr) : Option NamedExpr → NamedExpr
   | none => l
   | some r => .add l r
 
-private def plusRight (r : NamedExpr) : Option NamedExpr → NamedExpr
+def plusRight (r : NamedExpr) : Option NamedExpr → NamedExpr
   | none => r
   | some l => .add l r
 
@@ -488,7 +493,7 @@ def Isolated.expr {c : Context} {output : String} {lhs rhs : Term}
     (i : Isolated c output lhs rhs) : NamedExpr :=
   isolatedRhs i.affine.scale i.other i.affine.remainder
 
-private def orient (lhs rhs : Term) :
+def orient (lhs rhs : Term) :
     Except ErrorCode {sides : Term × Term //
       (sides.1 = lhs ∧ sides.2 = rhs) ∨ (sides.1 = rhs ∧ sides.2 = lhs)} :=
   match lhs.derivatives, rhs.derivatives with

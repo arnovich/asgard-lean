@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Core
+module
+
+public import Gimle.Asgard.Streams.Core
 
 /-! # Trigonometric polynomials on the torus
 
@@ -37,6 +39,9 @@ sources, and the one-line cast identity belongs in forseti-lean.
 the exponential-basis transport at any nonzero mode is the cosine-basis
 quadratic form, up to the change to cosine amplitudes `a = 2P`. Nothing here is
 analytic: no function on the torus is ever formed. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Torus
 
 /-- An integer wavevector on the `2π`-periodic square. -/

@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildPDE
+module
+
+public import Gimle.Asgard.Streams.MildPDE
 
 /-! Classical realization of the actual mild circuit output. The physical
 field has time derivatives in the open forward interval, a right derivative
 at the start, and all required fields continuous on the closed interval. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

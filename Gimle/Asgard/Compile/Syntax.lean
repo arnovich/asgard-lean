@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Named
-import Lean
+module
+
+public import Gimle.Asgard.Compile.Named
+public import Lean
 
 /-! Small, inspectable source notation. The preservation theorem starts at the
 resulting NamedExpr/Program AST. This macro implementation is tested, not a
 formally verified parser for text. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Polynomial
 
 def NamedExpr.pow (e : NamedExpr) : Nat → NamedExpr

@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Declaration
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Streams.Declaration
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! # Isolating a scaled derivative in a stream equation
 
@@ -35,6 +37,9 @@ factor (`nonlinearDerivative`), a scale around a sum (`unsupportedDerivative`),
 a zero scale (`zeroScale`), and integrals (`unsupportedIntegral`) and lambda
 applications (`unsupportedApplication`), which have no stream reading here.
 A name is always an input: axis variables are not written in this form. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-! ## Source terms as stream expressions -/
@@ -208,17 +213,17 @@ structure Affine where
   remainder : Option NamedExpr
   deriving Repr, DecidableEq
 
-private def plusLeft (l : NamedExpr) : Option NamedExpr → NamedExpr
+def plusLeft (l : NamedExpr) : Option NamedExpr → NamedExpr
   | none => l
   | some r => .binary .add l r
 
-private def plusRight (r : NamedExpr) : Option NamedExpr → NamedExpr
+def plusRight (r : NamedExpr) : Option NamedExpr → NamedExpr
   | none => r
   | some l => .binary .add l r
 
 /-- Of two findings of `NamedExpr.selfDerivative`, the first that names a form
 other than a second bare `D_along(unknown)`; `fallback` when neither does. -/
-private def specific (fallback : Model.ErrorCode) (a b : Option Model.ErrorCode) :
+def specific (fallback : Model.ErrorCode) (a b : Option Model.ErrorCode) :
     Model.ErrorCode :=
   match a.filter (· != .competingDerivative), b.filter (· != .competingDerivative) with
   | some code, _ => code

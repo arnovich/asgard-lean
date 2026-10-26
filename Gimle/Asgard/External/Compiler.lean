@@ -1,8 +1,12 @@
-import Gimle.Asgard.External.Core
+module
+
+public import Gimle.Asgard.External.Core
+
+@[expose] public section
 
 namespace Gimle.Asgard.External
 
-private def duplicate (n : Nat) : Gimle.Asgard.Circuit n (n+n) :=
+def duplicate (n : Nat) : Gimle.Asgard.Circuit n (n+n) :=
   Polynomial.compileOutputs (Fin.addCases Polynomial.Expr.var Polynomial.Expr.var)
 
 private theorem duplicate_run {n : Nat} (x : Point n) : (duplicate n).run x = pointAppend x x := by

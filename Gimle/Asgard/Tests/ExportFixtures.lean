@@ -1,7 +1,13 @@
-import Gimle.Asgard.Examples.PolynomialCompiler
+module
+
+public import Gimle.Asgard.Examples.PolynomialCompiler
+meta import Gimle.Asgard.Examples.PolynomialCompiler
 
 /-! Generate integration fixtures through the actual Lean compiler/exporter.
 Run explicitly; importing the formal library does not execute this program. -/
+
+public section
+
 open Gimle.Asgard Gimle.Asgard.Polynomial Gimle.Asgard.Interchange
 
 private def port (name : String) (role : PortRole) : Port := ⟨name, name, role⟩

@@ -1,9 +1,14 @@
-import Gimle.Asgard.Stochastic.Named
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+module
+
+public import Gimle.Asgard.Stochastic.Named
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 /-! One concrete interpretation: ordinary Lebesgue time integration and finitely
 many uncompensated jumps. Brownian, Stratonovich and compensated integration are
 unsupported here. This is not a Poisson model or a sampled approximation. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Stochastic
 open scoped BigOperators
 

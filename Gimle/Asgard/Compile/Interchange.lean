@@ -1,8 +1,13 @@
-import Gimle.Asgard.Compile.Named
-import Lean
+module
+
+public import Gimle.Asgard.Compile.Named
+public import Lean
 
 /-! Structural interchange has a typed decoder and an exact round-trip theorem.
 The Python syntax export is a deliberately narrower integer-only fragment. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Interchange
 
 def schemaVersion : String := "gimle.asgard.polynomial-circuit/v1"
@@ -57,7 +62,7 @@ theorem decoded_semantics {n m : Nat} (c : Circuit n m) (x : Point n) :
     ∃ d : Circuit n m, decode (encode c) = some ⟨n, m, d⟩ ∧ d.run x = c.run x :=
   ⟨c, decode_encode c, rfl⟩
 
-private def integerLiteral (q : ℚ) : Except String String :=
+def integerLiteral (q : ℚ) : Except String String :=
   if q.den = 1 then .ok (toString q.num)
   else .error "Python integer-coefficient interchange rejects non-integer rationals"
 

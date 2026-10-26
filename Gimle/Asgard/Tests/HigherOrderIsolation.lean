@@ -1,7 +1,9 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
-import Gimle.Asgard.Examples.DampedOscillator
-import Gimle.Asgard.Examples.HigherOrderIsolation
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
+public import Gimle.Asgard.Examples.DampedOscillator
+public import Gimle.Asgard.Examples.HigherOrderIsolation
 
 /-! Acceptance fixtures for higher-order chains over declared velocity states.
 
@@ -9,6 +11,9 @@ Python cases restate the Python implementation's tests. Python's outcome is reco
 it is a regression reference, not an oracle, and the cases where the fragments
 deliberately differ are marked "differs". Outcomes marked "probed" are not
 pinned test cases; they were observed with the Python compiler. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.HigherOrderIsolation
 open _root_.Gimle.Asgard.Polynomial Model
 
@@ -222,7 +227,7 @@ example : bareModel.model.rates.expressions =
 -- zero; Lean requires it declared, here as the same `0`.
 example : bareModel.model.initials = ![1, 0] := by decide +kernel
 
-private def code {α : Type} : Except Diagnostic α → Option Diagnostic
+def code {α : Type} : Except Diagnostic α → Option Diagnostic
   | .error d => some d
   | .ok _ => none
 

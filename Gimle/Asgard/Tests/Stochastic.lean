@@ -1,7 +1,13 @@
-import Gimle.Asgard.Examples.StochasticJump
+module
 
-import Gimle.Asgard.Stochastic.Named
-import Gimle.Asgard.Stochastic.FiniteJump
+public import Gimle.Asgard.Examples.StochasticJump
+public import Gimle.Asgard.Stochastic.Named
+public import Gimle.Asgard.Stochastic.FiniteJump
+meta import Gimle.Asgard.Examples.StochasticJump
+meta import Gimle.Asgard.Stochastic.Named
+meta import Gimle.Asgard.Stochastic.FiniteJump
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Stochastic
 open Gimle.Asgard.Stochastic _root_.Gimle.Asgard.Polynomial

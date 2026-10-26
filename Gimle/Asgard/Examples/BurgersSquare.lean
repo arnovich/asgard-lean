@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Burgers
+module
+
+public import Gimle.Asgard.Streams.Burgers
 
 /-! # Burgers from the profile `x²`
 
@@ -13,6 +15,9 @@ The iterate of order `n` is right up to `t`-degree `n` and wrong beyond it
 full series is expected to diverge; nothing about convergence is claimed
 here. Affine data `x` gives the first iterate `x − t x` of the rational
 solution `x/(1+t)`; nothing beyond the first iterate is proved. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.BurgersSquare
 
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.Burgers

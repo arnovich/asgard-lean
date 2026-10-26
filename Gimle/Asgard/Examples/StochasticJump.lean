@@ -1,5 +1,7 @@
-import Gimle.Asgard.Stochastic.FiniteJump
-import Mathlib.Tactic
+module
+
+public import Gimle.Asgard.Stochastic.FiniteJump
+public import Mathlib.Tactic
 
 /-! A genuine finite-jump equation, with no sampling or assumed solution theorem:
 
@@ -9,6 +11,9 @@ import Mathlib.Tactic
 The pre-jump state is 2, hence ΔX(1) = 2·3 = 6 and X(1) = 8.
 We prove the named source equation and the compiled initialized circuit admit
 this trajectory. Brownian integration and probability bounds are not used. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.StochasticJump
 open Stochastic _root_.Gimle.Asgard.Polynomial
 open scoped BigOperators Topology

@@ -1,11 +1,16 @@
-import Gimle.Asgard.Streams.FourierCircuit
-import Gimle.Asgard.Streams.Vorticity
+module
+
+public import Gimle.Asgard.Streams.FourierCircuit
+public import Gimle.Asgard.Streams.Vorticity
 
 /-! The vorticity equation as a Fourier circuit with an integrated feedback wire.
 The sole external input is the boundary stream. The solution is an output,
 never an input assumption. Both OGF and EGF, and any rational viscosity, are
 covered formally; analytic realization is a separate property.
 -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.NS
 
 open Fourier

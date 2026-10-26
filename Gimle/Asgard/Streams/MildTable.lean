@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.ExpPolyTable
-import Gimle.Asgard.Streams.Mild
-import Gimle.Asgard.Streams.VorticityTable
+module
+
+public import Gimle.Asgard.Streams.ExpPolyTable
+public import Gimle.Asgard.Streams.Mild
+public import Gimle.Asgard.Streams.VorticityTable
 
 /-! Computable Wild coefficients, with an exact bridge to the circuit's output. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus

@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildNorm
+module
+
+public import Gimle.Asgard.Streams.MildNorm
 
 /-! Rational modewise majorants of physical values on a closed time interval.
 These witnesses do not take absolute sums in the redundant exact carrier. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.VorticityCircuit
-import Gimle.Asgard.Examples.EulerThreeMode
+module
+
+public import Gimle.Asgard.Streams.VorticityCircuit
+public import Gimle.Asgard.Examples.EulerThreeMode
 
 /-! The Fourier circuit denotes the whole formal solution, in either basis.
 The boundary is an input, not a supplied solution or a fixed example. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.FourierCircuit
 
 open Streams Streams.Fourier Streams.NS

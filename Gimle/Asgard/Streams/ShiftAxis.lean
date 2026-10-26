@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.Causal
+module
+
+public import Gimle.Asgard.Streams.Causal
 
 /-! The plain interaction-degree shift, independent of the coefficient carrier. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-- Shift coefficients forward, reading only the boundary's initial slice. -/

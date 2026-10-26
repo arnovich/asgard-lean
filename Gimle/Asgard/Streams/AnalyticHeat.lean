@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Heat
-import Gimle.Asgard.Streams.Tail
+module
+
+public import Gimle.Asgard.Streams.Heat
+public import Gimle.Asgard.Streams.Tail
 
 /-! # Heat evolution of an analytic profile, with a certified majorant
 
@@ -39,6 +41,9 @@ exponential type at most `1/ρ`; a profile with a finite radius of convergence
 has no such bound (see the hostile tests). Nothing here discovers `M` or `ρ`,
 and no statement is made about the real field solving the PDE beyond what
 `Streams.Tail` proves about convergence. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.AnalyticHeat
 
 open Gimle.Asgard.Streams

@@ -1,9 +1,14 @@
-import Gimle.Asgard.Streams.MildField
-import Gimle.Asgard.Streams.EulerSolution
+module
+
+public import Gimle.Asgard.Streams.MildField
+public import Gimle.Asgard.Streams.EulerSolution
 
 /-! Finite real Fourier calculus for physical evaluations of mild terms.
 The spatial derivatives and transport/Jacobian identity are proved for real
 coefficients; the redundant exponential-polynomial carrier is not involved. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild.RealPoly
 
 open Torus Real
@@ -368,7 +373,6 @@ theorem field_transport (P : RealPoly) {Q : RealPoly} (hQ : IsEven Q) (x : ℝ �
         rw [Finset.sum_add_distrib, Finset.mul_sum, Finset.mul_sum]
     _ = ∑ q ∈ Q.support, (coupling p q : ℝ) * P p * Q q * cos (phase (p + q) x) := by
         rw [fold]; ring
-
 
 /-- A finite support radius bounds the derivative norm. -/
 theorem dnorm_zero_le {K : ℕ} {P : RealPoly} (hK : SizeLE K P) :

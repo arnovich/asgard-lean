@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildEvaluation
-import Gimle.Asgard.Streams.TrigNorm
+module
+
+public import Gimle.Asgard.Streams.MildEvaluation
+public import Gimle.Asgard.Streams.TrigNorm
 
 /-! Heat-kernel estimates for physical evaluation of exact mild terms.
 The output zero mode is handled without division by its heat rate. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

@@ -1,8 +1,13 @@
-import Gimle.Asgard.Rewrite
+module
+
+public import Gimle.Asgard.Rewrite
 
 /-! Certified approximation for the existing total real circuit interpretation.
 All quantitative facts reuse QuantitativeCircuitEquivalence. Numeric observations
 are separate data and never construct these facts. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Approximation
 
 def schemaVersion : String := "asgard.circuit-approximation/v1"

@@ -1,7 +1,12 @@
-import Gimle.Asgard.Model.Declaration
+module
+
+public import Gimle.Asgard.Model.Declaration
 
 /-! Proof-carrying resolution of original, unordered named equations. The source
 relation quantifies real environments and never executes a target circuit. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Model
 open _root_.Gimle.Asgard.Polynomial
 

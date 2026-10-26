@@ -1,7 +1,12 @@
-import Gimle.Asgard.Examples.EulerThreeMode
-import Gimle.Asgard.Streams.MildTable
+module
+
+public import Gimle.Asgard.Examples.EulerThreeMode
+public import Gimle.Asgard.Streams.MildTable
 
 /-! Kernel-checked exact viscous interaction coefficients through degree two. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.MildTable
 
 open Gimle.Asgard.Streams

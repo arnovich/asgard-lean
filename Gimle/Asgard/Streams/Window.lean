@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Majorant
-import Gimle.Asgard.Streams.Grid
+module
+
+public import Gimle.Asgard.Streams.Majorant
+public import Gimle.Asgard.Streams.Grid
 
 /-! # Windows: the inverse's low coefficients, and bounds on the window field
 
@@ -22,6 +24,9 @@ stream:
 
 Everything is in the OGF reading, where the decoded coefficient is the
 coefficient. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 open MvPowerSeries Lowering

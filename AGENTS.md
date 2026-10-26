@@ -10,6 +10,13 @@ axioms, or treat simulation as mathematical authority.
 
 Run `lake build` for the library, examples, viewer, and regression proofs.
 
+Every file is a Lean `module`. Imports are `public import`, and declarations sit
+in an `@[expose] public section` so that importing modules can compute with,
+unfold and `decide` the definitions. A helper that an exposed definition or a
+public statement uses must itself be public. Commands that run code, such as
+`#guard`, `#eval` and `#html`, need a `meta import` of the modules they run;
+macro helpers are `meta def`.
+
 Inspect axiom reports; only `propext`, `Classical.choice`, and `Quot.sound` are
 expected. Review substantial changes for mathematical correctness and integration.
 Keep executable entry points under `Executables/`, outside the core library.

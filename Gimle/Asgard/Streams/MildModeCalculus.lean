@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildFourierSeries
+module
+
+public import Gimle.Asgard.Streams.MildFourierSeries
 
 /-! Differentiating spectral quadratic quantities under summable, uniform
 mode envelopes. The bounds concern evaluated physical coefficients. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

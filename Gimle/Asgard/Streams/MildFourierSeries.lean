@@ -1,7 +1,12 @@
-import Gimle.Asgard.Streams.MildSolution
+module
+
+public import Gimle.Asgard.Streams.MildSolution
 
 /-! Uniform summable mode envelopes for physical Fourier coefficients and
 their time derivatives. These justify the modewise energy exchanges. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

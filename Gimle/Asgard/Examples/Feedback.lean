@@ -1,6 +1,8 @@
-import Gimle.Asgard.Dynamics
-import Gimle.Asgard.Compile.Syntax
-import Gimle.Asgard.Examples.Oscillator
+module
+
+public import Gimle.Asgard.Dynamics
+public import Gimle.Asgard.Compile.Syntax
+public import Gimle.Asgard.Examples.Oscillator
 
 /-! The oscillator now has generated integrator feedback, with initial-condition
 ports x0/y0 and a named real time axis. Its equations are
@@ -8,6 +10,9 @@ ports x0/y0 and a named real time axis. Its equations are
 Both derivatives and the initial values are properties of the actual closed
 circuit. This example reuses the existing explicit solution; general linear
 existence and uniqueness belong to the subsequent ODE milestone. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.Feedback
 open _root_.Gimle.Asgard.Polynomial Dynamics
 

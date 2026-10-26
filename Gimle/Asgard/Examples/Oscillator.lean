@@ -1,9 +1,13 @@
-import Gimle.Asgard.Examples.EnergyDemo
-import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+module
+
+public import Gimle.Asgard.Examples.EnergyDemo
+public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 
 /-! Both ODE equations are modeled using the circuit vector field:
 x′ = y and y′ = -x - 2y. Trajectories live on ℝ. This explicit solution model
 does not add a primitive circuit trace or claim numerical integration accuracy. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Oscillator
 
@@ -58,7 +62,6 @@ theorem explicitSolution (x₀ y₀ : ℝ) : Solves (position x₀ y₀) (veloci
 
 theorem initialState (x₀ y₀ : ℝ) : position x₀ y₀ 0 = x₀ ∧ velocity x₀ y₀ 0 = y₀ := by
   simp [position, velocity]
-
 
 #print axioms explicitSolution
 #print axioms initialState

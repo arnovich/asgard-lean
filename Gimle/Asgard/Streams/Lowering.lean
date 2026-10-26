@@ -1,6 +1,8 @@
-import Gimle.Asgard.Streams.Grid
-import Gimle.Asgard.Streams.Laws
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Streams.Grid
+public import Gimle.Asgard.Streams.Laws
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! Lowering finite coefficient observations of stream circuits.
 
@@ -24,6 +26,8 @@ is later discarded: the lowering never erases Asgard's strict domain.
 Degrees are plain functions `Fin d → ℕ` so that the lowering computes; they
 meet Asgard's finitely supported `Index d` only in the semantics.
 -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Streams.Lowering
 

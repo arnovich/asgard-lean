@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Lowering
-import Gimle.Asgard.Examples.DeclaredHeat
+module
+
+public import Gimle.Asgard.Streams.Lowering
+public import Gimle.Asgard.Examples.DeclaredHeat
 
 /-! Coverage for stream declarations.
 
@@ -9,6 +11,8 @@ substitution is accepted only where its constant coefficient is established,
 and refused with a diagnostic even when its value is discarded; repeated axis
 IDs are refused by validation and at resolution; and the diagnostics for
 references, roles and bindings. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.StreamDeclarations
 

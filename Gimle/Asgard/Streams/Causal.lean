@@ -1,4 +1,6 @@
-import Gimle.Asgard.Streams.Core
+module
+
+public import Gimle.Asgard.Streams.Core
 
 /-! # Causal stream equations: existence and uniqueness degree by degree
 
@@ -19,6 +21,9 @@ element. `Stream d` with any of its axes is an instance (`streamAxis`), and
 the statements below the instance keep their original form; a carrier whose
 coefficients are not rationals but, say, trigonometric polynomials
 (`Streams.TrigStream`) is another. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Causal
 
 /-! ## The abstract axis -/

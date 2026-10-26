@@ -1,4 +1,6 @@
-import Gimle.Asgard.Examples.DrivenForcing
+module
+
+public import Gimle.Asgard.Examples.DrivenForcing
 
 /-! Regression tests for declared time-varying drivers.
 
@@ -11,6 +13,9 @@ outcome and whether Lean agrees ("same") or deliberately differs.
 The state `a` has derivative port `da` and initial value `1`, and `g` has `dg`
 and `2`, on the axis `t` from `0`. `z` is a driver with derivative port `dz`, `f`
 a driver without one, and `p = 3` a parameter. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.Drivers
 open _root_.Gimle.Asgard.Polynomial Model
 

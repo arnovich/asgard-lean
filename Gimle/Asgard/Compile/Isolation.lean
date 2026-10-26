@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Normalization
+module
+
+public import Gimle.Asgard.Compile.Normalization
 
 /-! Conditional single-variable polynomial isolation. The selected coordinate is
 moved to zero by an explicit permutation; the remaining coordinates keep the
 order supplied by that permutation. Polynomial inverse witnesses are checked
 under explicit hypotheses, never inferred from totalized real division. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Isolation
 open _root_.Gimle.Asgard.Polynomial Normalization
 

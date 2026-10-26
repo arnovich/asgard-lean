@@ -1,9 +1,14 @@
-import Gimle.Asgard.Dynamics.Linear
-import Gimle.Asgard.Examples.Oscillator
+module
+
+public import Gimle.Asgard.Dynamics.Linear
+public import Gimle.Asgard.Examples.Oscillator
 
 /-! The autonomous oscillator is an exact matrix initial-value problem. Its
 compiled feedback circuit has the known explicit trajectory, shifted to the
 problem's starting time. Uniqueness concerns the forward domain only. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.LinearOscillator
 open Dynamics
 

@@ -1,8 +1,12 @@
-import Gimle.Asgard.Circuit
-import Mathlib.Basic.Real.Basic
-import Mathlib.Tactic
+module
+
+public import Gimle.Asgard.Circuit
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Tactic
 
 /-! Exact real interpretation; this does not assert correctness of floating-point execution. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard
 

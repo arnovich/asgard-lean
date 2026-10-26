@@ -1,7 +1,12 @@
-import Gimle.Asgard.Semantics.Real
+module
+
+public import Gimle.Asgard.Semantics.Real
 
 /-! Primitive wiring for finite ordered real contexts. No additional circuit
 constructors or semantic axioms are introduced. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Wiring
 
 /-- Empty wiring is derived from the existing constant and discard primitives. -/

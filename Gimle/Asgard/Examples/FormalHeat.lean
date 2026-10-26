@@ -1,5 +1,7 @@
-import Gimle.Asgard.Streams.Named
-import Gimle.Asgard.Streams.Reindex
+module
+
+public import Gimle.Asgard.Streams.Named
+public import Gimle.Asgard.Streams.Reindex
 
 /-! Formal two-axis heat equation, in ordinary generating-function coefficients.
 
@@ -11,6 +13,9 @@ The compiled circuit returns the spatial second derivative and the reconstructed
 stream obtained by integrating it along t with the complete boundary profile.
 These are exact formal coefficient identities, not an analytic PDE existence
 or numerical simulation claim. Axes are ordered [t,x]; inputs [u,boundary,unused]. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.FormalHeat
 open Gimle.Asgard.Streams
 

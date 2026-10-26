@@ -1,6 +1,8 @@
-import Gimle.Asgard.Model.AtomicSource
-import Gimle.Asgard.Model.SourceSyntax
-import Gimle.Asgard.Examples.AtomicSource
+module
+
+public import Gimle.Asgard.Model.AtomicSource
+public import Gimle.Asgard.Model.SourceSyntax
+public import Gimle.Asgard.Examples.AtomicSource
 
 /-! Acceptance fixtures for literal-quotient scales, decimal literals, real
 atomics and division by expressions.
@@ -9,6 +11,9 @@ Each fixture restates a case from the Python implementation's tests.
 Python's accept/reject outcome is recorded beside each one as **same** or
 **differs**; it is a regression reference, not an oracle. Lean's values are
 exact. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.AtomicSource
 open _root_.Gimle.Asgard.Polynomial Model
 
@@ -118,7 +123,7 @@ example : reject (term% diff(f, t)) (term% sin(f)) = some .unsupportedDerivative
 
 /-! ## Declarations -/
 
-private def code {α : Type} : Except Diagnostic α → Option Diagnostic
+def code {α : Type} : Except Diagnostic α → Option Diagnostic
   | .error d => some d
   | .ok _ => none
 

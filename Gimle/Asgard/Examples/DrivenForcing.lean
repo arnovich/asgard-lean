@@ -1,5 +1,7 @@
-import Gimle.Asgard.Model.DrivenSource
-import Gimle.Asgard.Model.SourceSyntax
+module
+
+public import Gimle.Asgard.Model.DrivenSource
+public import Gimle.Asgard.Model.SourceSyntax
 
 /-! A source declaration forced by a declared, differentiable driver.
 
@@ -14,6 +16,9 @@ derivative `du = cos`, `x = sin` is a solution. For `u = sin` with `du = 0`
 the signal is not admitted, because `du` must be the actual derivative of `u`,
 so no state solves the source with it: a derivative port is never an
 unconstrained extra input. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.DrivenForcing
 open _root_.Gimle.Asgard.Polynomial Model
 

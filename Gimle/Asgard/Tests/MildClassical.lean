@@ -1,7 +1,12 @@
-import Gimle.Asgard.Examples.MildBand
+module
+
+public import Gimle.Asgard.Examples.MildBand
 
 /-! Regressions for classical realization and dissipation of actual mild
 circuit outputs, including degenerate data and forward-time boundaries. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.MildClassical
 open Gimle.Asgard.Streams Gimle.Asgard.Streams.Torus Gimle.Asgard.Streams.Mild
 open Set

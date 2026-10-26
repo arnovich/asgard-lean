@@ -1,6 +1,8 @@
-import Gimle.Asgard.Model.Linear
-import Gimle.Asgard.Model.SourceSyntax
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+module
+
+public import Gimle.Asgard.Model.Linear
+public import Gimle.Asgard.Model.SourceSyntax
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 /-! An integral that no inverse rewrite removes, kept through a declared
 integral state, and solved.
@@ -21,6 +23,9 @@ The pinned Python compiler accepts the same source as Form-A
 zero; Lean requires that state declared, with its initial value `0` written in
 the evolution. A declared initial value other than `0` is rejected
 (`nonzero_rejected`). -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.IntegralStates
 open _root_.Gimle.Asgard.Polynomial Model
 

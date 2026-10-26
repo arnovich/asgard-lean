@@ -1,5 +1,7 @@
-import Gimle.Asgard.Examples.EulerThreeMode
-import Gimle.Asgard.Streams.Burgers
+module
+
+public import Gimle.Asgard.Examples.EulerThreeMode
+public import Gimle.Asgard.Streams.Burgers
 
 /-! Coverage for the formal vorticity stream.
 
@@ -12,6 +14,8 @@ coupling of the Galerkin family at kept and discarded modes alike; the
 three-mode coefficients are the hand values and a wrong
 value is refuted by the same kernel computation; and a transitive
 standard-axiom audit of every root theorem and example claim. -/
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Vorticity
 

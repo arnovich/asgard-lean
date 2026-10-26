@@ -1,6 +1,10 @@
-import Gimle.Asgard.Streams.Named
-import Gimle.Asgard.Streams.Reindex
-import Gimle.Asgard.Examples.FormalHeat
+module
+
+public import Gimle.Asgard.Streams.Named
+public import Gimle.Asgard.Streams.Reindex
+public import Gimle.Asgard.Examples.FormalHeat
+
+@[expose] public section
 
 namespace Gimle.Asgard.Tests.Streams
 open Gimle.Asgard.Streams

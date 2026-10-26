@@ -1,4 +1,8 @@
-import Gimle.Asgard.Dynamics.Circuit
+module
+
+public import Gimle.Asgard.Dynamics.Circuit
+
+@[expose] public section
 
 namespace Gimle.Asgard.Dynamics
 

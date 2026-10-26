@@ -1,7 +1,12 @@
-import Gimle.Asgard.Compile.Polynomial
+module
+
+public import Gimle.Asgard.Compile.Polynomial
 
 /-! Pure pointwise external components. A symbol is a typed lookup key, not
 proof of an implementation's identity. Every theorem retains the environment. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.External
 
 def semanticVersion : String := "asgard.external-pointwise-real/v1"

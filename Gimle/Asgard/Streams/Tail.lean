@@ -1,6 +1,8 @@
-import Gimle.Asgard.Streams.Realization
-import Mathlib.Analysis.Normed.Ring.InfiniteSum
-import Mathlib.Analysis.SpecificLimits.Normed
+module
+
+public import Gimle.Asgard.Streams.Realization
+public import Mathlib.Analysis.Normed.Ring.InfiniteSum
+public import Mathlib.Analysis.SpecificLimits.Normed
 
 /-! # Certified analytic truncation of streams
 
@@ -33,6 +35,9 @@ realizing the truncated stream (`truncate_realizes`, `field_windowPoly`).
 
 Coefficients are always decoded, so the whole construction depends on the OGF
 series only: `analyticField_encode`, `majorizes_encode`. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams
 
 /-! ## Absolutely summable products over multi-indices -/
@@ -80,7 +85,6 @@ theorem hasSum_index_prod {d : Nat} (f : Fin d → ℕ → ℝ) (s : Fin d → �
     HasSum (fun α : Index d => ∏ i, f i (α i)) (∏ i, s i) := by
   rw [← (Finsupp.equivFunOnFinite (α := Fin d) (M := ℕ)).symm.hasSum_iff]
   exact (hasSum_pi_prod_aux d f s norms sums).1
-
 
 private theorem hasSum_geometric_index {d : Nat} (q : Fin d → ℝ) (h0 : ∀ i, 0 ≤ q i)
     (h1 : ∀ i, q i < 1) :

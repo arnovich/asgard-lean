@@ -1,9 +1,14 @@
-import Gimle.Asgard.Compile.Syntax
-import Gimle.Asgard.Dynamics.Feedback
+module
+
+public import Gimle.Asgard.Compile.Syntax
+public import Gimle.Asgard.Dynamics.Feedback
 
 /-! Four-species antithetic integral feedback (AIF), compiled to typed circuits.
 Eta is a real input fixed along each feedback trajectory. These equivalences
 assert no trajectory existence, uniqueness, species positivity or safety bound. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Examples.AIF
 open _root_.Gimle.Asgard.Polynomial
 

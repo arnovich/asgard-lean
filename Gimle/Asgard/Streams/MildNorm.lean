@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.RealTrigNorm
-import Gimle.Asgard.Streams.MildHeatBounds
+module
+
+public import Gimle.Asgard.Streams.RealTrigNorm
+public import Gimle.Asgard.Streams.MildHeatBounds
 
 /-! Weighted norms of physically evaluated mild coefficients and their
 heat/Duhamel estimates. All time integrals are forward from zero. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real Set

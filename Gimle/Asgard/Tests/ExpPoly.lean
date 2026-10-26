@@ -1,6 +1,11 @@
-import Gimle.Asgard.Streams.ExpPoly
+module
+
+public import Gimle.Asgard.Streams.ExpPoly
 
 /-! Exact exponential-polynomial arithmetic and all Duhamel resonance branches. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Tests.ExpPoly
 
 open Gimle.Asgard.Streams

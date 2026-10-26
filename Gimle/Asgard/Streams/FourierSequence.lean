@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.FourierFlux
-import Gimle.Asgard.Streams.MildFourierSeries
+module
+
+public import Gimle.Asgard.Streams.FourierFlux
+public import Gimle.Asgard.Streams.MildFourierSeries
 
 /-! Absolute Fourier exchanges and nonlinear cancellation for infinite real
 coefficient sequences with one summable spatial derivative. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real

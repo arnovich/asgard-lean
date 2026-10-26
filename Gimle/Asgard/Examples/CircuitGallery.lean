@@ -1,8 +1,15 @@
+module
+
 import Gimle.Asgard.Visualization.Widget
 import Gimle.Asgard.Examples.EnergyOptimization
 import Gimle.Asgard.Examples.EquationModels
 import Gimle.Asgard.Examples.RationalModel
 import Gimle.Asgard.Examples.ThreeState
+meta import Gimle.Asgard.Visualization.Widget
+meta import Gimle.Asgard.Examples.EnergyOptimization
+meta import Gimle.Asgard.Examples.EquationModels
+meta import Gimle.Asgard.Examples.RationalModel
+meta import Gimle.Asgard.Examples.ThreeState
 
 /-! Open this file in VS Code and put the cursor on a #html command.
 Edit the circuit/model, save, and inspect the updated Lean Infoview.

@@ -1,7 +1,11 @@
-import Gimle.Asgard.Visualization.Model
-import Gimle.Asgard.Examples.EnergyOptimization
-import Gimle.Asgard.Examples.EquationModels
-import Gimle.Asgard.Examples.RationalModel
+module
+
+public import Gimle.Asgard.Visualization.Model
+public import Gimle.Asgard.Examples.EnergyOptimization
+public import Gimle.Asgard.Examples.EquationModels
+public import Gimle.Asgard.Examples.RationalModel
+
+@[expose] public section
 
 open Gimle.Asgard Visualization
 

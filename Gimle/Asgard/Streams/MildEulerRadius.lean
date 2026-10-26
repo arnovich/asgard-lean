@@ -1,8 +1,13 @@
-import Gimle.Asgard.Streams.MildNorm
-import Gimle.Asgard.Streams.EulerRadius
+module
+
+public import Gimle.Asgard.Streams.MildNorm
+public import Gimle.Asgard.Streams.EulerRadius
 
 /-! The Euler-scale bound for the mild interaction expansion at every
 nonnegative viscosity. Time integration replaces Taylor coefficient division. -/
+
+@[expose] public section
+
 namespace Gimle.Asgard.Streams.Mild
 
 open Torus Real
