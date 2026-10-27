@@ -213,14 +213,12 @@ example : polynomialModel.lowered.assignments = [⟨⟨"z", "z", .output⟩,
     .add (.mul (.add (.var "x") (.constant 1)) (.add (.var "x") (.constant 1))) (.var "a")⟩] := by
   decide +kernel
 
-/-- The ORIGINAL lambda source observes `z = 19/2` at `x = 2`. The input and
-variable are written at the model's runtime port count, a filtered length that
-unification does not evaluate. -/
+/-- The ORIGINAL lambda source observes `z = 19/2` at `x = 2`. -/
 example : polynomial.Observes Context.empty polynomialModel.lowered.body.runtimeIds
-    polynomial.observationIds (fun _ => 2) ![19 / 2] := by
+    polynomial.observationIds ![2] ![19 / 2] := by
   rw [polynomialModel.correct, Selected.circuit, compileOutputs_correct]
-  have terms : polynomialModel.model.outputs.expressions = ![.add (.mul (.add (.var ⟨0, by decide⟩)
-      (.constant 1)) (.add (.var ⟨0, by decide⟩) (.constant 1))) (.constant (1 / 2))] := by
+  have terms : polynomialModel.model.outputs.expressions = ![.add (.mul (.add (.var 0)
+      (.constant 1)) (.add (.var 0) (.constant 1))) (.constant (1 / 2))] := by
     decide +kernel
   rw [terms]
   ext i

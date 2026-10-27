@@ -111,8 +111,39 @@ theorem program_count (p : Program) (es : List (Expr p.inputs.length))
   · exact assignment_count _ _ _ h
   · simp at h
 
-def System.inputIds (s : System) : List String :=
-  s.externalIds ++ s.states.map StateBinding.stateId
+/-- The state IDs of a binding list. Reducible structural recursion, as
+`DriverBinding.ports`, so the count reduces to a numeral during unification;
+`stateIds_eq_map` gives the map form. -/
+@[reducible] def StateBinding.stateIds : List StateBinding → List String
+  | [] => []
+  | b :: bs => b.stateId :: StateBinding.stateIds bs
+
+theorem StateBinding.stateIds_eq_map (bs : List StateBinding) :
+    StateBinding.stateIds bs = bs.map StateBinding.stateId := by
+  induction bs with
+  | nil => rfl
+  | cons b bs ih => simp [StateBinding.stateIds, ih]
+
+/-- `xs ++ ys` by reducible structural recursion; `List.append` does not unfold
+during unification. -/
+@[reducible] def appendIds : List String → List String → List String
+  | [], ys => ys
+  | x :: xs, ys => x :: appendIds xs ys
+
+theorem appendIds_eq_append (xs ys : List String) : appendIds xs ys = xs ++ ys := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp [appendIds, ih]
+
+/-- The IDs a system's program may read: its external IDs, then its state IDs.
+Reducible, so the input count of a concrete system reduces to a numeral during
+unification; `inputIds_eq_append` gives the list form. -/
+@[reducible] def System.inputIds (s : System) : List String :=
+  appendIds s.externalIds (StateBinding.stateIds s.states)
+
+theorem System.inputIds_eq_append (s : System) :
+    s.inputIds = s.externalIds ++ s.states.map StateBinding.stateId := by
+  rw [System.inputIds, appendIds_eq_append, StateBinding.stateIds_eq_map]
 
 /-- Successful preparation carries the lookup equations checked by the pure
 compiler. These are evidence about declared IDs, not caller-supplied routing. -/
@@ -161,7 +192,7 @@ def System.prepare (s : System) : Option (Prepared s) :=
 def Prepared.field {s : System} (p : Prepared s) :
     Gimle.Asgard.Circuit (s.externalIds.length + s.states.length) s.states.length :=
   .compose (Polynomial.route (fun i =>
-    Fin.cast (by simp [System.inputIds]) (p.inputRoute i)))
+    Fin.cast (by simp [System.inputIds_eq_append]) (p.inputRoute i)))
     (.compose (compileList p.expressions) (Polynomial.route (fun i =>
       Fin.cast (program_count _ _ p.accepted).symm (p.outputRoute i))))
 
@@ -174,7 +205,7 @@ def Prepared.circuit {s : System} (p : Prepared s) :
 
 noncomputable def System.environment (s : System) (external : Point s.externalIds.length)
     (state : Point s.states.length) : Point s.inputIds.length :=
-  fun i => pointAppend external state (Fin.cast (by simp [System.inputIds]) i)
+  fun i => pointAppend external state (Fin.cast (by simp [System.inputIds_eq_append]) i)
 
 noncomputable def initialValue (s : System) (initial : Point s.initialPorts.length)
     (id : String) : Option ℝ := (idIndex s.initialPorts id).map initial

@@ -162,7 +162,27 @@ theorem Selected.correct {n m : Nat} {b : Body} {ids : Fin n → String}
     intro i
     simpa [← outputs] using s.value_correct x i
 
-def Body.runtimePorts (b : Body) : List Port := b.program.inputs.filter (·.role != .parameter)
+/-- The declared ports read at runtime: every input that is not a parameter.
+Reducible structural recursion, as `DriverBinding.ports`, so the runtime port
+count of a concrete body reduces to a numeral during unification;
+`runtimeInputs_eq_filter` gives the filter form. -/
+@[reducible] def runtimeInputs : List Port → List Port
+  | [] => []
+  | p :: ps => match p.role with
+    | .parameter => runtimeInputs ps
+    | _ => p :: runtimeInputs ps
+
+theorem runtimeInputs_eq_filter (ps : List Port) :
+    runtimeInputs ps = ps.filter (·.role != .parameter) := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih => cases h : p.role <;> simp +decide [runtimeInputs, h, ih]
+
+@[reducible] def Body.runtimePorts (b : Body) : List Port := runtimeInputs b.program.inputs
+
+theorem Body.runtimePorts_eq_filter (b : Body) :
+    b.runtimePorts = b.program.inputs.filter (·.role != .parameter) :=
+  runtimeInputs_eq_filter _
 def Body.runtimeIds (b : Body) (i : Fin b.runtimePorts.length) : String := b.runtimePorts[i].id
 def Body.observationIds (b : Body) (i : Fin b.observations.length) : String :=
   b.observations[i].sourceId
