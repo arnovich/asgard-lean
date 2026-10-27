@@ -56,9 +56,7 @@ theorem source_iff_feedback (time : TimeDomain) (initial : Point 2) (state : Sig
 theorem field_equations (x : Point 2) : prepared.field.run x = ![x 1, -x 0 - 2*x 1] := by
   have es : prepared.expressions =
       ([Expr.var 1, .add (.neg (.var 0)) (.neg (.mul (.constant 2) (.var 1)))] : List (Expr 2)) := by decide
-  -- The input count is `inputIds.length`, which only reduces to `2` by unfolding
-  -- `System.inputIds`; the cast states the identity at the route's own type.
-  have inputs : prepared.inputRoute = Fin.cast (by decide) := by decide +kernel
+  have inputs : prepared.inputRoute = fun i => i := by decide +kernel
   have outputs : prepared.outputRoute = (fun i => i) := by decide +kernel
   simp only [Prepared.field, Gimle.Asgard.Circuit.run, Polynomial.route_correct,
     compileList, compileOutputs_correct, inputs, outputs]

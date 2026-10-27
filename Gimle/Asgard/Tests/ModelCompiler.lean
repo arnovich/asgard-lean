@@ -10,11 +10,10 @@ import all Init.Data.Repr
 namespace Gimle.Asgard.Tests.ModelCompiler
 open _root_.Gimle.Asgard.Polynomial Model
 
-/- The polynomial models below are typed by `Body.runtimePorts`, which filters
-the declared ports. Unification does not evaluate that filter, so inputs and
-variables are written at the model's own input type (`fun _ => 3`,
-`.var ⟨0, by decide⟩`) rather than at `Point 1` and `Expr 1`. The bodies are
-`abbrev`s so their literal observation counts still reduce to numerals. -/
+/- The polynomial models below are typed by `Body.runtimePorts`, a reducible
+count of the declared ports, so inputs and variables are written at `Point 1`
+and `Expr 1`. The bodies are `abbrev`s so their literal port and observation
+counts reduce to numerals. -/
 
 abbrev forward : Body := {
   program := ⟨[⟨"x", "x", .input⟩, ⟨"a", "a", .parameter⟩],
@@ -30,27 +29,27 @@ def polynomial : PolynomialModel forward :=
   (compilePolynomial forward).toOption.get (by decide +kernel)
 
 example : polynomial.outputs.expressions =
-    ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
-      (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by
+    ![Expr.add (.mul (.var 0) (.var 0))
+      (.mul (.constant (1 / 3)) (.var 0))] := by
   decide +kernel
 
-example : polynomial.outputs.circuit.run (fun _ => 3) = ![(10 : ℝ)] := by
+example : polynomial.outputs.circuit.run ![3] = ![(10 : ℝ)] := by
   rw [Selected.circuit, compileOutputs_correct]
   have terms : polynomial.outputs.expressions =
-      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
-        (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
+      ![Expr.add (.mul (.var 0) (.var 0))
+        (.mul (.constant (1 / 3)) (.var 0))] := by decide +kernel
   rw [terms]
   ext i
   change Fin 1 at i
   fin_cases i
   norm_num [Expr.eval]
 
-example : forward.Observes forward.runtimeIds forward.observationIds (fun _ => 3) ![10] := by
+example : forward.Observes forward.runtimeIds forward.observationIds ![3] ![10] := by
   apply (polynomial.outputs.correct _ _).mpr
   rw [Selected.circuit, compileOutputs_correct]
   have terms : polynomial.outputs.expressions =
-      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
-        (.mul (.constant (1 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
+      ![Expr.add (.mul (.var 0) (.var 0))
+        (.mul (.constant (1 / 3)) (.var 0))] := by decide +kernel
   rw [terms]
   ext i
   change Fin 1 at i
@@ -61,11 +60,11 @@ example : forward.Observes forward.runtimeIds forward.observationIds (fun _ => 3
 abbrev changed : Body := { forward with parameters := [⟨"a", 2 / 3⟩] }
 def changedModel : PolynomialModel changed :=
   (compilePolynomial changed).toOption.get (by decide +kernel)
-example : ¬ changed.Observes changed.runtimeIds changed.observationIds (fun _ => 3) ![10] := by
+example : ¬ changed.Observes changed.runtimeIds changed.observationIds ![3] ![10] := by
   rw [changedModel.outputs.correct, Selected.circuit, compileOutputs_correct]
   have terms : changedModel.outputs.expressions =
-      ![Expr.add (.mul (.var ⟨0, by decide⟩) (.var ⟨0, by decide⟩))
-        (.mul (.constant (2 / 3)) (.var ⟨0, by decide⟩))] := by decide +kernel
+      ![Expr.add (.mul (.var 0) (.var 0))
+        (.mul (.constant (2 / 3)) (.var 0))] := by decide +kernel
   rw [terms]
   intro bad
   have := congrFun bad (0 : Fin 1)
@@ -113,10 +112,10 @@ abbrev repeated : Body := { forward with observations :=
   [⟨⟨"o1", "first", .output⟩, "x"⟩, ⟨⟨"o2", "second", .output⟩, "x"⟩] }
 def repeatedModel : PolynomialModel repeated :=
   (compilePolynomial repeated).toOption.get (by decide +kernel)
-example : repeatedModel.outputs.circuit.run (fun _ => 3) = ![(3 : ℝ), 3] := by
+example : repeatedModel.outputs.circuit.run ![3] = ![(3 : ℝ), 3] := by
   rw [Selected.circuit, compileOutputs_correct]
   have terms : repeatedModel.outputs.expressions =
-      ![Expr.var ⟨0, by decide⟩, .var ⟨0, by decide⟩] := by decide +kernel
+      ![Expr.var 0, .var 0] := by decide +kernel
   rw [terms]
   ext i
   change Fin 2 at i
